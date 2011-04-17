@@ -3,27 +3,57 @@
 #include <stdlib.h>
 
 
+
+
+#define ceildiv(x, y) ((x - 1) / (y) + 1)
+#define pid_remap(p, p0, P) (((p) + (P) - (p0)) % (P))
+
+int num_c_blocks(int N, int B) {
+  return N / B;
+}
+
+int num_blocks(int N, int B) {
+  return ceildiv(N, B);
+}
+
+int num_c_lblocks(int N, int B, int p, int P) {
+  int nbc = num_c_blocks(N, B);
+  return (nbc / P) + ((nbc % P) / (p + 1));
+}
+
+
+int num_lblocks(int N, int B, int p, int P) {
+  int nb = num_blocks(N, B);
+  return (nb / P) + ((nb % P) / (p + 1));
+}
+
+int partial_last_block(int N, int B, int p, int P) {
+  return ((N % B > 0) && ((num_c_blocks(N, B) % P) == p));
+}
+
+int num_rstride(int N, int B, int stride) {
+  return num_blocks(N, B) * stride;
+}
+
+
 int numrc(int N, int B, int p, int p0, int P) {
 
   int nbc, nbp, n;
 
   /* If the process owning block zero (p0) is not zero, then remap
      process numbers. */
-  p = (p + p0) % P;
-
-  /* Number of complete blocks. */
-  nbc = N / B;
+  p = pid_remap(p, p0, P);
   
   /* Number of complete blocks owned by the process. */
   //nbp = (nbc - p - 1) / P + 1;
-  nbp = nbc / P + (nbc % P) / (p+1);
+  nbp = num_c_lblocks(N, B, p, P);
 
   /* Number of entries of complete blocks owned by process. */
   n = nbp * B;
   
   /* If this process owns an incomplete block, then add the number of
      entries. */
-  if(N % B > 0 && (nbc % P) == p) {
+  if(partial_last_block(N, B, p, P)) {
     n += N%B;
   }
 
@@ -37,7 +67,7 @@ int bc1d_copy_forward(double * src, double *dest, int N, int B, int P, int p) {
   int b = 0, i;
   int lB;
 
-  lB = ((N / B) - p - 1) / P + 1; // Number of local, complete, blocks
+  lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
   
   for(b = 0; b < lB; b++) {
     memcpy(dest + b*B, src + B*(p + b*P), B*sizeof(double));
@@ -47,7 +77,7 @@ int bc1d_copy_forward(double * src, double *dest, int N, int B, int P, int p) {
       }*/
   }
 
-  if(N % B > 0 && (N/B % P) == p) {
+  if(partial_last_block(N, B, p, P)) {
     //printf("Here %i\n", p);
     memcpy(dest + lB*B, src + N - N%B, (N%B) * sizeof(double));
     /*for(i = 0; i < N%B; i++) {
@@ -65,7 +95,7 @@ int bc2d_copy_forward(double * src, double * dest, int Nr, int Nc, int Br, int B
   int lBc;
   int nr;
 
-  lBc = ((Nc / Bc) - pc - 1) / Pc + 1; // Number of local, complete, col blocks
+  lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
 
   nr = numrc(Nr, Br, pr, 0, Pr);
 
@@ -83,7 +113,7 @@ int bc2d_copy_forward(double * src, double * dest, int Nr, int Nc, int Br, int B
     }
   }
 
-  if(Nc % Bc > 0 && (Nc/Bc % Pc) == pc) {
+  if(partial_last_block(Nc, Bc, pc, Pc)) {
     for(i = 0; i < Nc%Bc; i++) {
       /* printf("\nColumn %i %i\n", lBc, i); */
       /* for(j = 0; j < Nr; j++) { */
@@ -107,13 +137,13 @@ int bc1d_copy_backward(double * src, double *dest, int N, int B, int P, int p) {
   int b = 0, i;
   int lB;
 
-  lB = ((N / B) - p - 1) / P + 1; // Number of local, complete, blocks
+  lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
   
   for(b = 0; b < lB; b++) {
     memcpy(dest + B*(p + b*P), src + b*B, B*sizeof(double));
   }
 
-  if(N % B > 0 && (N/B % P) == p) {
+  if(partial_last_block(N, B, p, P)) {
     memcpy(dest + N - N%B, src + lB*B, (N%B) * sizeof(double));
   }
 
@@ -127,7 +157,7 @@ int bc2d_copy_backward(double * src, double * dest, int Nr, int Nc, int Br, int 
   int lBc;
   int nr;
 
-  lBc = ((Nc / Bc) - pc - 1) / Pc + 1; // Number of local, complete, col blocks
+  lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
 
   nr = numrc(Nr, Br, pr, 0, Pr);
 
@@ -137,7 +167,7 @@ int bc2d_copy_backward(double * src, double * dest, int Nr, int Nc, int Br, int 
     }
   }
 
-  if(Nc % Bc > 0 && (Nc/Bc % Pc) == pc) {
+  if(partial_last_block(Nc, Bc, pc, Pc)) {
     for(i = 0; i < Nc%Bc; i++) {
       bc1d_copy_backward(src + (lBc*Bc + i)*nr, dest + (i + Bc*(pc + lBc*Pc))*Nr, Nr, Br, Pr, pr);
     }
@@ -147,3 +177,150 @@ int bc2d_copy_backward(double * src, double * dest, int Nr, int Nc, int Br, int 
 }
 
 
+
+int bc1d_copy_forward_stride(double * src, double *dest, int N, int B, int P, int p, int stride) {
+
+  int b = 0, i;
+  int lB;
+
+  lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
+  
+  for(b = 0; b < lB; b++) {
+    memcpy(dest + b*B, src + stride*(p + b*P), B*sizeof(double));
+  }
+
+  if(partial_last_block(N, B, p, P)) {
+    memcpy(dest + lB*B,  src + stride*(p + lB*P), (N%B) * sizeof(double));
+  }
+
+  return 0;
+}
+
+
+int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc, int stride) {
+
+  int bc, i, j;
+  int lBc;
+  int nr;
+
+  int ncs;
+
+  lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
+
+  nr = numrc(Nr, Br, pr, 0, Pr);
+  
+  if(stride == 0) {
+    stride = Br;
+    ncs = Nr;
+  }
+  else {
+    ncs = num_rstride(Nr, Br, stride);
+  }
+
+  for(bc = 0; bc < lBc; bc++) {
+    for(i = 0; i < Bc; i++) {
+      bc1d_copy_forward_stride(src + (i + Bc*(pc + bc*Pc))*ncs,
+			       dest + (bc*Bc + i)*nr, 
+			       Nr, Br, Pr, pr, stride);
+    }
+  }
+
+  if(partial_last_block(Nc, Bc, pc, Pc)) {
+    for(i = 0; i < Nc%Bc; i++) {
+      bc1d_copy_forward_stride(src + (i + Bc*(pc + lBc*Pc))*ncs, 
+			       dest + (lBc*Bc + i)*nr, 
+			       Nr, Br, Pr, pr, stride);
+    }
+  }
+
+  return 0;
+}
+
+int bc1d_copy_backward_stride(double * src, double *dest, int N, int B, int P, int p, int stride) {
+
+  int b = 0, i;
+  int lB;
+
+  lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
+  
+  for(b = 0; b < lB; b++) {
+    memcpy(dest + stride*(p + b*P), src + b*B, B*sizeof(double));
+  }
+
+  if(partial_last_block(N, B, p, P)) {
+    memcpy(dest + stride*(p + lB*P), src + lB*B, (N%B) * sizeof(double));
+  }
+
+  return 0;
+}
+
+
+
+int bc2d_copy_backward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc, int stride) {
+
+  int bc, i, j;
+  int lBc;
+  int nr;
+
+  int ncs;
+
+  lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
+
+  nr = numrc(Nr, Br, pr, 0, Pr);
+
+  if(stride == 0) {
+    stride = Br;
+    ncs = Nr;
+  }
+  else {
+    ncs = num_rstride(Nr, Br, stride);
+  }
+
+  for(bc = 0; bc < lBc; bc++) {
+    for(i = 0; i < Bc; i++) {
+      bc1d_copy_backward_stride(src + (bc*Bc + i)*nr, dest + (i + Bc*(pc + bc*Pc))*ncs, Nr, Br, Pr, pr, stride);
+    }
+  }
+
+  if(partial_last_block(Nc, Bc, pc, Pc)) {
+    for(i = 0; i < Nc%Bc; i++) {
+      bc1d_copy_backward_stride(src + (lBc*Bc + i)*nr, dest + (i + Bc*(pc + lBc*Pc))*ncs, Nr, Br, Pr, pr, stride);
+    }
+  }
+
+  return 0;
+}
+
+
+int bc1d_copy_blockstride(double * src, double *dest, int N, int B, int stride) {
+
+  int b = 0, i;
+  int nB;
+
+  nB = num_c_blocks(N, B); // Number of local, complete, blocks
+  
+  for(b = 0; b < nB; b++) {
+    memcpy(dest + b*stride, src + b*B, B*sizeof(double));
+  }
+
+  if(N % B > 0) {
+    memcpy(dest + nB*stride,  src + nB*B, (N%B) * sizeof(double));
+  }
+
+  return 0;
+}
+
+
+int bc2d_copy_blockstride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int stride) {
+
+  int i;
+  int ncs;
+
+  ncs = num_rstride(Nr, Br, stride);
+
+  for(i = 0; i < Nc; i++) {
+    bc1d_copy_blockstride(src + i*Nr, dest + i*ncs, Nr, Br, stride);
+  }
+
+  return 0;
+}

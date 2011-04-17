@@ -21,11 +21,15 @@ int main(int argc, char **argv) {
   double * xc2, *xr2;
 
   double * X2r2, * xr22;
-  
 
   int i, j, nr, nc;
 
   int N = 19, B = 3, P = 3, p = 0;
+
+  int stride = 5;
+  
+
+
 
   int Nc = 17, Nr = 5, Bc = 3, Br = 2, Pc = 3, Pr = 2, pc = 2, pr = 0;
 
@@ -34,6 +38,8 @@ int main(int argc, char **argv) {
   int fd, fd1, fd2;
 
   double * X2m;
+
+  double * Xs, * xsc, * Xs2;
 
   printf("\n1d test\n");
 
@@ -148,7 +154,7 @@ int main(int argc, char **argv) {
   nc = numrc(Nc, Bc, pc, 0, Pc);
 
   X2m = (double *)mmap(NULL, sizeof(double) * Nr* Nc, PROT_READ, MAP_PRIVATE, fd1, 0);
-  if((int)X2m == -1) { perror(NULL); exit(-226); }
+  if((long)X2m == -1) { perror(NULL); exit(-226); }
 
   bc2d_copy_forward(X2m, xc2, Nr, Nc, Br, Bc, Pr, Pc, pr, pc);
 
@@ -162,5 +168,14 @@ int main(int argc, char **argv) {
 
   munmap(X2m, sizeof(double) * Nr *Nc);
   close(fd1);
+
+  printf("\n\n");
+
+  Xs = (double *)calloc(num_blocks(N, B) * stride, sizeof(double));
+  bc1d_copy_blockstride(X, Xs, N, B, stride);
+
+  for(i = 0; i < N/B*stride; i++) {
+    printf("%f\n", Xs[i]);
+  }
 
 }
