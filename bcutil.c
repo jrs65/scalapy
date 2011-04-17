@@ -2,6 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <sys/mman.h>
+#include <sys/stat.h>
+
+#include <errno.h>
 
 
 
@@ -18,13 +25,13 @@ int num_blocks(int N, int B) {
 
 int num_c_lblocks(int N, int B, int p, int P) {
   int nbc = num_c_blocks(N, B);
-  return (nbc / P) + ((nbc % P) / (p + 1));
+  return (nbc / P) + (((nbc % P) > p) ? 1 : 0);
 }
 
 
 int num_lblocks(int N, int B, int p, int P) {
   int nb = num_blocks(N, B);
-  return (nb / P) + ((nb % P) / (p + 1));
+  return (nb / P) + (((nb % P) > p) ? 1 : 0);
 }
 
 int partial_last_block(int N, int B, int p, int P) {
@@ -35,10 +42,23 @@ int num_rstride(int N, int B, int stride) {
   return num_blocks(N, B) * stride;
 }
 
+int stride_page(int N, int B) {
+
+  int pl, stride;
+
+  pl = getpagesize() / sizeof(double);
+  return ceildiv(B, pl) * pl;
+}
+
+
+int num_rpage(int N, int B) {
+  return num_rstride(N, B, stride_page(N, B));
+}
+
 
 int numrc(int N, int B, int p, int p0, int P) {
 
-  int nbc, nbp, n;
+  int nbp, n;
 
   /* If the process owning block zero (p0) is not zero, then remap
      process numbers. */
@@ -68,22 +88,19 @@ int bc1d_copy_forward(double * src, double *dest, int N, int B, int P, int p) {
   int lB;
 
   lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
-  
+  //printf("I1: %i %i %i %i\n",N,B,P,p);
+  //fflush(stdout);
   for(b = 0; b < lB; b++) {
-    memcpy(dest + b*B, src + B*(p + b*P), B*sizeof(double));
-    /*for(i = 0; i < B; i++) {
-      dest[b*B+i] = src[B*(p+b*P)+i];
-      printf("%i  %i  %f\n", p, b*B+i, dest[b*B+i]);
-      }*/
+    for(i = 0; i < B; i++) {
+      //printf("    %i %i\n",b,i);
+      //fflush(stdout);
+      dest[b*B+i] = src[B*(p + b*P)+i];
+    }
+    //memcpy(dest + b*B, src + B*(p + b*P), B*sizeof(double));
   }
 
   if(partial_last_block(N, B, p, P)) {
-    //printf("Here %i\n", p);
     memcpy(dest + lB*B, src + N - N%B, (N%B) * sizeof(double));
-    /*for(i = 0; i < N%B; i++) {
-      dest[lB*B+i] = src[B*(p+lB*P)+i];
-      printf("%i  %i  %f\n", p, lB*B+i, dest[lB*B+i]);
-      }*/
   }
 
   return 0;
@@ -91,39 +108,26 @@ int bc1d_copy_forward(double * src, double *dest, int N, int B, int P, int p) {
 
 int bc2d_copy_forward(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
 
-  int bc, i, j;
+  int bc, i;
   int lBc;
   int nr;
 
   lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
-
+  //printf("lbc %i\n", lBc);
   nr = numrc(Nr, Br, pr, 0, Pr);
-
+  //printf("I2: %i %i %i %i %i %i %i %i\n",Nr, Nc, Br,Bc,Pr, Pc,pr, pc);
+  //fflush(stdout);
   for(bc = 0; bc < lBc; bc++) {
     for(i = 0; i < Bc; i++) {
-      /*printf("\nColumn %i %i\n", bc, i);
-      for(j = 0; j < Nr; j++) {
-        printf("%10.2f\n", src[(i + Bc*(pc + bc*Pc))*Nr+j]);
-      }
-      printf("\n");*/
+      //printf("%i %i\n", bc, i);
+      //fflush(stdout);
       bc1d_copy_forward(src + (i + Bc*(pc + bc*Pc))*Nr, dest + (bc*Bc + i)*nr, Nr, Br, Pr, pr);
-      /*for(j = 0; j < nr; j++) {
-        printf("%10.2f\n", dest[(i + bc*Bc)*nr+j]);
-        }*/
     }
   }
 
   if(partial_last_block(Nc, Bc, pc, Pc)) {
     for(i = 0; i < Nc%Bc; i++) {
-      /* printf("\nColumn %i %i\n", lBc, i); */
-      /* for(j = 0; j < Nr; j++) { */
-      /*   printf("%10.2f\n", src[(i + Bc*(pc + lBc*Pc))*Nr+j]); */
-      /* } */
-      /* printf("\n"); */
       bc1d_copy_forward(src + (i + Bc*(pc + lBc*Pc))*Nr, dest + (lBc*Bc + i)*nr, Nr, Br, Pr, pr);
-      /* for(j = 0; j < nr; j++) { */
-      /*   printf("%10.2f\n", dest[(i + lBc*Bc)*nr+j]); */
-      /* } */
     }
   }
 
@@ -134,7 +138,7 @@ int bc2d_copy_forward(double * src, double * dest, int Nr, int Nc, int Br, int B
 
 int bc1d_copy_backward(double * src, double *dest, int N, int B, int P, int p) {
 
-  int b = 0, i;
+  int b = 0;
   int lB;
 
   lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
@@ -153,7 +157,7 @@ int bc1d_copy_backward(double * src, double *dest, int N, int B, int P, int p) {
 
 int bc2d_copy_backward(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
 
-  int bc, i, j;
+  int bc, i;
   int lBc;
   int nr;
 
@@ -180,7 +184,7 @@ int bc2d_copy_backward(double * src, double * dest, int Nr, int Nc, int Br, int 
 
 int bc1d_copy_forward_stride(double * src, double *dest, int N, int B, int P, int p, int stride) {
 
-  int b = 0, i;
+  int b = 0;
   int lB;
 
   lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
@@ -197,9 +201,10 @@ int bc1d_copy_forward_stride(double * src, double *dest, int N, int B, int P, in
 }
 
 
-int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc, int stride) {
+int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, 
+			     int Pr, int Pc, int pr, int pc, int stride) {
 
-  int bc, i, j;
+  int bc, i;
   int lBc;
   int nr;
 
@@ -238,7 +243,7 @@ int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br
 
 int bc1d_copy_backward_stride(double * src, double *dest, int N, int B, int P, int p, int stride) {
 
-  int b = 0, i;
+  int b = 0;
   int lB;
 
   lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
@@ -256,9 +261,10 @@ int bc1d_copy_backward_stride(double * src, double *dest, int N, int B, int P, i
 
 
 
-int bc2d_copy_backward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc, int stride) {
+int bc2d_copy_backward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc,
+			      int Pr, int Pc, int pr, int pc, int stride) {
 
-  int bc, i, j;
+  int bc, i;
   int lBc;
   int nr;
 
@@ -294,7 +300,7 @@ int bc2d_copy_backward_stride(double * src, double * dest, int Nr, int Nc, int B
 
 int bc1d_copy_blockstride(double * src, double *dest, int N, int B, int stride) {
 
-  int b = 0, i;
+  int b = 0;
   int nB;
 
   nB = num_c_blocks(N, B); // Number of local, complete, blocks
@@ -323,4 +329,204 @@ int bc2d_copy_blockstride(double * src, double * dest, int Nr, int Nc, int Br, i
   }
 
   return 0;
+}
+
+
+int bc1d_copy_pagealign(double * src, double * dest, int N, int B) {
+  int pl, stride;
+
+  pl = getpagesize() / sizeof(double);
+  stride = ceildiv(B, pl) * pl;
+
+  return bc1d_copy_blockstride(src, dest, N, B, stride);
+}
+
+
+int bc2d_copy_pagealign(double * src, double * dest, int Nr, int Nc, int Br, int Bc) {
+  int pl, stride;
+
+  pl = getpagesize() / sizeof(double);
+  stride = ceildiv(Bc, pl) * pl;
+
+  return bc2d_copy_blockstride(src, dest, Nr, Nc, Br, Bc, stride);
+}
+
+
+int bc1d_mmap_load(char * file, double * dest, int N, int B, int P, int p) {
+
+  int fd;
+
+  double * xm;
+
+  int pl, stride;
+  long nm;
+
+  struct stat fst;
+  long fs;
+
+  pl = getpagesize() / sizeof(double);
+  stride = ceildiv(B, pl) * pl;
+  nm = num_rstride(N, B, stride) * sizeof(double);
+
+  fd = open(file, O_RDONLY);
+  if(fd == -1) {
+    perror("BC1d mmap load");
+    return -1;
+  }
+
+  fstat(fd, &fst);
+  fs = fst.st_size;
+  if(fs < nm) {
+    printf("File is not long enough.");
+  }
+  
+  xm = (double *)mmap(NULL, nm, PROT_READ, MAP_PRIVATE, fd, 0);
+  if((long)xm == -1) {
+    perror("BC1d mmap load");
+    return -1;
+  }
+  
+  bc1d_copy_forward_stride(xm, dest, N, B, P, p, stride);
+
+  munmap(xm, nm);
+  close(fd);
+
+  return 0;
+
+}
+
+int bc2d_mmap_load(char * file, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
+
+  int fd;
+
+  double * xm;
+
+  int pl, stride; 
+  long nm;
+
+  struct stat fst;
+  long fs;
+
+  pl = getpagesize() / sizeof(double);
+  stride = ceildiv(Br, pl) * pl;
+  nm = num_rstride(Nr, Br, stride) * Nc * sizeof(double);
+
+  printf("%i %i %i %i %i\n", stride, nm, pl, getpagesize(), sizeof(double));
+
+  fd = open(file, O_RDONLY);
+  if(fd == -1) {
+    perror("BC2d mmap load");
+    return -1;
+  }
+
+  fstat(fd, &fst);
+  fs = fst.st_size;
+  if(fs < nm) {
+    printf("File is not long enough.");
+  }
+  
+  xm = (double *)mmap(NULL, nm, PROT_READ, MAP_PRIVATE, fd, 0);
+  if((long)xm == -1) {
+    perror("BC2d mmap load");
+    return -1;
+  }
+  
+  bc2d_copy_forward_stride(xm, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, stride);
+
+  munmap(xm, nm);
+  close(fd);
+
+  return 0;
+
+}
+
+int bc1d_mmap_save(char * file, double * src, int N, int B, int P, int p) {
+
+  int fd;
+
+  double * xm;
+
+  int pl, stride;
+  long nm;
+
+  struct stat fst;
+  long fs;
+
+  pl = getpagesize() / sizeof(double);
+  stride = ceildiv(B, pl) * pl;
+  nm = num_rstride(N, B, stride) * sizeof(double);
+
+  fd = open(file, O_RDWR);
+  if(fd == -1) {
+    perror("BC1d mmap save");
+    return -1;
+  }
+
+  fstat(fd, &fst);
+  fs = fst.st_size;
+  if(fs < nm) {
+    printf("File is not long enough.");
+  }
+  
+  xm = (double *)mmap(NULL, nm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if((long)xm == -1) {
+    perror("BC1d mmap save");
+    return -1;
+  }
+  
+  bc1d_copy_backward_stride(src, xm, N, B, P, p, stride);
+
+  msync(xm, nm, MS_SYNC);
+  munmap(xm, nm);
+  close(fd);
+
+  return 0;
+
+}
+
+
+
+int bc2d_mmap_save(char * file, double * src, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
+
+  int fd;
+
+  double * xm;
+
+  int pl, stride; 
+  long nm;
+
+  struct stat fst;
+  long fs;
+
+  pl = getpagesize() / sizeof(double);
+  stride = ceildiv(Br, pl) * pl;
+  nm = num_rstride(Nr, Br, stride) * Nc * sizeof(double);
+
+
+  fd = open(file, O_RDWR);
+  if(fd == -1) {
+    perror("BC2d mmap save");
+    return -1;
+  }
+
+  fstat(fd, &fst);
+  fs = fst.st_size;
+  if(fs < nm) {
+    printf("File is not long enough.");
+  }
+  
+  xm = (double *)mmap(NULL, nm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if((long)xm == -1) {
+    perror("BC2d mmap save");
+    return -1;
+  }
+  
+  bc2d_copy_backward_stride(src, xm, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, stride);
+
+  msync(xm, nm, MS_SYNC);
+  munmap(xm, nm);
+  close(fd);
+
+  return 0;
+
 }

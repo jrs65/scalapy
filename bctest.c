@@ -37,6 +37,8 @@ int main(int argc, char **argv) {
 
   int fd, fd1, fd2;
 
+  int m2an;
+
   double * X2m;
 
   double * Xs, * xsc, * Xs2;
@@ -140,13 +142,16 @@ int main(int argc, char **argv) {
 
   printf("Page size: %i\n", getpagesize());
 
-  fd = open("testfile1.dat", O_WRONLY|O_CREAT);
+  fd = open("testfile1.dat", O_WRONLY|O_CREAT, S_IREAD | S_IWRITE);
   if(write(fd, X2r, sizeof(double)*Nr*Nc) == -1) {
     printf("Error.\n");
     perror(NULL);
     exit(-30);
+    }
+  if(close(fd) != 0) {
+    perror(NULL);
+    exit(-223);
   }
-  close(fd);
 
   fd1 = open("testfile1.dat", O_RDONLY);
   
@@ -171,11 +176,66 @@ int main(int argc, char **argv) {
 
   printf("\n\n");
 
-  Xs = (double *)calloc(num_blocks(N, B) * stride, sizeof(double));
+  Xs = (double *)calloc(num_rstride(N, B, stride), sizeof(double));
   bc1d_copy_blockstride(X, Xs, N, B, stride);
 
   for(i = 0; i < N/B*stride; i++) {
     printf("%f\n", Xs[i]);
   }
+
+  stride = getpagesize() / sizeof(double);
+
+  free(X2r2);
+
+  m2an = sizeof(double) * num_rstride(Nr, Br, stride) * Nc;
+
+  X2r2 = (double *)malloc(m2an);
+
+  bc2d_copy_blockstride(X2r, X2r2, Nr, Nc, Br, Bc, stride);
+
+  fd1 = open("testfile2.dat", O_RDWR|O_CREAT, S_IREAD | S_IWRITE);
+  write(fd1, X2r2, sizeof(double));
+  
+  ftruncate(fd1, m2an);
+
+  X2m =  (double *)mmap(NULL, m2an, PROT_READ | PROT_WRITE, MAP_SHARED, fd1, 0);
+  if((long)X2m == -1) { printf("Here1"); perror(NULL); exit(-226); }
+
+  bc2d_copy_blockstride(X2r, X2m, Nr, Nc, Br, Bc, stride);
+
+  msync(X2m, m2an, MS_SYNC);
+  munmap(X2m, m2an);
+  if(close(fd1) != 0) {
+    printf("Here3"); 
+    perror(NULL);
+    exit(-223);
+  }
+
+
+
+  printf("\n\n");
+
+  fd1 = open("testfile2.dat", O_RDONLY);
+  
+  X2m = (double *)mmap(NULL, m2an, PROT_READ, MAP_PRIVATE, fd1, 0);
+  if((long)X2m == -1) { printf("Here2"); perror(NULL); exit(-226); }
+
+  bc2d_copy_forward_stride(X2m, xc2, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, stride);
+
+  for(i = 0; i < nc; i++) {
+    for(j = 0; j < nr; j++) {
+      //printf("%10i %10.2f %10.2f\n", i, xc[i], X[i % B + B * (p + P * (i / B))]);
+      printf("%5.1f  ", xc2[i*nr+j]);
+    }
+    printf("\n");
+  }
+
+  munmap(X2m, m2an);
+  close(fd1);
+  
+
+  
+  printf("\n\n");
+  
 
 }
