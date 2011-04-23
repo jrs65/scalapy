@@ -1,7 +1,14 @@
+CC=gcc
 
+all: tests
 
-all: bctest
+bcutil.o: bcutil.h
 
-bctest: bctest.c bcutil.c
-	gcc -o bctest bcutil.c bctest.c 
+tests = bctest_1d bctest_2d bctest_mmap
 
+tests : $(tests)
+
+$(tests) : % : %.o bcutil.o
+	$(CC) -o $@ $^
+clean:
+	rm $(tests) *.o
