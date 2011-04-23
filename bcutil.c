@@ -83,101 +83,22 @@ int numrc(int N, int B, int p, int p0, int P) {
 
 
 int bc1d_copy_forward(double * src, double *dest, int N, int B, int P, int p) {
-
-  int b = 0, i;
-  int lB;
-
-  lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
-  //printf("I1: %i %i %i %i\n",N,B,P,p);
-  //fflush(stdout);
-  for(b = 0; b < lB; b++) {
-    for(i = 0; i < B; i++) {
-      //printf("    %i %i\n",b,i);
-      //fflush(stdout);
-      dest[b*B+i] = src[B*(p + b*P)+i];
-    }
-    //memcpy(dest + b*B, src + B*(p + b*P), B*sizeof(double));
-  }
-
-  if(partial_last_block(N, B, p, P)) {
-    memcpy(dest + lB*B, src + N - N%B, (N%B) * sizeof(double));
-  }
-
-  return 0;
+  return bc1d_copy_forward_stride(src, dest, N, B, P, p, B);
 }
 
 int bc2d_copy_forward(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
-
-  int bc, i;
-  int lBc;
-  int nr;
-
-  lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
-  //printf("lbc %i\n", lBc);
-  nr = numrc(Nr, Br, pr, 0, Pr);
-  //printf("I2: %i %i %i %i %i %i %i %i\n",Nr, Nc, Br,Bc,Pr, Pc,pr, pc);
-  //fflush(stdout);
-  for(bc = 0; bc < lBc; bc++) {
-    for(i = 0; i < Bc; i++) {
-      //printf("%i %i\n", bc, i);
-      //fflush(stdout);
-      bc1d_copy_forward(src + (i + Bc*(pc + bc*Pc))*Nr, dest + (bc*Bc + i)*nr, Nr, Br, Pr, pr);
-    }
-  }
-
-  if(partial_last_block(Nc, Bc, pc, Pc)) {
-    for(i = 0; i < Nc%Bc; i++) {
-      bc1d_copy_forward(src + (i + Bc*(pc + lBc*Pc))*Nr, dest + (lBc*Bc + i)*nr, Nr, Br, Pr, pr);
-    }
-  }
-
-  return 0;
+  return bc2d_copy_forward_stride(src, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, 0);
 }
 
 
 
 int bc1d_copy_backward(double * src, double *dest, int N, int B, int P, int p) {
-
-  int b = 0;
-  int lB;
-
-  lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
-  
-  for(b = 0; b < lB; b++) {
-    memcpy(dest + B*(p + b*P), src + b*B, B*sizeof(double));
-  }
-
-  if(partial_last_block(N, B, p, P)) {
-    memcpy(dest + N - N%B, src + lB*B, (N%B) * sizeof(double));
-  }
-
-  return 0;
+  return bc1d_copy_backward_stride(src, dest, N, B, P, p, B);
 }
 
 
 int bc2d_copy_backward(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
-
-  int bc, i;
-  int lBc;
-  int nr;
-
-  lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
-
-  nr = numrc(Nr, Br, pr, 0, Pr);
-
-  for(bc = 0; bc < lBc; bc++) {
-    for(i = 0; i < Bc; i++) {
-      bc1d_copy_backward(src + (bc*Bc + i)*nr, dest + (i + Bc*(pc + bc*Pc))*Nr, Nr, Br, Pr, pr);
-    }
-  }
-
-  if(partial_last_block(Nc, Bc, pc, Pc)) {
-    for(i = 0; i < Nc%Bc; i++) {
-      bc1d_copy_backward(src + (lBc*Bc + i)*nr, dest + (i + Bc*(pc + lBc*Pc))*Nr, Nr, Br, Pr, pr);
-    }
-  }
-
-  return 0;
+  return bc2d_copy_backward_stride(src, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, 0);
 }
 
 
