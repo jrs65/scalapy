@@ -110,10 +110,13 @@ int bc1d_copy_forward_stride(double * src, double *dest, int N, int B, int P, in
 
   lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
   
+  /* Iterate over complete local blocks, copying each from the full array into
+     the sequential region in the local array */
   for(b = 0; b < lB; b++) {
     memcpy(dest + b*B, src + stride*(p + b*P), B*sizeof(double));
   }
 
+  /* If there is a partial final block copy this */
   if(partial_last_block(N, B, p, P)) {
     memcpy(dest + lB*B,  src + stride*(p + lB*P), (N%B) * sizeof(double));
   }
@@ -131,9 +134,9 @@ int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br
 
   int ncs;
 
-  lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
+  lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, column blocks
 
-  nr = numrc(Nr, Br, pr, 0, Pr);
+  nr = numrc(Nr, Br, pr, 0, Pr); // Number of rows in the local array.
   
   if(stride == 0) {
     stride = Br;
@@ -143,6 +146,7 @@ int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br
     ncs = num_rstride(Nr, Br, stride);
   }
 
+  /* For each block, perform a 1d opy on its rows. */
   for(bc = 0; bc < lBc; bc++) {
     for(i = 0; i < Bc; i++) {
       bc1d_copy_forward_stride(src + (i + Bc*(pc + bc*Pc))*ncs,
@@ -151,6 +155,7 @@ int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br
     }
   }
 
+  /* Treat the special case of the final block */
   if(partial_last_block(Nc, Bc, pc, Pc)) {
     for(i = 0; i < Nc%Bc; i++) {
       bc1d_copy_forward_stride(src + (i + Bc*(pc + lBc*Pc))*ncs, 

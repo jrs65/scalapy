@@ -9,6 +9,8 @@
 
 #include <errno.h>
 
+#include <stddef.h>
+
 #include "bcutil.h"
 
 
@@ -16,6 +18,10 @@
 int main(int argc, char **argv) {
   double * X, *Xc; 
   double * xc;
+
+  long t1i, t1l;
+  int t2i = 1000000000;
+  long t2l = 1000000000;
 
   int i, nr, pi;
 
@@ -70,6 +76,16 @@ int main(int argc, char **argv) {
   free(Xc);
   X = NULL;
   Xc = NULL;
+
+  t1i = t2i *t2i + t2l;
+  t1l = t2l *t2l + t2l;
+
+  printf("i %ld\nl %ld\n", t1i, t1l);
+  printf("si %i\n", sizeof(int));
+  printf("su %i\n", sizeof(unsigned int));
+  printf("st %i\n", sizeof(size_t));
+  printf("pd %i\n", sizeof(ptrdiff_t));
+  printf("ds %i\n", sizeof(double *));
   return 0;
 
 }
