@@ -15,50 +15,50 @@
 #define ceildiv(x, y) ((x - 1) / (y) + 1)
 #define pid_remap(p, p0, P) (((p) + (P) - (p0)) % (P))
 
-int num_c_blocks(int N, int B) {
+size_t num_c_blocks(size_t N, size_t B) {
   return N / B;
 }
 
-int num_blocks(int N, int B) {
+size_t num_blocks(size_t N, size_t B) {
   return ceildiv(N, B);
 }
 
-int num_c_lblocks(int N, int B, int p, int P) {
-  int nbc = num_c_blocks(N, B);
+size_t num_c_lblocks(size_t N, size_t B, size_t p, size_t P) {
+  size_t nbc = num_c_blocks(N, B);
   return (nbc / P) + (((nbc % P) > p) ? 1 : 0);
 }
 
 
-int num_lblocks(int N, int B, int p, int P) {
-  int nb = num_blocks(N, B);
+size_t num_lblocks(size_t N, size_t B, size_t p, size_t P) {
+  size_t nb = num_blocks(N, B);
   return (nb / P) + (((nb % P) > p) ? 1 : 0);
 }
 
-int partial_last_block(int N, int B, int p, int P) {
+int partial_last_block(size_t N, size_t B, size_t p, size_t P) {
   return ((N % B > 0) && ((num_c_blocks(N, B) % P) == p));
 }
 
-int num_rstride(int N, int B, int stride) {
+size_t num_rstride(size_t N, size_t B, size_t stride) {
   return num_blocks(N, B) * stride;
 }
 
-int stride_page(int N, int B) {
+size_t stride_page(size_t B) {
 
-  int pl, stride;
+  size_t pl;
 
-  pl = getpagesize() / sizeof(double);
+  pl = (size_t) sysconf (_SC_PAGESIZE) / sizeof(double);
   return ceildiv(B, pl) * pl;
 }
 
 
-int num_rpage(int N, int B) {
-  return num_rstride(N, B, stride_page(N, B));
+size_t num_rpage(size_t N, size_t B) {
+  return num_rstride(N, B, stride_page(B));
 }
 
 
-int numrc(int N, int B, int p, int p0, int P) {
+size_t numrc(size_t N, size_t B, size_t p, size_t p0, size_t P) {
 
-  int nbp, n;
+  size_t nbp, n;
 
   /* If the process owning block zero (p0) is not zero, then remap
      process numbers. */
@@ -82,31 +82,31 @@ int numrc(int N, int B, int p, int p0, int P) {
 }
 
 
-int bc1d_copy_forward(double * src, double *dest, int N, int B, int P, int p) {
+int bc1d_copy_forward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p) {
   return bc1d_copy_forward_stride(src, dest, N, B, P, p, B);
 }
 
-int bc2d_copy_forward(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
+int bc2d_copy_forward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc) {
   return bc2d_copy_forward_stride(src, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, 0);
 }
 
 
 
-int bc1d_copy_backward(double * src, double *dest, int N, int B, int P, int p) {
+int bc1d_copy_backward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p) {
   return bc1d_copy_backward_stride(src, dest, N, B, P, p, B);
 }
 
 
-int bc2d_copy_backward(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
+int bc2d_copy_backward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc) {
   return bc2d_copy_backward_stride(src, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, 0);
 }
 
 
 
-int bc1d_copy_forward_stride(double * src, double *dest, int N, int B, int P, int p, int stride) {
+int bc1d_copy_forward_stride(double * src, double *dest, size_t N, size_t B, size_t P, size_t p, size_t stride) {
 
-  int b = 0;
-  int lB;
+  size_t b = 0;
+  size_t lB;
 
   lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
   
@@ -125,14 +125,14 @@ int bc1d_copy_forward_stride(double * src, double *dest, int N, int B, int P, in
 }
 
 
-int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, 
-			     int Pr, int Pc, int pr, int pc, int stride) {
+int bc2d_copy_forward_stride(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, 
+			     size_t Pr, size_t Pc, size_t pr, size_t pc, size_t stride) {
 
-  int bc, i;
-  int lBc;
-  int nr;
+  size_t bc, i;
+  size_t lBc;
+  size_t nr;
 
-  int ncs;
+  size_t ncs;
 
   lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, column blocks
 
@@ -167,10 +167,10 @@ int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br
   return 0;
 }
 
-int bc1d_copy_backward_stride(double * src, double *dest, int N, int B, int P, int p, int stride) {
+int bc1d_copy_backward_stride(double * src, double *dest, size_t N, size_t B, size_t P, size_t p, size_t stride) {
 
-  int b = 0;
-  int lB;
+  size_t b = 0;
+  size_t lB;
 
   lB = num_c_lblocks(N, B, p, P); // Number of local, complete, blocks
   
@@ -187,14 +187,14 @@ int bc1d_copy_backward_stride(double * src, double *dest, int N, int B, int P, i
 
 
 
-int bc2d_copy_backward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc,
-			      int Pr, int Pc, int pr, int pc, int stride) {
+int bc2d_copy_backward_stride(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc,
+			      size_t Pr, size_t Pc, size_t pr, size_t pc, size_t stride) {
 
-  int bc, i;
-  int lBc;
-  int nr;
+  size_t bc, i;
+  size_t lBc;
+  size_t nr;
 
-  int ncs;
+  size_t ncs;
 
   lBc = num_c_lblocks(Nc, Bc, pc, Pc); // Number of local, complete, col blocks
 
@@ -224,42 +224,20 @@ int bc2d_copy_backward_stride(double * src, double * dest, int Nr, int Nc, int B
 }
 
 
-int bc1d_copy_blockstride(double * src, double *dest, int N, int B, int stride) {
+int bc1d_copy_blockstride(double * src, double *dest, size_t N, size_t B, size_t stride) {
 
-  int b = 0;
-  int nB;
-
-  nB = num_c_blocks(N, B); // Number of local, complete, blocks
-  
-  for(b = 0; b < nB; b++) {
-    memcpy(dest + b*stride, src + b*B, B*sizeof(double));
-  }
-
-  if(N % B > 0) {
-    memcpy(dest + nB*stride,  src + nB*B, (N%B) * sizeof(double));
-  }
-
-  return 0;
+  return bc1d_copy_backward_stride(src, dest, N, B, 1, 0, stride);
 }
 
 
-int bc2d_copy_blockstride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int stride) {
+int bc2d_copy_blockstride(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t stride) {
 
-  int i;
-  int ncs;
-
-  ncs = num_rstride(Nr, Br, stride);
-
-  for(i = 0; i < Nc; i++) {
-    bc1d_copy_blockstride(src + i*Nr, dest + i*ncs, Nr, Br, stride);
-  }
-
-  return 0;
+  return bc2d_copy_backward_stride(src, dest, Nr, Nc, Br, Bc, 1, 1, 0, 0, stride);
 }
 
 
-int bc1d_copy_pagealign(double * src, double * dest, int N, int B) {
-  int pl, stride;
+int bc1d_copy_pagealign(double * src, double * dest, size_t N, size_t B) {
+  size_t pl, stride;
 
   pl = getpagesize() / sizeof(double);
   stride = ceildiv(B, pl) * pl;
@@ -268,8 +246,8 @@ int bc1d_copy_pagealign(double * src, double * dest, int N, int B) {
 }
 
 
-int bc2d_copy_pagealign(double * src, double * dest, int Nr, int Nc, int Br, int Bc) {
-  int pl, stride;
+int bc2d_copy_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc) {
+  size_t pl, stride;
 
   pl = getpagesize() / sizeof(double);
   stride = ceildiv(Bc, pl) * pl;
@@ -278,21 +256,20 @@ int bc2d_copy_pagealign(double * src, double * dest, int Nr, int Nc, int Br, int
 }
 
 
-int bc1d_mmap_load(char * file, double * dest, int N, int B, int P, int p) {
+int bc1d_mmap_load(char * file, double * dest, size_t N, size_t B, size_t P, size_t p) {
 
   int fd;
 
   double * xm;
 
-  int pl, stride;
-  long nm;
+  size_t stride;
+  size_t nm;
 
   struct stat fst;
-  long fs;
+  size_t fs;
 
-  pl = getpagesize() / sizeof(double);
-  stride = ceildiv(B, pl) * pl;
-  nm = num_rstride(N, B, stride) * sizeof(double);
+  stride = stride_page(B);
+  nm = num_rpage(N, B) * sizeof(double);
 
   fd = open(file, O_RDONLY);
   if(fd == -1) {
@@ -321,23 +298,22 @@ int bc1d_mmap_load(char * file, double * dest, int N, int B, int P, int p) {
 
 }
 
-int bc2d_mmap_load(char * file, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
+int bc2d_mmap_load(char * file, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc) {
 
   int fd;
 
   double * xm;
 
-  int pl, stride; 
-  long nm;
+  size_t stride; 
+  size_t nm;
 
   struct stat fst;
-  long fs;
+  size_t fs;
 
-  pl = getpagesize() / sizeof(double);
-  stride = ceildiv(Br, pl) * pl;
-  nm = num_rstride(Nr, Br, stride) * Nc * sizeof(double);
+  stride = stride_page(Br);
+  nm = num_rpage(Nr, Br) * Nc * sizeof(double);
 
-  printf("%i %i %i %i %i\n", stride, nm, pl, getpagesize(), sizeof(double));
+  //printf("%i %i %i %i %i\n", stride, nm, pl, getpagesize(), sizeof(double));
 
   fd = open(file, O_RDONLY);
   if(fd == -1) {
@@ -366,21 +342,20 @@ int bc2d_mmap_load(char * file, double * dest, int Nr, int Nc, int Br, int Bc, i
 
 }
 
-int bc1d_mmap_save(char * file, double * src, int N, int B, int P, int p) {
+int bc1d_mmap_save(char * file, double * src, size_t N, size_t B, size_t P, size_t p) {
 
   int fd;
 
   double * xm;
 
-  int pl, stride;
-  long nm;
+  size_t stride;
+  size_t nm;
 
   struct stat fst;
-  long fs;
+  size_t fs;
 
-  pl = getpagesize() / sizeof(double);
-  stride = ceildiv(B, pl) * pl;
-  nm = num_rstride(N, B, stride) * sizeof(double);
+  stride = stride_page(B);
+  nm = num_rpage(N, B) * sizeof(double);
 
   fd = open(file, O_RDWR);
   if(fd == -1) {
@@ -412,21 +387,20 @@ int bc1d_mmap_save(char * file, double * src, int N, int B, int P, int p) {
 
 
 
-int bc2d_mmap_save(char * file, double * src, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
+int bc2d_mmap_save(char * file, double * src, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc) {
 
   int fd;
 
   double * xm;
 
-  int pl, stride; 
-  long nm;
+  size_t stride; 
+  size_t nm;
 
   struct stat fst;
-  long fs;
+  size_t fs;
 
-  pl = getpagesize() / sizeof(double);
-  stride = ceildiv(Br, pl) * pl;
-  nm = num_rstride(Nr, Br, stride) * Nc * sizeof(double);
+  stride = stride_page(Br);
+  nm = num_rpage(Nr, Br) * Nc * sizeof(double);
 
 
   fd = open(file, O_RDWR);

@@ -6,67 +6,6 @@
 #define AA(i,j) AA[(i)*M+(j)]
 
 
-int numrc(int N, int B, int p, int p0, int P) {
-
-  int nbc, nbp, n;
-
-  /* If the process owning block zero (p0) is not zero, then remap
-     process numbers. */
-  p = (p + p0) % P;
-
-  /* Number of complete blocks. */
-  nbc = N / B;
-  
-  /* Number of complete blocks owned by the process. */
-  nbp = (nbc - p - 1) / P + 1;
-
-  /* Number of entries of complete blocks owned by process. */
-  n = nbp * B;
-  
-  /* If this process owns an incomplete block, then add the number of
-     entries. */
-  if(N % B > 0 && ((nbc + 1) % P) == p + 1) {
-    n += N%B;
-  }
-
-  return n;
-
-}
-
-
-int bc1_copy(double * src, double *dest, int N, int B, int P, int p) {
-
-  int b = 0, i;
-  int lB, bE;
-
-  lB = N / (B*P); // Number of local, complete, blocks
-
-  //printf("%i %i %i %i\n\n", N, B, P, p);
-  
-  for(b = 0; b < lB; b++) {
-    memcpy(dest + b*B, src + B*(p + b*P), B*sizeof(double));
-    /*for(i = 0; i < B; i++) {
-      dest[b*B+i] = src[B*(p+b*P)+i];
-      printf("%i  %i  %f\n", p, b*B+i, dest[b*B+i]);
-      }*/
-  }
-
-  if(N % B > 0 && ((N/B + 1) % P) == (p+1)) {
-    //printf("Here %i\n", p);
-    memcpy(dest + lB*B, src + N / B, (N%B) * sizeof(double));
-    /*for(i = 0; i < N%B; i++) {
-      dest[lB*B+i] = src[B*(p+lB*P)+i];
-      printf("%i  %i  %f\n", p, lB*B+i, dest[lB*B+i]);
-      }*/
-  }
-
-  return 0;
-}
-
-int bc2_copy(double * A, double *B, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc) {
-  return 0;
-}
-
 
 int main(int argc, char **argv) {
    int i, j, k;
@@ -75,11 +14,13 @@ int main(int argc, char **argv) {
    MPI_Init( &argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
    MPI_Comm_size(MPI_COMM_WORLD, &nprocs_mpi);
+   printf("%i %i\n", myrank_mpi, nprocs_mpi);
 /************  BLACS ***************************/
    int ictxt, nprow, npcol, myrow, mycol,nb;
    int info,itemp;
    int ZERO=0,ONE=1;
-   nprow = 2; npcol = 2; nb =2;
+   //nprow = 2; npcol = 2; nb =2;
+   nprow = 1; npcol = 1; nb =2;
    Cblacs_pinfo( &myrank_mpi, &nprocs_mpi ) ;
    Cblacs_get( -1, 0, &ictxt );
    Cblacs_gridinit( &ictxt, "Row", nprow, npcol );
@@ -102,10 +43,10 @@ int main(int argc, char **argv) {
    int my = numroc_( &M, &nb, &myrow, &ZERO, &nprow );
 
    int tN = 100, tB = 5, tP = 2;
-   printf("%i  %i\n", numroc_( &tN, &tB, &myrow, &ZERO, &tP ), numrc(tN, tB, myrow, 0, tP)); 
+   //printf("%i  %i\n", numroc_( &tN, &tB, &myrow, &ZERO, &tP ), numrc(tN, tB, myrow, 0, tP)); 
 
 
-   printf("%i  %i\n", mA, numrc(M, nb, myrow, 0, nprow)); 
+   //printf("%i  %i\n", mA, numrc(M, nb, myrow, 0, nprow)); 
    descinit_(descA, &M,   &M,   &nb,  &nb,  &ZERO, &ZERO, &ictxt, &mA,  &info);
    descinit_(descx, &M, &ONE,   &nb, &ONE,  &ZERO, &ZERO, &ictxt, &nx, &info);
 
@@ -122,7 +63,7 @@ int main(int argc, char **argv) {
                 A[j*mA+i]=AA(sat,sut);
         }
 
-   bc1_copy(X, xc, M, nb, nprow, myrow);
+   //bc1_copy(X, xc, M, nb, nprow, myrow);
 
    for(i=0;i<nx;i++){
                 sut= (myrow*nb)+i+(i/nb)*nb;

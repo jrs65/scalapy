@@ -16,43 +16,43 @@
 #define n_loc_cblocks(N, B, p, P) (n_cblocks(N, B) / (P) + n_cblocks(N, B) % (P) / ((p) + 1))
 
 
-int num_c_blocks(int N, int B);
-int num_blocks(int N, int B);
+size_t num_c_blocks(size_t N, size_t B);
+size_t num_blocks(size_t N, size_t B);
 
-int n_c_lblocks(int N, int B, int p, int P);
-int n_lblocks(int N, int B, int p, int P);
+size_t n_c_lblocks(size_t N, size_t B, size_t p, size_t P);
+size_t n_lblocks(size_t N, size_t B, size_t p, size_t P);
 
-int partial_last_block(int N, int B, int p, int P);
+int partial_last_block(size_t N, size_t B, size_t p, size_t P);
 
-int numrc(int N, int B, int p, int p0, int P);
-int num_rstride(int N, int B, int stride);
+size_t numrc(size_t N, size_t B, size_t p, size_t p0, size_t P);
+size_t num_rstride(size_t N, size_t B, size_t stride);
 
-int stride_page(int N, int B);
-int num_rpage(int N, int B);
+size_t stride_page(size_t B);
+size_t num_rpage(size_t N, size_t B);
 
-int bc1d_copy_forward(double * src, double *dest, int N, int B, int P, int p);
-int bc2d_copy_forward(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc);
+int bc1d_copy_forward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p);
+int bc2d_copy_forward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc);
 
 
-int bc1d_copy_backward(double * src, double *dest, int N, int B, int P, int p);
-int bc2d_copy_backward(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc);
+int bc1d_copy_backward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p);
+int bc2d_copy_backward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc);
 
-int bc1d_copy_forward_stride(double * src, double *dest, int N, int B, int P, int p, int stride);
-int bc1d_copy_backward_stride(double * src, double *dest, int N, int B, int P, int p, int stride);
+int bc1d_copy_forward_stride(double * src, double *dest, size_t N, size_t B, size_t P, size_t p, size_t stride);
+int bc1d_copy_backward_stride(double * src, double *dest, size_t N, size_t B, size_t P, size_t p, size_t stride);
 
-int bc1d_copy_blockstride(double * src, double *dest, int N, int B, int stride);
-int bc2d_copy_blockstride(double * src, double *dest, int Nr, int Nc, int Br, int Bc, int stride);
+int bc1d_copy_blockstride(double * src, double *dest, size_t N, size_t B, size_t stride);
+int bc2d_copy_blockstride(double * src, double *dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t stride);
 
-int bc1d_copy_pagealign(double * src, double * dest, int N, int B);
-int bc2d_copy_pagealign(double * src, double * dest, int Nr, int Nc, int Br, int Bc);
+int bc1d_copy_pagealign(double * src, double * dest, size_t N, size_t B);
+int bc2d_copy_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc);
 
-int bc2d_copy_forward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc, int stride);
-int bc2d_copy_backward_stride(double * src, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc, int stride);
+int bc2d_copy_forward_stride(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc, size_t stride);
+int bc2d_copy_backward_stride(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc, size_t stride);
 
-int bc1d_mmap_load(char * file, double * dest, int N, int B, int P, int p);
-int bc2d_mmap_load(char * file, double * dest, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc);
+int bc1d_mmap_load(char * file, double * dest, size_t N, size_t B, size_t P, size_t p);
+int bc2d_mmap_load(char * file, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc);
 
-int bc1d_mmap_save(char * file, double * src, int N, int B, int P, int p);
-int bc2d_mmap_save(char * file, double * src, int Nr, int Nc, int Br, int Bc, int Pr, int Pc, int pr, int pc);
+int bc1d_mmap_save(char * file, double * src, size_t N, size_t B, size_t P, size_t p);
+int bc2d_mmap_save(char * file, double * src, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc);
 
 #endif
