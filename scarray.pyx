@@ -7,7 +7,9 @@ from libc.stdlib import size_t
 
 cdef extern from "bcutil.h":
     int bc1d_copy_pagealign(double * src, double * dest, int N, int B)
-    int bc2d_copy_pagealign(double * src, double * dest, int Nr, int Nc, int Br, int Bc) 
+    int bc2d_copy_pagealign(double * src, double * dest, int Nr, int Nc, int Br, int Bc)
+    int bc1d_from_pagealign(double * src, double *dest, size_t N, size_t B)
+    int bc2d_from_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc)
     int num_rpage(int N, int B)
     
 class ProcessContext(object):
@@ -73,14 +75,49 @@ def matrix_pagealign(mat, blocksize):
     m1 = np.asfortranarray(mat)
 
     Nr, Nc = mat.shape
-    Br = blocksize[0]
-    Bc = blocksize[1]
+    Br, Bc = blocksize
 
     nr = num_rpage(Nr, Br)
 
     m2 = np.empty((nr, Nc), order='F')
 
     bc2d_copy_pagealign(<double *>m1.data, <double *>m2.data, Nr, Nc, Br, Bc)
+
+    return m2
+
+
+def matrix_from_pagealign(matp, size, blocksize):
+    r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
+
+    Parameters
+    ==========
+    mat : ndarray
+        The matrix to page align (can either by C or Fortran ordered).
+    blocksize : array_like
+        The blocksize, the first and second elements correspond to the
+        row and column blocks respectively.
+
+    Returns
+    =======
+    m2 : ndarray
+        The page aligned matrix.
+    """
+    cdef np.ndarray[np.float64_t, ndim=2] m1
+    cdef np.ndarray[np.float64_t, ndim=2] m2
+
+    m1 = matp.flatten()
+
+    Nr, Nc = size
+    Br, Bc = blocksize
+
+    nr = num_rpage(Nr, Br)
+
+    if len(m1) < nr*Nc:
+        raise Exception("Source matrix not long enough.")
+
+    m2 = np.empty((Nr, Nc), order='F')
+
+    bc2d_from_pagealign(<double *>m1.data, <double *>m2.data, Nr, Nc, Br, Bc)
 
     return m2
 

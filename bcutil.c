@@ -82,26 +82,6 @@ size_t numrc(size_t N, size_t B, size_t p, size_t p0, size_t P) {
 }
 
 
-int bc1d_copy_forward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p) {
-  return bc1d_copy_forward_stride(src, dest, N, B, P, p, B);
-}
-
-int bc2d_copy_forward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc) {
-  return bc2d_copy_forward_stride(src, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, 0);
-}
-
-
-
-int bc1d_copy_backward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p) {
-  return bc1d_copy_backward_stride(src, dest, N, B, P, p, B);
-}
-
-
-int bc2d_copy_backward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc) {
-  return bc2d_copy_backward_stride(src, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, 0);
-}
-
-
 
 int bc1d_copy_forward_stride(double * src, double *dest, size_t N, size_t B, size_t P, size_t p, size_t stride) {
 
@@ -224,6 +204,29 @@ int bc2d_copy_backward_stride(double * src, double * dest, size_t Nr, size_t Nc,
 }
 
 
+int bc1d_copy_forward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p) {
+  return bc1d_copy_forward_stride(src, dest, N, B, P, p, B);
+}
+
+
+int bc2d_copy_forward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc) {
+  return bc2d_copy_forward_stride(src, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, 0);
+}
+
+
+
+int bc1d_copy_backward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p) {
+  return bc1d_copy_backward_stride(src, dest, N, B, P, p, B);
+}
+
+
+int bc2d_copy_backward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc) {
+  return bc2d_copy_backward_stride(src, dest, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, 0);
+}
+
+
+
+
 int bc1d_copy_blockstride(double * src, double *dest, size_t N, size_t B, size_t stride) {
 
   return bc1d_copy_backward_stride(src, dest, N, B, 1, 0, stride);
@@ -246,6 +249,19 @@ int bc2d_copy_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_
 
   return bc2d_copy_blockstride(src, dest, Nr, Nc, Br, Bc, stride_page(Br));
 }
+
+
+int bc1d_from_pagealign(double * src, double *dest, size_t N, size_t B) {
+
+  return bc1d_copy_forward_stride(src, dest, N, B, 1, 0, stride_page(B));
+}
+
+
+int bc2d_from_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc) {
+
+  return bc2d_copy_forward_stride(src, dest, Nr, Nc, Br, Bc, 1, 1, 0, 0, stride_page(Br));
+}
+
 
 
 int bc1d_mmap_load(char * file, double * dest, size_t N, size_t B, size_t P, size_t p) {

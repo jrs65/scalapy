@@ -46,6 +46,9 @@ int bc2d_copy_blockstride(double * src, double *dest, size_t Nr, size_t Nc, size
 int bc1d_copy_pagealign(double * src, double * dest, size_t N, size_t B);
 int bc2d_copy_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc);
 
+int bc1d_from_pagealign(double * src, double *dest, size_t N, size_t B);
+int bc2d_from_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc);
+
 int bc2d_copy_forward_stride(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc, size_t stride);
 int bc2d_copy_backward_stride(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc, size_t stride);
 

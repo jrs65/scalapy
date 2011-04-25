@@ -1,6 +1,9 @@
-CC=gcc
+CC=icc
 
-all: tests
+all: tests pdtest
+
+pdtest: pdgemv
+	$(CC) -o pdtest pdgemv.c
 
 bcutil.o: bcutil.h
 

@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
    int info,itemp;
    int ZERO=0,ONE=1;
    //nprow = 2; npcol = 2; nb =2;
-   nprow = 1; npcol = 1; nb =2;
+   nprow = 2; npcol = 2; nb =2;
    Cblacs_pinfo( &myrank_mpi, &nprocs_mpi ) ;
    Cblacs_get( -1, 0, &ictxt );
    Cblacs_gridinit( &ictxt, "Row", nprow, npcol );
