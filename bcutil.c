@@ -237,22 +237,14 @@ int bc2d_copy_blockstride(double * src, double * dest, size_t Nr, size_t Nc, siz
 
 
 int bc1d_copy_pagealign(double * src, double * dest, size_t N, size_t B) {
-  size_t pl, stride;
 
-  pl = getpagesize() / sizeof(double);
-  stride = ceildiv(B, pl) * pl;
-
-  return bc1d_copy_blockstride(src, dest, N, B, stride);
+  return bc1d_copy_blockstride(src, dest, N, B, stride_page(B));
 }
 
 
 int bc2d_copy_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc) {
-  size_t pl, stride;
 
-  pl = getpagesize() / sizeof(double);
-  stride = ceildiv(Bc, pl) * pl;
-
-  return bc2d_copy_blockstride(src, dest, Nr, Nc, Br, Bc, stride);
+  return bc2d_copy_blockstride(src, dest, Nr, Nc, Br, Bc, stride_page(Br));
 }
 
 
