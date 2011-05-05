@@ -3,7 +3,9 @@
 import numpy as np
 cimport numpy as np
 
-from libc.stdlib import size_t
+#from libc.stdlib import size_t
+
+ctypedef unsigned long size_t
 
 cdef extern from "bcutil.h":
     int bc1d_copy_pagealign(double * src, double * dest, int N, int B)
@@ -85,40 +87,40 @@ def matrix_pagealign(mat, blocksize):
 
     return m2
 
+
 def vector_from_pagealign(vecp, size, blocksize):
     r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
 
     Parameters
     ==========
     vecp : ndarray
-        The matrix to page align (can either by C or Fortran ordered).
-    blocksize : array_like
-        The blocksize, the first and second elements correspond to the
-        row and column blocks respectively.
+        The vector to page align (can either by C or Fortran ordered).
+    blocksize : scalar
+        The blocksize of the vector.
 
     Returns
     =======
-    m2 : ndarray
-        The page aligned matrix.
+    v2 : ndarray
+        The page aligned vector.
     """
-    cdef np.ndarray[np.float64_t, ndim=2] m1
-    cdef np.ndarray[np.float64_t, ndim=2] m2
+    cdef np.ndarray[np.float64_t, ndim=1] v1
+    cdef np.ndarray[np.float64_t, ndim=1] v2
 
-    m1 = matp.flatten()
+    v1 = vecp
 
-    Nr, Nc = size
-    Br, Bc = blocksize
+    N = size
+    B = blocksize
 
-    nr = num_rpage(Nr, Br)
+    nr = num_rpage(N, B)
 
-    if len(m1) < nr*Nc:
-        raise Exception("Source matrix not long enough.")
+    if len(v1) < nr:
+        raise Exception("Source vector not long enough.")
 
-    m2 = np.empty((Nr, Nc), order='F')
+    v2 = np.empty(N, order='F')
 
-    bc2d_from_pagealign(<double *>m1.data, <double *>m2.data, Nr, Nc, Br, Bc)
+    bc1d_from_pagealign(<double *>v1.data, <double *>v2.data, N, B)
 
-    return m2
+    return v2
 
 
 def matrix_from_pagealign(matp, size, blocksize):
@@ -137,18 +139,19 @@ def matrix_from_pagealign(matp, size, blocksize):
     m2 : ndarray
         The page aligned matrix.
     """
-    cdef np.ndarray[np.float64_t, ndim=2] m1
+    cdef np.ndarray[np.float64_t, ndim=1] m1
     cdef np.ndarray[np.float64_t, ndim=2] m2
 
-    m1 = matp.flatten()
+    #m1 = matp.flatten()
+    m1 = matp.reshape(-1, order='A')
 
     Nr, Nc = size
     Br, Bc = blocksize
 
     nr = num_rpage(Nr, Br)
 
-    if len(m1) < nr*Nc:
-        raise Exception("Source matrix not long enough.")
+    if np.size(m1) < nr*Nc:
+        raise Exception("Source matrix not long enough. Is %i x %i, should be %i x %i." % (matp.shape[0], matp.shape[1], nr, Nc))
 
     m2 = np.empty((Nr, Nc), order='F')
 
