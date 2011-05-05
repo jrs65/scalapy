@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include "mpi.h"
 
+#include "bcutil.h"
+
 #define AA(i,j) AA[(i)*M+(j)]
 
 

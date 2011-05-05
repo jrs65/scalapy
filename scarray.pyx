@@ -85,13 +85,48 @@ def matrix_pagealign(mat, blocksize):
 
     return m2
 
+def vector_from_pagealign(vecp, size, blocksize):
+    r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
+
+    Parameters
+    ==========
+    vecp : ndarray
+        The matrix to page align (can either by C or Fortran ordered).
+    blocksize : array_like
+        The blocksize, the first and second elements correspond to the
+        row and column blocks respectively.
+
+    Returns
+    =======
+    m2 : ndarray
+        The page aligned matrix.
+    """
+    cdef np.ndarray[np.float64_t, ndim=2] m1
+    cdef np.ndarray[np.float64_t, ndim=2] m2
+
+    m1 = matp.flatten()
+
+    Nr, Nc = size
+    Br, Bc = blocksize
+
+    nr = num_rpage(Nr, Br)
+
+    if len(m1) < nr*Nc:
+        raise Exception("Source matrix not long enough.")
+
+    m2 = np.empty((Nr, Nc), order='F')
+
+    bc2d_from_pagealign(<double *>m1.data, <double *>m2.data, Nr, Nc, Br, Bc)
+
+    return m2
+
 
 def matrix_from_pagealign(matp, size, blocksize):
     r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
 
     Parameters
     ==========
-    mat : ndarray
+    matp : ndarray
         The matrix to page align (can either by C or Fortran ordered).
     blocksize : array_like
         The blocksize, the first and second elements correspond to the
