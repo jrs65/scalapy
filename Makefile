@@ -1,12 +1,17 @@
 CC=icc
 
-all: tests pdtest
+MPICC=mpicc
+
+all: tests evtest scarray.so
 
 pdtest: pdgemv
-	$(CC) -o pdtest pdgemv.c
+	$(MPICC) -o pdtest pdgemv.c
+
+scarray.so: scarray.pyx setup.py bcutil.c
+	python setup.py build_ext --inplace
 
 evtest: evtest.c bcutil.c
-	mpicc -o evtest $^ -mkl -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -openmp -lpthread
+	$(MPICC) -o evtest $^ -mkl -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -openmp -lpthread
 
 bcutil.o: bcutil.h
 

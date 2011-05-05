@@ -81,11 +81,11 @@ int main(int argc, char **argv) {
   t1l = t2l *t2l + t2l;
 
   printf("i %ld\nl %ld\n", t1i, t1l);
-  printf("si %i\n", sizeof(int));
-  printf("su %i\n", sizeof(unsigned int));
-  printf("st %i\n", sizeof(size_t));
-  printf("pd %i\n", sizeof(ptrdiff_t));
-  printf("ds %i\n", sizeof(double *));
+  printf("si %ld\n", sizeof(int));
+  printf("su %ld\n", sizeof(unsigned int));
+  printf("st %ld\n", sizeof(size_t));
+  printf("pd %ld\n", sizeof(ptrdiff_t));
+  printf("ds %ld\n", sizeof(double *));
   return 0;
 
 }

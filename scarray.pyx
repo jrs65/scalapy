@@ -13,6 +13,9 @@ cdef extern from "bcutil.h":
     int bc1d_from_pagealign(double * src, double *dest, size_t N, size_t B)
     int bc2d_from_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc)
     int num_rpage(int N, int B)
+
+
+_context = None
     
 class ProcessContext(object):
     r"""The position in the process grid."""
@@ -168,11 +171,18 @@ cdef class ScVector(object):
     local_vector = None
     global_vector = None
 
-    def __init__(self, N, B, context, fname = None):
+    def __init__(self, N, B, fname = None, context = None):
         self.N = N
         self.B = B
-        self.context = context
 
+        if not context:
+            if not _context:
+                raise Exception("No supplied or default context.")
+            else:
+                self.context = _context
+        else:
+            self.context = context
+        
         if fname:
             pass
 
@@ -187,7 +197,7 @@ cdef class ScMatrix(object):
     local_matrix = None
     global_matrix = None
 
-    def __init__(self, Nr, Nc, Br, Bc, Pr, Pc, pr, pc, fname = None):
+    def __init__(self, Nr, Nc, Br, Bc, fname = None, context = None):
         pass
 
     def to_file(fname):
