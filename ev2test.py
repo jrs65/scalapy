@@ -18,12 +18,16 @@ Pr = 2
 Pc = 2
 
 
-m1 = np.identity(2000, dtype=np.float64)
+#m1 = np.identity(2000, dtype=np.float64)
+print "Generating matrix"
+m1 = np.random.randn((2000,2000), dtype=np.float64)
+m1 = 0.5*(m1 + m1.T)
 
 m2 = scarray.matrix_pagealign(m1, [Br, Bc])
 
 m2.reshape(-1, order='A').tofile(matfile)
 
+print "Running ScaLapack"
 os.system("mpirun -np %i ./evtest %i %i %i %i %i %i %s %s %s" % (Pr*Pc, m1.shape[0], m1.shape[1], Br, Bc, Pr, Pc, matfile, evalsfile, evecsfile))
 
 evecst = np.fromfile(evecsfile, dtype=np.float64)
@@ -34,3 +38,4 @@ evals1 = np.fromfile(evalsfile, dtype=np.float64)
 
 
 evals2, evecs2 = la.eigh(m1)
+
