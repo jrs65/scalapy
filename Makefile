@@ -1,6 +1,6 @@
-CC=icc
+CC=gcc -Wall
 
-MPICC=mpicc
+MPICC=mpicc -Wall
 
 all: tests evtest scarray.so
 
@@ -11,7 +11,8 @@ scarray.so: scarray.pyx setup.py bcutil.c
 	python setup.py build_ext --inplace
 
 evtest: evtest.c bcutil.c
-	$(MPICC) -o evtest $^ -mkl -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -openmp -lpthread
+#	$(MPICC) -o evtest $^ -mkl -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -openmp -lpthread
+	$(MPICC) -o evtest $^ -lscalapack-openmpi
 
 bcutil.o: bcutil.h
 
@@ -22,4 +23,5 @@ tests : $(tests)
 $(tests) : % : %.o bcutil.o
 	$(CC) -o $@ $^
 clean:
-	rm $(tests) *.o
+	rm $(tests) *.o scarray.so evtest *.pyc
+	rm -rf build/

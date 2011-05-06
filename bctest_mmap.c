@@ -18,14 +18,14 @@
 int main(int argc, char **argv) {
 
 
-  double * Xr, * Xc, * Xp;
+  double * Xr, * Xp;
   double * Xrc;
 
   double * xr;
 
   int i, j, nr, nc;
 
-  int Nc = 17, Nr = 11, Bc = 3, Br = 2, Pc = 3, Pr = 3, pc = 2, pr = 2;
+  int Nc = 17, Nr = 11, Bc = 3, Br = 2, Pc = 3, Pr = 3;
 
   int pi, pj, nm, fd;
 
@@ -92,6 +92,6 @@ int main(int argc, char **argv) {
     printf("\n");
   }
 
-
+  return 0;
 
 }

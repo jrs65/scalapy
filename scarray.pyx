@@ -1,7 +1,10 @@
 
+import os.path
 
 import numpy as np
 cimport numpy as np
+
+from mpi4py import MPI
 
 #from libc.stdlib import size_t
 
@@ -14,6 +17,23 @@ cdef extern from "bcutil.h":
     int bc2d_from_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc)
     int num_rpage(int N, int B)
 
+    size_t numrc(size_t N, size_t B, size_t p, size_t p0, size_t P)
+    int bc1d_mmap_load(char * file, double * dest, size_t N, size_t B, size_t P, size_t p)
+    int bc2d_mmap_load(char * file, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
+
+    int bc1d_mmap_save(char * file, double * src, size_t N, size_t B, size_t P, size_t p)
+    int bc2d_mmap_save(char * file, double * src, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
+
+cdef extern:
+    pass
+
+def initmpi():
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.get_size()
+
+    context = ProcessContext()
+    
 
 _context = None
     
@@ -24,6 +44,9 @@ class ProcessContext(object):
 
     row = 0
     col = 0
+
+    mpi_rank = 0
+    mpi_size = 1
 
 
 def vector_pagealign(vec, blocksize):
@@ -184,7 +207,16 @@ cdef class ScVector(object):
             self.context = context
         
         if fname:
-            pass
+            if os.path.exists(fname):
+                cdef np.ndarray[np.float64_t, ndim=1] vc
+                # Check size
+                n = numrc(self.N, self.B, self.context.row, 0, self.context.num_rows)
+
+                self.local_vector = np.empty(n)
+                vc = self.local_vector
+                bc1d_mmap_load(fname, <double *>vc.data, self.N, self.B, 
+                               self.context.num_rows, self.context.row)
+                
 
     def to_file(fname):
         pass
@@ -198,7 +230,29 @@ cdef class ScMatrix(object):
     global_matrix = None
 
     def __init__(self, Nr, Nc, Br, Bc, fname = None, context = None):
-        pass
+
+        if not context:
+            if not _context:
+                raise Exception("No supplied or default context.")
+            else:
+                self.context = _context
+        else:
+            self.context = context
+        
+        if fname:
+            if os.path.exists(fname):
+                cdef np.ndarray[np.float64_t, ndim=2] mc
+                # Check size
+                nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
+                nc = numrc(self.Nc, self.Bc, self.context.col, 0, self.context.num_cols)
+
+                self.local_matrix = np.empty((nr,nc), order='F')
+                mc = self.local_matrix
+                bc2d_mmap_load(fname, <double *>mc.data, self.Nr, self.Nc, self.Br, self.Bc, 
+                               self.context.num_rows, self.context.num_cols, 
+                               self.context.row, self.context.col)
+                
+
 
     def to_file(fname):
         pass
