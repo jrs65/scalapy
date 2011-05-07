@@ -1,0 +1,5 @@
+
+import scarray
+
+scarray.initmpi()
+

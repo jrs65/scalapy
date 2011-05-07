@@ -11,8 +11,9 @@ scarray.so: scarray.pyx setup.py bcutil.c
 	python setup.py build_ext --inplace
 
 evtest: evtest.c bcutil.c
-#	$(MPICC) -o evtest $^ -mkl -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -openmp -lpthread
-	$(MPICC) -o evtest $^ -lscalapack-openmpi
+	$(MPICC) -o evtest $^ -mkl -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -openmp -lpthread
+#	$(MPICC) -o evtest $^ -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_rt -lmkl_blacs_openmpi_lp64 -fopenmp -lpthread
+#	$(MPICC) -o evtest $^ -lscalapack-openmpi
 
 bcutil.o: bcutil.h
 

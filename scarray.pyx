@@ -1,10 +1,10 @@
 
 import os.path
-
+import sys
 import numpy as np
 cimport numpy as np
 
-from mpi4py import MPI
+#from mpi4py import MPI
 
 #from libc.stdlib import size_t
 
@@ -24,15 +24,52 @@ cdef extern from "bcutil.h":
     int bc1d_mmap_save(char * file, double * src, size_t N, size_t B, size_t P, size_t p)
     int bc2d_mmap_save(char * file, double * src, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
 
+    
+    int bc1d_copy_forward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p)
+    int bc2d_copy_forward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
+
+
+    int bc1d_copy_backward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p)
+    int bc2d_copy_backward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
+
 cdef extern:
-    pass
+    Cblacs_pinfo( int * mypnum, int * nprocs )
+    Cblacs_get( int icontxt,  int what, int * val)
+    Cblacs_gridinit( int icontxt, char * order, int nprow, int npcol )
+    Cblacs_gridinfo( int icontxt, int * nprow, int * npcol, int * myprow, int * mypcol )
 
 def initmpi():
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.get_size()
+    cdef int pnum, nprocs, ictxt, row, col, nrows, ncols
+    cdef i1, i2
+    #comm = MPI.COMM_WORLD
+    ct = ProcessContext()
+    #ct.rank = comm.Get_rank()
+    #ct.size = comm.Get_size()
 
-    context = ProcessContext()
+    print "MPI: %i of %i" % (ct.rank, ct.size)
+
+    print "hrllo"
+    #Cblacs_pinfo(&pnum, &nprocs)
+    print "hrllo2"
+    #side = int((nprocs*1.0)**0.5)
+    ictxt = 0
+    i1 = -1
+    i2 = 0
+    #Cblacs_get(i1, i2, &ictxt)
+    print "hrllo3"
+    sys.stdout.flush()
+    #Cblacs_gridinit(ictxt, "Row", side, side)
+    #Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
+
+    ct.num_rows = nrows
+    ct.num_cols = ncols
+
+    ct.row = row
+    ct.col = col
+
+    print "MPI %i: position (%i,%i) in %i x %i" % (ct.rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
+
+
     
 
 _context = None
@@ -195,6 +232,8 @@ cdef class ScVector(object):
     global_vector = None
 
     def __init__(self, N, B, fname = None, context = None):
+        cdef np.ndarray[np.float64_t, ndim=1] vc
+        
         self.N = N
         self.B = B
 
@@ -205,14 +244,15 @@ cdef class ScVector(object):
                 self.context = _context
         else:
             self.context = context
+
+        n = numrc(self.N, self.B, self.context.row, 0, self.context.num_rows)
+        self.local_vector = np.empty(n)
         
         if fname:
             if os.path.exists(fname):
-                cdef np.ndarray[np.float64_t, ndim=1] vc
-                # Check size
-                n = numrc(self.N, self.B, self.context.row, 0, self.context.num_rows)
 
-                self.local_vector = np.empty(n)
+                # Check size
+
                 vc = self.local_vector
                 bc1d_mmap_load(fname, <double *>vc.data, self.N, self.B, 
                                self.context.num_rows, self.context.row)
@@ -229,8 +269,11 @@ cdef class ScMatrix(object):
     local_matrix = None
     global_matrix = None
 
-    def __init__(self, Nr, Nc, Br, Bc, fname = None, context = None):
-
+    def __init__(self, Nr, Nc, Br, Bc, context = None):
+        self.Nr = Nr
+        self.Br = Br
+        self.Nc = Nc
+        self.Bc = Bc
         if not context:
             if not _context:
                 raise Exception("No supplied or default context.")
@@ -238,19 +281,40 @@ cdef class ScMatrix(object):
                 self.context = _context
         else:
             self.context = context
-        
-        if fname:
-            if os.path.exists(fname):
-                cdef np.ndarray[np.float64_t, ndim=2] mc
-                # Check size
-                nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
-                nc = numrc(self.Nc, self.Bc, self.context.col, 0, self.context.num_cols)
 
-                self.local_matrix = np.empty((nr,nc), order='F')
-                mc = self.local_matrix
-                bc2d_mmap_load(fname, <double *>mc.data, self.Nr, self.Nc, self.Br, self.Bc, 
-                               self.context.num_rows, self.context.num_cols, 
-                               self.context.row, self.context.col)
+        nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
+        nc = numrc(self.Nc, self.Bc, self.context.col, 0, self.context.num_cols)
+        self.local_matrix = np.empty((nr,nc), order='F')
+
+    @classmethod
+    def fromfile(cls, file, Nr, Nc, Br, Bc):
+        cdef np.ndarray[np.float64_t, ndim=2] mc
+
+        m = cls(Nr, Nc, Br, Bc)
+        
+        if os.path.exists(file):
+            # Check size
+            mc = m.local_matrix
+            bc2d_mmap_load(file, <double *>mc.data, m.Nr, m.Nc, m.Br, m.Bc, 
+                           m.context.num_rows, m.context.num_cols, 
+                           m.context.row, m.context.col)
+
+    @classmethod
+    def fromarray(cls, array, Nr, Nc, Br, Bc):
+        cdef np.ndarray[np.float64_t, ndim=2] mc
+        cdef np.ndarray[np.float64_t, ndim=2] ac
+
+        m = cls(Nr, Nc, Br, Bc)
+        
+        # Check size
+        mc = m.local_matrix
+        ac = np.asfortranarray(array)
+        bc2d_copy_forward(<double *>ac.data, <double *>mc.data, m.Nr, m.Nc, m.Br, m.Bc, 
+                          m.context.num_rows, m.context.num_cols, 
+                          m.context.row, m.context.col)
+
+
+            
                 
 
 
