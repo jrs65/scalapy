@@ -10,6 +10,9 @@
 
 #include <errno.h>
 
+#include <mpi.h>
+
+#include <math.h>
 
 
 #define ceildiv(x, y) ((x - 1) / (y) + 1)
@@ -80,6 +83,30 @@ size_t numrc(size_t N, size_t B, size_t p, size_t p0, size_t P) {
   return n;
 
 }
+
+
+int scinit(int argc, char ** argv, int * ictxt, int * Pr, int * Pc, int * pr, int * pc, int * rank, int * size) {
+  MPI_Init(&argc, &argv);
+  //MPI_Comm_size(MPI_COMM_WORLD, size);
+  //MPI_Comm_rank(MPI_COMM_WORLD,rank);
+
+  Cblacs_pinfo( rank, size );
+  printf("RS: %i %i\n", *rank, *size);
+
+  *Pr = (int)sqrt(*size);
+  *Pc = (int)sqrt(*size);
+
+  printf("Px: %i %i\n", *Pr, *Pc);
+
+  Cblacs_get( -1, 0, ictxt );
+  printf("Ic: %i\n", *ictxt);
+  Cblacs_gridinit( ictxt, "Row", *Pr, *Pc );
+  printf("hello\n");
+  Cblacs_gridinfo( *ictxt, Pr, Pc, pr, pc );
+  printf("hello2\n");
+  return 0;
+}
+
 
 
 

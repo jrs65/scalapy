@@ -1,4 +1,4 @@
-CC=gcc -Wall
+CC=mpicc -Wall
 
 MPICC=mpicc -Wall
 
@@ -8,12 +8,14 @@ pdtest: pdgemv
 	$(MPICC) -o pdtest pdgemv.c
 
 scarray.so: scarray.pyx setup.py bcutil.c
+	export CC=mpicc
+	export LDSHARED=mpicc
 	python setup.py build_ext --inplace
 
 evtest: evtest.c bcutil.c
-	$(MPICC) -o evtest $^ -mkl -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -openmp -lpthread
+#	$(MPICC) -o evtest $^ -mkl -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -openmp -lpthread
 #	$(MPICC) -o evtest $^ -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_rt -lmkl_blacs_openmpi_lp64 -fopenmp -lpthread
-#	$(MPICC) -o evtest $^ -lscalapack-openmpi
+	$(MPICC) -o evtest $^ -lscalapack-openmpi
 
 bcutil.o: bcutil.h
 
@@ -24,5 +26,6 @@ tests : $(tests)
 $(tests) : % : %.o bcutil.o
 	$(CC) -o $@ $^
 clean:
-	rm $(tests) *.o scarray.so evtest *.pyc
-	rm -rf build/
+	-rm $(tests) *.o evtest
+	-rm -rf build/ sarray.so
+	-rm *.pyc

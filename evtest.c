@@ -27,20 +27,24 @@ int main(int argc, char **argv) {
 
 /************  MPI ***************************/
    int myrank_mpi, nprocs_mpi;
-   MPI_Init( &argc, &argv);
-   MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
-   MPI_Comm_size(MPI_COMM_WORLD, &nprocs_mpi);
-   printf("%i %i\n", myrank_mpi, nprocs_mpi);
-/************  BLACS ***************************/
    int info, ictxt;
    int ZERO=0,ONE=1;
+   /*MPI_Init( &argc, &argv);
+   MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
+   MPI_Comm_size(MPI_COMM_WORLD, &nprocs_mpi);
+   printf("%i %i\n", myrank_mpi, nprocs_mpi);*/
+/************  BLACS ***************************/
+
    //nprow = 2; npcol = 2; nb =2;
    //nprow = 2; npcol = 2; nb =2;
-   Cblacs_pinfo( &myrank_mpi, &nprocs_mpi ) ;
+   /*Cblacs_pinfo( &myrank_mpi, &nprocs_mpi ) ;
    printf("%i %i\n", myrank_mpi, nprocs_mpi);
    Cblacs_get( -1, 0, &ictxt );
    Cblacs_gridinit( &ictxt, "Row", Pr, Pc );
    Cblacs_gridinfo( ictxt, &Pr, &Pc, &pr, &pc );
+   */
+
+   scinit(argc, argv, &ictxt, &Pr, &Pc, &pr, &pc, &myrank_mpi, &nprocs_mpi);
 
    if(myrank_mpi == 0) {
      printf("Matrix size: %i x %i\n", Nr, Nc);
