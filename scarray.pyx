@@ -5,7 +5,7 @@ import numpy as np
 cimport numpy as np
 import sys
 
-#from mpi4py import MPI
+from mpi4py import MPI
 
 #from libc.stdlib import size_t
 
@@ -47,72 +47,36 @@ cdef extern:
     void Cblacs_gridinfo( int icontxt, int * nprow, int * npcol, int * myprow, int * mypcol )
 
 
-#cdef extern from "mpi.h":
-#    int MPI_Init(int *argc, char ***argv)
-
-#include "mpi4py/mpi.pxi"
-#from mpi4py.mpi_c cimport *
-
 def initmpi():
     cdef int pnum, nprocs, ictxt, row, col, nrows, ncols
-    cdef int c_argc
     cdef int rank, size
-    #comm = MPI.COMM_WORLD
+    comm = MPI.COMM_WORLD
     ct = ProcessContext()
-    #ct.rank = comm.Get_rank()
-    #ct.size = comm.Get_size()
+    ct.rank = comm.Get_rank()
+    ct.size = comm.Get_size()
+    print "MPI: %i of %i" % (ct.rank, ct.size)
+    
+    Cblacs_pinfo(&pnum, &nprocs)
+    print "BLACS pinfo %i %i" % (pnum, nprocs)
 
-    cdef char **c_argv 
-    args = sys.argv
-    # make *sure* that we have the exact string object for every argument 
-    #, and don't invoke __str__ on something else!! 
-    args = [b'calling_from_cython'] + [bytes(x) for x in args] 
-    # or, use str(x).encode(...) above, depending on what API you want
-    # and what encoding C program expect
-    c_argv = <char**>malloc(sizeof(char*) * len(args)) # + try/finally and free!!
-    c_argc = len(args)
+    ## Figure out what to do when we have spare MPI procs
+    side = int((nprocs*1.0)**0.5)
 
-    try: 
-        for idx, s in enumerate(args): 
-            c_argv[idx] = s 
-        #test(len(args), c_argv) 
-    finally: 
-        free(c_argv) 
-
-    #MPI_Init(&c_argc, &c_argv)
-    #MPI_Comm_size(MPI_COMM_WORLD,&size)
-    #MPI_Comm_rank(MPI_COMM_WORLD,&rank)
-    #ct.rank = rank
-    #ct.size = size
-    #print "MPI: %i of %i" % (ct.rank, ct.size)
-    #pnum = 0
-    #nprocs = 0
-    #print "hrllo"
-    #Cblacs_pinfo(&pnum, &nprocs)
-    #print "hrllo2"
-    #side = int((nprocs*1.0)**0.5)
-    #ictxt = 0
-    #i1 = -1
-    #i2 = 0
-    #Cblacs_get(-1, 0, &ictxt)
-    #print "hrllo3"
-    #print ictxt, side
-    #sys.stdout.flush()
-    #Cblacs_gridinit(&ictxt, "Row", side, side)
-    #Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
-
-    scinit(c_argc, c_argv, &ictxt, &nrows, &ncols, &row, &col, &rank, &size)
+    Cblacs_get(-1, 0, &ictxt)
+    print "BLACS context: %i" % ictxt
+    
+    Cblacs_gridinit(&ictxt, "Row", side, side)
+    Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
 
     ct.num_rows = nrows
     ct.num_cols = ncols
 
     ct.row = row
     ct.col = col
-
-    ct.rank = rank
-    ct.size = size
-
     print "MPI %i: position (%i,%i) in %i x %i" % (ct.rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
+
+    _context = ct
+
 
 
     

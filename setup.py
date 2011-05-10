@@ -13,20 +13,22 @@ process = subprocess.Popen(['mpicc', '-showme:compile'], shell=False, stdout=sub
 mpicompileargs = process.communicate()[0].split()
 
 
-#mpicc = distutils.ccompiler.new_compiler()
-
-#mpicc.set_executables(compiler = 'mpicc', linker_exe = 'mpicc')
 
 import numpy as np
-#-L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_rt -lmkl_blacs_intelmpi_lp64 -fopenmp -lpthread
+
 setup(  
-   name = 'ScArray',  
-   ext_modules=[ extension.Extension('scarray', ['scarray.pyx', 'bcutil.c'],
-                           include_dirs=[np.get_include(), '/usr/local/lib/python2.7/dist-packages/mpi4py/include'],
-                           #library_dirs=['$(MKLROOT)/lib/intel64'],
-                           #libraries=['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_openmpi_lp64', 'pthread'],
-                           libraries=['scalapack-openmpi'],
-                           extra_compile_args = (['-fopenmp'] + mpicompileargs),
-                           extra_link_args = (['-fopenmp'] + mpilinkargs) ) ],  
-   cmdclass = {'build_ext': build_ext}  
-)
+    name = 'ScArray',  
+    ext_modules=[ extension.Extension('scarray', ['scarray.pyx', 'bcutil.c'],
+                                      include_dirs=[np.get_include(), '/usr/local/lib/python2.7/dist-packages/mpi4py/include'],
+                                      library_dirs=['$(MKLROOT)/lib/intel64'],
+                                      libraries=['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_openmpi_lp64', 'iomp5', 'pthread'],
+                                      #libraries=['mkl_scalapack_lp64', 'mkl_blacs_openmpi_lp64', 'mkl_intel_lp64','mkl_gnu_thread', 'mkl_core', 'iomp5', 'pthread'],
+                                      #libraries=['scalapack-openmpi'],
+                                      extra_compile_args = (['-fopenmp'] + mpicompileargs),
+                                      extra_link_args = (['-fopenmp'] + mpilinkargs)
+                                      #extra_compile_args = mpicompileargs,
+                                      #extra_link_args = mpilinkargs
+                                      )
+                  ],  
+    cmdclass = {'build_ext': build_ext}  
+    )

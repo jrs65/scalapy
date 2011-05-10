@@ -29,22 +29,22 @@ int main(int argc, char **argv) {
    int myrank_mpi, nprocs_mpi;
    int info, ictxt;
    int ZERO=0,ONE=1;
-   /*MPI_Init( &argc, &argv);
+   MPI_Init( &argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
    MPI_Comm_size(MPI_COMM_WORLD, &nprocs_mpi);
-   printf("%i %i\n", myrank_mpi, nprocs_mpi);*/
+   printf("%i %i\n", myrank_mpi, nprocs_mpi);
 /************  BLACS ***************************/
 
    //nprow = 2; npcol = 2; nb =2;
    //nprow = 2; npcol = 2; nb =2;
-   /*Cblacs_pinfo( &myrank_mpi, &nprocs_mpi ) ;
+   Cblacs_pinfo( &myrank_mpi, &nprocs_mpi ) ;
    printf("%i %i\n", myrank_mpi, nprocs_mpi);
    Cblacs_get( -1, 0, &ictxt );
    Cblacs_gridinit( &ictxt, "Row", Pr, Pc );
    Cblacs_gridinfo( ictxt, &Pr, &Pc, &pr, &pc );
-   */
+   
 
-   scinit(argc, argv, &ictxt, &Pr, &Pc, &pr, &pc, &myrank_mpi, &nprocs_mpi);
+   //scinit(argc, argv, &ictxt, &Pr, &Pc, &pr, &pc, &myrank_mpi, &nprocs_mpi);
 
    if(myrank_mpi == 0) {
      printf("Matrix size: %i x %i\n", Nr, Nc);
@@ -64,11 +64,17 @@ int main(int argc, char **argv) {
    double wl;
    int lwork = -1;
 
+   int * iwork;
+   int liwork;
+
    int fd;
 
    bc2d_mmap_load(argv[7], X, Nr, Nc, Br, Bc, Pr, Pc, pr, pc);
 
    int descX[9], desc_evecs[9];
+
+   liwork = 7*Nr + 8*Pc + 2;
+   iwork = (int *) malloc(sizeof(int) * liwork);
 
    //printf("%i  %i\n", mA, numrc(M, nb, myrow, 0, nprow)); 
    descinit_(descX,      &Nr, &Nc, &Br, &Bc,  &ZERO, &ZERO, &ictxt, &nr, &info);
@@ -77,11 +83,11 @@ int main(int argc, char **argv) {
 
    //pdgemv_("N",&M,&M,&alpha,A,&ONE,&ONE,descA,x,&ONE,&ONE,descx,&ONE,&beta,y,&ONE,&ONE,descy,&ONE);
    // Get workspace size
-   pdsyev_("V", "U", &Nr,
+   pdsyevd_("V", "U", &Nr,
            X, &ONE, &ONE, descX,
            evals,
            evecs, &ONE, &ONE, desc_evecs, 
-           &wl, &lwork,
+           &wl, &lwork, iwork, &liwork,
            &info);
 
    printf("Required work array %f\n", wl);
@@ -91,11 +97,11 @@ int main(int argc, char **argv) {
    work = (double *)malloc(sizeof(double) * lwork);
    
    // Compute.
-   pdsyev_("V", "U", &Nr,
+   pdsyevd_("V", "U", &Nr,
            X, &ONE, &ONE, &descX,
            evals,
            evecs, &ONE, &ONE, desc_evecs, 
-           work, &lwork,
+	    work, &lwork, iwork, &liwork,
            &info);
 
    //Cblacs_barrier(ictxt,"A");
