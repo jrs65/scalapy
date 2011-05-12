@@ -11,6 +11,8 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#include <time.h>
+
 
 int main(int argc, char **argv) {
   int Nr, Nc, Br, Bc, Pr, Pc;
@@ -24,7 +26,6 @@ int main(int argc, char **argv) {
   Bc = atoi(argv[4]);
   Pr = atoi(argv[5]);
   Pc = atoi(argv[6]);
-
 /************  MPI ***************************/
    int myrank_mpi, nprocs_mpi;
    int info, ictxt;
@@ -32,13 +33,11 @@ int main(int argc, char **argv) {
    MPI_Init( &argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
    MPI_Comm_size(MPI_COMM_WORLD, &nprocs_mpi);
-   printf("%i %i\n", myrank_mpi, nprocs_mpi);
 /************  BLACS ***************************/
 
    //nprow = 2; npcol = 2; nb =2;
    //nprow = 2; npcol = 2; nb =2;
    Cblacs_pinfo( &myrank_mpi, &nprocs_mpi ) ;
-   printf("%i %i\n", myrank_mpi, nprocs_mpi);
    Cblacs_get( -1, 0, &ictxt );
    Cblacs_gridinit( &ictxt, "Row", Pr, Pc );
    Cblacs_gridinfo( ictxt, &Pr, &Pc, &pr, &pc );
@@ -67,9 +66,14 @@ int main(int argc, char **argv) {
    int * iwork;
    int liwork;
 
+   time_t st, et;
+
    int fd;
 
    bc2d_mmap_load(argv[7], X, Nr, Nc, Br, Bc, Pr, Pc, pr, pc);
+   
+   Cblacs_barrier(ictxt,"B");
+   st = time(NULL);
 
    int descX[9], desc_evecs[9];
 
@@ -90,7 +94,7 @@ int main(int argc, char **argv) {
            &wl, &lwork, iwork, &liwork,
            &info);
 
-   printf("Required work array %f\n", wl);
+   //printf("Required work array %f\n", wl);
 
    lwork = (int)wl;
    // Initialise work array
@@ -122,6 +126,11 @@ int main(int argc, char **argv) {
      close(fd);
    }
    Cblacs_barrier(ictxt,"A");
+   et = time(NULL);
+   
+   if(pr == 0 && pc == 0) {
+     printf("Computation time: %f\n", (double)(et-st));
+   }
 
    bc2d_mmap_save(argv[9], evecs, Nr, Nc, Br, Bc, Pr, Pc, pr, pc);
 

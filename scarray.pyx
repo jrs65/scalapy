@@ -47,7 +47,11 @@ cdef extern:
     void Cblacs_gridinfo( int icontxt, int * nprow, int * npcol, int * myprow, int * mypcol )
 
 
+_context = None
+
 def initmpi():
+    global _context
+    
     cdef int pnum, nprocs, ictxt, row, col, nrows, ncols
     cdef int rank, size
     comm = MPI.COMM_WORLD
@@ -81,7 +85,6 @@ def initmpi():
 
     
 
-_context = None
     
 class ProcessContext(object):
     r"""The position in the process grid."""
@@ -271,9 +274,9 @@ cdef class ScVector(object):
         pass
 
 
-cdef class ScMatrix(object):
+class ScMatrix(object):
 
-    cdef double * data
+    #cdef double * data
 
     local_matrix = None
     global_matrix = None
@@ -308,10 +311,15 @@ cdef class ScMatrix(object):
                            m.context.num_rows, m.context.num_cols, 
                            m.context.row, m.context.col)
 
+        return m
+
     @classmethod
-    def fromarray(cls, array, Nr, Nc, Br, Bc):
+    def fromarray(cls, array, Br, Bc):
         cdef np.ndarray[np.float64_t, ndim=2] mc
         cdef np.ndarray[np.float64_t, ndim=2] ac
+
+        Nr = array.shape[0]
+        Nc = array.shape[1]
 
         m = cls(Nr, Nc, Br, Bc)
         
@@ -322,7 +330,7 @@ cdef class ScMatrix(object):
                           m.context.num_rows, m.context.num_cols, 
                           m.context.row, m.context.col)
 
-
+        return m
             
                 
 

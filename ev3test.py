@@ -16,7 +16,7 @@ evalsfile = "evals.dat"
 Br = 500
 Bc = 500
 
-Pr = 3
+Pr = 4
 Pc = 3
 
 
