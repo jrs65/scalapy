@@ -234,9 +234,12 @@ def matrix_from_pagealign(matp, size, blocksize):
 
     return m2
 
+
+
+
     
 
-cdef class ScVector(object):
+cdef class LocalVector(object):
 
     cdef double * data
 
@@ -274,12 +277,20 @@ cdef class ScVector(object):
         pass
 
 
-class ScMatrix(object):
+cdef class LocalMatrix:
 
     #cdef double * data
 
     local_matrix = None
     global_matrix = None
+
+    context = None
+
+    #Nr = 0
+    #Nc = 0
+    cdef int Nr, Nc
+    Br = 0
+    Bc = 0
 
     def __init__(self, Nr, Nc, Br, Bc, context = None):
         self.Nr = Nr
@@ -294,9 +305,20 @@ class ScMatrix(object):
         else:
             self.context = context
 
+        self.local_matrix = np.empty(self.local_shape(), order='F')
+
+    def local_shape(self):
         nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
         nc = numrc(self.Nc, self.Bc, self.context.col, 0, self.context.num_cols)
-        self.local_matrix = np.empty((nr,nc), order='F')
+
+        return (nr, nc)
+
+    cdef double * _data(self):
+         cdef np.ndarray[np.float64_t, ndim=2] m
+         m = self.local_matrix
+
+         return <double *>m.data
+     
 
     @classmethod
     def fromfile(cls, file, Nr, Nc, Br, Bc):
@@ -331,10 +353,13 @@ class ScMatrix(object):
                           m.context.row, m.context.col)
 
         return m
+
+
             
                 
 
 
     def to_file(fname):
         pass
-    
+
+

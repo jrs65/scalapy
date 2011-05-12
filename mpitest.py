@@ -12,8 +12,8 @@ scarray.initmpi()
 
 x, y = np.meshgrid(np.arange(10, dtype=np.float64), np.arange(10, dtype=np.float64))
 
-xm = scarray.ScMatrix.fromarray(x, Br, Bc)
-ym = scarray.ScMatrix.fromarray(y, Br, Bc)
+xm = scarray.LocalMatrix.fromarray(x, Br, Bc)
+ym = scarray.LocalMatrix.fromarray(y, Br, Bc)
 
 for i in range(comm.Get_size()):
     comm.Barrier()
@@ -33,8 +33,8 @@ if comm.Get_rank() == 0:
 
 comm.Barrier()
 
-xm2 = scarray.ScMatrix.fromfile("x.dat", 10, 10, Br, Bc)
-ym2 = scarray.ScMatrix.fromfile("y.dat", 10, 10, Br, Bc)
+xm2 = scarray.LocalMatrix.fromfile("x.dat", 10, 10, Br, Bc)
+ym2 = scarray.LocalMatrix.fromfile("y.dat", 10, 10, Br, Bc)
 
 
 for i in range(comm.Get_size()):
