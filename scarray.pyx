@@ -48,6 +48,15 @@ cdef extern:
 
 
 _context = None
+_blocksize = None
+
+cdef extern:
+    void pdsyevd_( char * jobz, char * uplo, int * N,
+                   double * A, int * ia, int * ja, int * desca,
+                   double * w,
+                   double * z, int * iz, int * jz, int * descz,
+                   double * work, int * iwork, int * iwork, int * liwork,
+                   int * info )
 
 def initmpi():
     global _context
@@ -67,6 +76,7 @@ def initmpi():
     side = int((nprocs*1.0)**0.5)
 
     Cblacs_get(-1, 0, &ictxt)
+    ct.blacs_context = ictxt
     print "BLACS context: %i" % ictxt
     
     Cblacs_gridinit(&ictxt, "Row", side, side)
@@ -78,6 +88,8 @@ def initmpi():
     ct.row = row
     ct.col = col
     print "MPI %i: position (%i,%i) in %i x %i" % (ct.rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
+
+    
 
     _context = ct
 
@@ -96,6 +108,8 @@ class ProcessContext(object):
 
     mpi_rank = 0
     mpi_size = 1
+
+    blacs_context = 0
 
 
 def vector_pagealign(vec, blocksize):
@@ -277,35 +291,65 @@ cdef class LocalVector(object):
         pass
 
 
-cdef class LocalMatrix:
+cdef void * np_data(np.ndarray a):
+    return a.data
+
+
+cdef class LocalMatrix(object):
 
     #cdef double * data
 
-    local_matrix = None
-    global_matrix = None
+    property local_matrix:
+        def __get__(self):
+            return self._local_matrix
 
-    context = None
+    cdef np.ndarray _local_matrix
+
+    cdef np.ndarray _desc
+
+    cdef object context
 
     #Nr = 0
     #Nc = 0
-    cdef int Nr, Nc
-    Br = 0
-    Bc = 0
+    cdef readonly int Nr, Nc
+    cdef readonly int Br, Bc
 
-    def __init__(self, Nr, Nc, Br, Bc, context = None):
-        self.Nr = Nr
-        self.Br = Br
-        self.Nc = Nc
-        self.Bc = Bc
-        if not context:
-            if not _context:
-                raise Exception("No supplied or default context.")
-            else:
-                self.context = _context
-        else:
-            self.context = context
+    def __init__(self, globalsize, blocksize = None, context = None):
+        self.Nr, self.Nc = globalsize
+        if not _blocksize and not blocksize:
+            raise Exception("No supplied or default blocksize.")
 
-        self.local_matrix = np.empty(self.local_shape(), order='F')
+        self.Br, self.Bc = blocksize if blocksize else _blocksize
+            
+        if not context and  not _context:
+            raise Exception("No supplied or default context.")
+        self.context = context if context else _context
+
+        self._local_matrix = np.empty(self.local_shape(), order='F')
+
+        self._mkdesc()
+
+
+    def _mkdesc(self):
+        self._desc = np.zeros(9, dtype=np.int32)
+
+        self._desc[0] = 1 # Dense matrix
+        self._desc[1] = self.context.blacs_context
+        self._desc[2] = self.Nr
+        self._desc[3] = self.Nc
+        self._desc[4] = self.Br
+        self._desc[5] = self.Bc
+        self._desc[6] = 0
+        self._desc[7] = 0
+        self._desc[8] = self.local_shape()[0]
+
+    cdef int * _getdesc(self):
+        return <int *>self._desc.data
+
+    @classmethod
+    def empty_like(cls, mat):
+        return cls([mat.Nr, mat.Nc], [mat.Br, mat.Bc])
+        
 
     def local_shape(self):
         nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
@@ -317,40 +361,39 @@ cdef class LocalMatrix:
          cdef np.ndarray[np.float64_t, ndim=2] m
          m = self.local_matrix
 
-         return <double *>m.data
-     
+         return <double *>self._local_matrix.data
 
+
+    def _loadfile(self, file):
+        bc2d_mmap_load(file, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+                       self.context.num_rows, self.context.num_cols, 
+                       self.context.row, self.context.col)
+
+    def _loadarray(self, array):
+        bc2d_copy_forward(<double *>np_data(array), <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+                          self.context.num_rows, self.context.num_cols, 
+                          self.context.row, self.context.col)
+        
     @classmethod
-    def fromfile(cls, file, Nr, Nc, Br, Bc):
-        cdef np.ndarray[np.float64_t, ndim=2] mc
+    def fromfile(cls, file, globalsize, blocksize = None):
 
-        m = cls(Nr, Nc, Br, Bc)
+        m = cls(globalsize, blocksize)
         
         if os.path.exists(file):
-            # Check size
-            mc = m.local_matrix
-            bc2d_mmap_load(file, <double *>mc.data, m.Nr, m.Nc, m.Br, m.Bc, 
-                           m.context.num_rows, m.context.num_cols, 
-                           m.context.row, m.context.col)
+            m._loadfile(file)
 
         return m
 
     @classmethod
-    def fromarray(cls, array, Br, Bc):
-        cdef np.ndarray[np.float64_t, ndim=2] mc
-        cdef np.ndarray[np.float64_t, ndim=2] ac
+    def fromarray(cls, array, blocksize = None):
 
-        Nr = array.shape[0]
-        Nc = array.shape[1]
+        if array.ndim != 2:
+            raise Exception("Array must be 2d.")
 
-        m = cls(Nr, Nc, Br, Bc)
+        m = cls(array.shape, blocksize)
         
-        # Check size
-        mc = m.local_matrix
         ac = np.asfortranarray(array)
-        bc2d_copy_forward(<double *>ac.data, <double *>mc.data, m.Nr, m.Nc, m.Br, m.Bc, 
-                          m.context.num_rows, m.context.num_cols, 
-                          m.context.row, m.context.col)
+        m._loadarray(ac)
 
         return m
 
@@ -361,5 +404,58 @@ cdef class LocalMatrix:
 
     def to_file(fname):
         pass
+
+
+def pdsyevd(mat, destroy = True):
+
+    cdef int lwork, liwork
+    cdef double * work
+    cdef double wl
+    cdef int * iwork
+    cdef LocalMatrix A, evecs
+
+
+    cdef int ONE = 1
+
+    cdef int info
+    cdef np.ndarray evals
+    
+    A = mat if destroy else mat.copy()
+
+    evecs = LocalMatrix.empty_like(A)
+    evals = np.empty(A.Nr, dtype=np.float64)
+
+    liwork = 7*A.Nr + 8*A.context.num_cols + 2
+    iwork = <int *>malloc(sizeof(int) * liwork)
+
+    print A._desc
+    print evecs._desc
+
+    ## Workspace size inquiry
+    lwork = -1
+    pdsyevd_("V", "L", &(A.Nr),
+             A._data(), &ONE, &ONE, A._getdesc(),
+             <double *>np_data(evals),
+             evecs._data(), &ONE, &ONE, evecs._getdesc(),
+             &wl, &lwork, iwork, &liwork,
+             &info);
+    
+    ## Initialise workspace to correct length
+    lwork = <int>wl
+    work = <double *>malloc(sizeof(double) * lwork)
+
+    ## Compute eigen problem
+    pdsyevd_("V", "L", &(A.Nr),
+             A._data(), &ONE, &ONE, A._getdesc(),
+             <double *>np_data(evals),
+             evecs._data(), &ONE, &ONE, evecs._getdesc(),
+             work, &lwork, iwork, &liwork,
+             &info);
+
+    free(iwork)
+    free(work)
+
+    return (evals, evecs)
+    
 
 
