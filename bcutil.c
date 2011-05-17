@@ -97,7 +97,7 @@ int indices_rc(size_t N, size_t B, size_t p, size_t P, int * ind) {
   }
   
   if(nb * B < nt) {
-    for(j = 0; j < B; j++) {
+    for(j = 0; j < (nt - nb*B); j++) {
       ind[nb*B+j] = (nb*P+p)*B+j;
     }
   }

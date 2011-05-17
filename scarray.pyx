@@ -363,13 +363,13 @@ cdef class LocalVector(object):
     
     def tofile(self, fname):
         if self.context.mpi_rank == 0:
-            length = self.Nr * self.Nc * sizeof(double)
+            length = self.N * sizeof(double)
 
         ensure_filelength(fname, length)
         
         MPI.COMM_WORLD.barrier()
 
-        bc1d_mmap_load(file, <double *>self._data(), self.N, self.B,
+        bc1d_mmap_load(fname, <double *>self._data(), self.N, self.B,
                        self.context.num_rows, self.context.row) 
 
 
@@ -486,9 +486,22 @@ cdef class LocalMatrix(object):
 
         MPI.COMM_WORLD.barrier()
 
-        bc2d_mmap_load(file, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+        bc2d_mmap_load(fname, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
                        self.context.num_rows, self.context.num_cols, 
                        self.context.row, self.context.col)
+
+    def indices(self, full=False):
+
+        if full:
+            lr, lc = self.local_shape()
+            ri, ci = self.indices(full=False)
+            ri = np.tile(ri, lc)
+            rc = np.tile(ci.T, lr).T
+        else:
+            ri = index_array(self.Nr, self.Br, self.context.row, self.context.num_rows)[:,np.newaxis]
+            ci = index_array(self.Nc, self.Bc, self.context.col, self.context.num_cols)[np.newaxis,:]
+
+        return (ri, ci)
 
 
 

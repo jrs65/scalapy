@@ -7,29 +7,48 @@ import numpy as np
 import scipy.linalg as la
 
 from mpi4py import MPI
+
+import time
+
 comm = MPI.COMM_WORLD
 
-scarray._blocksize = [4, 4]
-gsize = [10, 10]
+def f(x):
+    return np.where(np.abs(x) < 10, np.ones_like(x), np.zeros_like(x))
+
+if comm.Get_rank() == 0:
+    print "Setting up..."
+    st = time.time()
+
+n = 1000
+scarray._blocksize = [100, 100]
+gsize = [n, n]
 
 scarray.initmpi()
 
 np.random.seed(0)
 
-A = np.random.standard_normal(gsize).astype(np.float64)
+A = scarray.LocalMatrix(gsize)
 
-Am = scarray.LocalMatrix.fromarray(A)
+ri, ci = A.indices()
 
-evals1, evecs1 = scroutine.pdsyevd(Am)
+A.local_matrix[:,:] = f(ri-ci)
 
 if comm.Get_rank() == 0:
-    evals2, evecs2 = la.eigh(A)
+    et = time.time()
+    print "Done. Time: ", et-st
+    st = time.time()
+    print "Starting eigenvalue solve..."
 
-    print "=== Scalapack ==="
-    print evals1
+evals1, evecs1 = scroutine.pdsyevd(A)
 
-    print "=== Scipy ==="
-    print evals2
+if comm.Get_rank() == 0:
+    et = time.time()
+    print "Done. Time: ", et-st
 
-    print
+
+x = np.arange(n, dtype=np.float64)
+px = np.where(x < n-x, x, n-x)
+evals2 = np.sort(np.fft.fft(f(px)).real)
+
+if comm.Get_rank() == 0:
     print "Max diff:", np.abs((evals1 - evals2) / evals1).max()
