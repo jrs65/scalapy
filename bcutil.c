@@ -10,8 +10,6 @@
 
 #include <errno.h>
 
-#include <mpi.h>
-
 #include <math.h>
 
 
@@ -84,7 +82,7 @@ size_t numrc(size_t N, size_t B, size_t p, size_t p0, size_t P) {
 
 }
 
-
+/*
 int scinit(int argc, char ** argv, int * ictxt, int * Pr, int * Pc, int * pr, int * pc, int * rank, int * size) {
   MPI_Init(&argc, &argv);
   //MPI_Comm_size(MPI_COMM_WORLD, size);
@@ -107,7 +105,7 @@ int scinit(int argc, char ** argv, int * ictxt, int * Pr, int * Pc, int * pr, in
   return 0;
 }
 
-
+*/
 
 
 int bc1d_copy_forward_stride(double * src, double *dest, size_t N, size_t B, size_t P, size_t p, size_t stride) {
@@ -402,6 +400,7 @@ int bc1d_mmap_save(char * file, double * src, size_t N, size_t B, size_t P, size
   fs = fst.st_size;
   if(fs < nm) {
     printf("File is not long enough.");
+    exit(-29);
   }
   
   xm = (double *)mmap(NULL, nm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -448,6 +447,7 @@ int bc2d_mmap_save(char * file, double * src, size_t Nr, size_t Nc, size_t Br, s
   fs = fst.st_size;
   if(fs < nm) {
     printf("File is not long enough.");
+    exit(-29);
   }
   
   xm = (double *)mmap(NULL, nm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);

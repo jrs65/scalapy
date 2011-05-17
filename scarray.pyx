@@ -1,4 +1,4 @@
-
+import os
 import os.path
 import sys
 import numpy as np
@@ -7,56 +7,41 @@ import sys
 
 from mpi4py import MPI
 
-#from libc.stdlib import size_t
 
-ctypedef unsigned long size_t
+#ctypedef unsigned long size_t
+from libc.stddef cimport size_t
+from libc.stdlib cimport malloc, free
 
-cdef extern from "stdlib.h":
-    void free(void* ptr)
-    void* malloc(size_t size)
-
-cdef extern from "bcutil.h":
-    int bc1d_copy_pagealign(double * src, double * dest, int N, int B)
-    int bc2d_copy_pagealign(double * src, double * dest, int Nr, int Nc, int Br, int Bc)
-    int bc1d_from_pagealign(double * src, double *dest, size_t N, size_t B)
-    int bc2d_from_pagealign(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc)
-    int num_rpage(int N, int B)
-
-    size_t numrc(size_t N, size_t B, size_t p, size_t p0, size_t P)
-    int bc1d_mmap_load(char * file, double * dest, size_t N, size_t B, size_t P, size_t p)
-    int bc2d_mmap_load(char * file, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
-
-    int bc1d_mmap_save(char * file, double * src, size_t N, size_t B, size_t P, size_t p)
-    int bc2d_mmap_save(char * file, double * src, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
-
-    
-    int bc1d_copy_forward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p)
-    int bc2d_copy_forward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
+## Import Unix low level open/close
+from posix.fcntl cimport *
+from posix.unistd cimport *
 
 
-    int bc1d_copy_backward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p)
-    int bc2d_copy_backward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc)
+## Import routine for pre-allocating files
+cdef extern from "fcntl.h":
+    int posix_fallocate(int fd, off_t offset, off_t len)
 
-    int scinit(int argc, char ** argv, int * ictxt, int * Pr, int * Pc, int * pr, int * pr, int * rank, int * size)
+cdef extern from "sys/stat.h":
+    enum: S_IRUSR
+    enum: S_IWUSR
+    #mode_t umask(mode_t mask)
 
 
-cdef extern:
-    void Cblacs_pinfo( int * mypnum, int * nprocs )
-    void Cblacs_get( int icontxt,  int what, int * val)
-    void Cblacs_gridinit( int * icontxt, char * order, int nprow, int npcol )
-    void Cblacs_gridinfo( int icontxt, int * nprow, int * npcol, int * myprow, int * mypcol )
+from blacs cimport *
+from bcutil cimport *
+
+
+# For some reason umask related stuff is not working. grr..
+#cdef mode_t read_umask():
+#    cdef mode_t mask
+#    mask = umask (0);
+#    umask (mask);
+#    return mask
 
 
 _context = None
 _blocksize = None
 
-cdef extern:
-    void pdsyevd_( char * jobz, char * uplo, int * N,
-                   double * A, int * ia, int * ja, int * desca,
-                   double * w,
-                   double * z, int * iz, int * jz, int * descz,
-                   double * work, int * iwork, int * iwork, int * liwork,
-                   int * info )
 
 def initmpi():
     global _context
@@ -88,8 +73,6 @@ def initmpi():
     ct.row = row
     ct.col = col
     print "MPI %i: position (%i,%i) in %i x %i" % (ct.rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
-
-    
 
     _context = ct
 
@@ -251,68 +234,140 @@ def matrix_from_pagealign(matp, size, blocksize):
 
 
 
-    
-
-cdef class LocalVector(object):
-
-    cdef double * data
-
-    local_vector = None
-    global_vector = None
-
-    def __init__(self, N, B, fname = None, context = None):
-        cdef np.ndarray[np.float64_t, ndim=1] vc
-        
-        self.N = N
-        self.B = B
-
-        if not context:
-            if not _context:
-                raise Exception("No supplied or default context.")
-            else:
-                self.context = _context
-        else:
-            self.context = context
-
-        n = numrc(self.N, self.B, self.context.row, 0, self.context.num_rows)
-        self.local_vector = np.empty(n)
-        
-        if fname:
-            if os.path.exists(fname):
-
-                # Check size
-
-                vc = self.local_vector
-                bc1d_mmap_load(fname, <double *>vc.data, self.N, self.B, 
-                               self.context.num_rows, self.context.row)
-                
-
-    def to_file(fname):
-        pass
-
 
 cdef void * np_data(np.ndarray a):
     return a.data
 
 
-cdef class LocalMatrix(object):
 
-    #cdef double * data
+def ensure_filelength(fname, length):
+    cdef int fd, res
+
+    # I've no idea why umask is not being set correctly.
+    fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)
+    if fd == -1:
+        raise Exception("Error opening file: %s" % fname)
+
+    res = posix_fallocate(fd, 0, <size_t>length)
+    close(fd)
+    
+    if res != 0:
+        raise Exception("Allocating file %s length %i bytes failed." % (fname, length))
+
+    st = os.stat(fname)
+    if st.st_size < length:
+        raise Exception("Allocating file %s length %i bytes failed in some odd way.")
+    
+
+    
+
+cdef class LocalVector(object):
+
+
+    property local_vector:
+        def __get__(self):
+            return self._local_vector
+    
+
+    def __init__(self, globalsize, blocksize = None, context = None):
+        
+        self.N = globalsize
+
+        if not _blocksize and not blocksize:
+            raise Exception("No supplied or default blocksize.")
+
+        self.B = blocksize if blocksize else _blocksize[0]
+        
+        if not context and  not _context:
+            raise Exception("No supplied or default context.")
+        self.context = context if context else _context
+        
+        self.local_vector = np.empty(self.local_shape(), dtype=np.float64)
+
+        self._mkdesc()
+
+    def _mkdesc(self):
+        self._desc = np.zeros(9, dtype=np.int32)
+
+        self._desc[0] = 1 # Dense matrix
+        self._desc[1] = self.context.blacs_context
+        self._desc[2] = self.N
+        self._desc[3] = 1
+        self._desc[4] = self.B
+        self._desc[5] = 1
+        self._desc[6] = 0
+        self._desc[7] = 0
+        self._desc[8] = self.local_shape()
+    
+    @classmethod
+    def empty_like(cls, vec):
+        return cls(vec.N, vec.B)
+        
+    def local_shape(self):
+        nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
+        return nr
+    
+    cdef int * _getdesc(self):
+        return <int *>self._desc.data
+    
+    cdef double * _data(self):
+         return <double *>self._local_vector.data
+     
+    def _loadfile(self, file):
+        bc1d_mmap_load(file, <double *>self._data(), self.N, self.B,
+                       self.context.num_rows, self.context.row)
+        
+    def _loadarray(self, array):
+        bc1d_copy_forward(<double *>np_data(array), <double *>self._data(), self.N, self.B, 
+                          self.context.num_rows, self.context.row)
+        
+    @classmethod
+    def fromfile(cls, file, globalsize, blocksize = None):
+
+        v = cls(globalsize, blocksize)
+        
+        if os.path.exists(file):
+            v._loadfile(file)
+
+        return v
+
+    @classmethod
+    def fromarray(cls, array, blocksize = None):
+
+        if array.ndim != 1:
+            raise Exception("Array must be 2d.")
+
+        v = cls(array.shape, blocksize)
+        
+        ac = np.asfortranarray(array)
+        v._loadarray(ac)
+
+        return v
+
+    
+    def to_file(self, fname):
+        if self.context.rank == 0:
+            length = self.Nr * self.Nc * sizeof(double)
+
+        ensure_filelength(fname, length)
+        
+        MPI.COMM_WORLD.barrier()
+
+        bc1d_mmap_load(file, <double *>self._data(), self.N, self.B,
+                       self.context.num_rows, self.context.row) 
+
+
+
+
+
+
+
+
+cdef class LocalMatrix(object):
 
     property local_matrix:
         def __get__(self):
             return self._local_matrix
-
-    cdef np.ndarray _local_matrix
-
-    cdef np.ndarray _desc
-
-    cdef object context
-
-    #Nr = 0
-    #Nc = 0
-    cdef readonly int Nr, Nc
-    cdef readonly int Br, Bc
 
     def __init__(self, globalsize, blocksize = None, context = None):
         self.Nr, self.Nc = globalsize
@@ -325,54 +380,11 @@ cdef class LocalMatrix(object):
             raise Exception("No supplied or default context.")
         self.context = context if context else _context
 
-        self._local_matrix = np.empty(self.local_shape(), order='F')
+        self._local_matrix = np.empty(self.local_shape(), order='F', dtype=np.float64)
 
         self._mkdesc()
 
 
-    def _mkdesc(self):
-        self._desc = np.zeros(9, dtype=np.int32)
-
-        self._desc[0] = 1 # Dense matrix
-        self._desc[1] = self.context.blacs_context
-        self._desc[2] = self.Nr
-        self._desc[3] = self.Nc
-        self._desc[4] = self.Br
-        self._desc[5] = self.Bc
-        self._desc[6] = 0
-        self._desc[7] = 0
-        self._desc[8] = self.local_shape()[0]
-
-    cdef int * _getdesc(self):
-        return <int *>self._desc.data
-
-    @classmethod
-    def empty_like(cls, mat):
-        return cls([mat.Nr, mat.Nc], [mat.Br, mat.Bc])
-        
-
-    def local_shape(self):
-        nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
-        nc = numrc(self.Nc, self.Bc, self.context.col, 0, self.context.num_cols)
-
-        return (nr, nc)
-
-    cdef double * _data(self):
-         cdef np.ndarray[np.float64_t, ndim=2] m
-         m = self.local_matrix
-
-         return <double *>self._local_matrix.data
-
-
-    def _loadfile(self, file):
-        bc2d_mmap_load(file, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
-                       self.context.num_rows, self.context.num_cols, 
-                       self.context.row, self.context.col)
-
-    def _loadarray(self, array):
-        bc2d_copy_forward(<double *>np_data(array), <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
-                          self.context.num_rows, self.context.num_cols, 
-                          self.context.row, self.context.col)
         
     @classmethod
     def fromfile(cls, file, globalsize, blocksize = None):
@@ -398,64 +410,72 @@ cdef class LocalMatrix(object):
         return m
 
 
-            
-                
+
+    @classmethod
+    def empty_like(cls, mat):
+        return cls([mat.Nr, mat.Nc], [mat.Br, mat.Bc])
+        
+
+    def local_shape(self):
+        nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
+        nc = numrc(self.Nc, self.Bc, self.context.col, 0, self.context.num_cols)
+
+        return (nr, nc)
 
 
-    def to_file(fname):
-        pass
+    def _mkdesc(self):
+        self._desc = np.zeros(9, dtype=np.int32)
+
+        self._desc[0] = 1 # Dense matrix
+        self._desc[1] = self.context.blacs_context
+        self._desc[2] = self.Nr
+        self._desc[3] = self.Nc
+        self._desc[4] = self.Br
+        self._desc[5] = self.Bc
+        self._desc[6] = 0
+        self._desc[7] = 0
+        self._desc[8] = self.local_shape()[0]
+
+    cdef int * _getdesc(self):
+        return <int *>self._desc.data
 
 
-def pdsyevd(mat, destroy = True):
-
-    cdef int lwork, liwork
-    cdef double * work
-    cdef double wl
-    cdef int * iwork
-    cdef LocalMatrix A, evecs
+    cdef double * _data(self):
+         return <double *>self._local_matrix.data
 
 
-    cdef int ONE = 1
+    def _loadfile(self, file):
+        bc2d_mmap_load(file, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+                       self.context.num_rows, self.context.num_cols, 
+                       self.context.row, self.context.col)
 
-    cdef int info
-    cdef np.ndarray evals
-    
-    A = mat if destroy else mat.copy()
+    def _loadarray(self, array):
+        bc2d_copy_forward(<double *>np_data(array), <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+                          self.context.num_rows, self.context.num_cols, 
+                          self.context.row, self.context.col)
 
-    evecs = LocalMatrix.empty_like(A)
-    evals = np.empty(A.Nr, dtype=np.float64)
+    def to_file(self, fname):
+        if self.context.rank == 0:
+            length = self.Nr * self.Nc * sizeof(double)
+            ensure_filelength(fname, length)
 
-    liwork = 7*A.Nr + 8*A.context.num_cols + 2
-    iwork = <int *>malloc(sizeof(int) * liwork)
+        MPI.COMM_WORLD.barrier()
 
-    print A._desc
-    print evecs._desc
-
-    ## Workspace size inquiry
-    lwork = -1
-    pdsyevd_("V", "L", &(A.Nr),
-             A._data(), &ONE, &ONE, A._getdesc(),
-             <double *>np_data(evals),
-             evecs._data(), &ONE, &ONE, evecs._getdesc(),
-             &wl, &lwork, iwork, &liwork,
-             &info);
-    
-    ## Initialise workspace to correct length
-    lwork = <int>wl
-    work = <double *>malloc(sizeof(double) * lwork)
-
-    ## Compute eigen problem
-    pdsyevd_("V", "L", &(A.Nr),
-             A._data(), &ONE, &ONE, A._getdesc(),
-             <double *>np_data(evals),
-             evecs._data(), &ONE, &ONE, evecs._getdesc(),
-             work, &lwork, iwork, &liwork,
-             &info);
-
-    free(iwork)
-    free(work)
-
-    return (evals, evecs)
-    
+        bc2d_mmap_load(file, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+                       self.context.num_rows, self.context.num_cols, 
+                       self.context.row, self.context.col)
 
 
+
+
+def matrix_equal(A, B):
+    if not np.array_equal(A._desc, B._desc):
+        raise Exception("Matrices must be the same size, and equally distributed, for comparison.")
+
+    t = np.array(np.array_equal(A.local_matrix, B.local_matrix), dtype=np.uint8)
+
+    tv = np.zeros(A.context.mpi_size, dtype=np.uint8)
+
+    MPI.COMM_WORLD.Allgather([t, MPI.BYTE], [tv, MPI.BYTE])
+
+    return tv.astype(np.bool).all()

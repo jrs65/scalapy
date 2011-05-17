@@ -6,29 +6,43 @@ from Cython.Distutils import build_ext
 
 import subprocess
 
-process = subprocess.Popen(['mpicc', '-showme:link'], shell=False, stdout=subprocess.PIPE)
-mpilinkargs = process.communicate()[0].split()
 
-process = subprocess.Popen(['mpicc', '-showme:compile'], shell=False, stdout=subprocess.PIPE)
-mpicompileargs = process.communicate()[0].split()
+def runcommand(cmd):
+    process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE)    
+    c = process.communicate()
+
+    if process.returncode != 0:
+        raise Exception("Something went wrong whilst running the command: %s" % cmd)
+
+    return c[0]
 
 
+mpilinkargs = runcommand('mpicc -showme:link').split()
+mpicompileargs = runcommand('mpicc -showme:compile').split()
+
+
+scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_openmpi_lp64', 'iomp5', 'pthread']
+scl_libdir = ['$(MKLROOT)/lib/intel64']
 
 import numpy as np
 
 setup(  
-    name = 'ScArray',  
+    name = 'PyScalapack',  
     ext_modules=[ extension.Extension('scarray', ['scarray.pyx', 'bcutil.c'],
-                                      include_dirs=[np.get_include(), '/usr/local/lib/python2.7/dist-packages/mpi4py/include'],
-                                      library_dirs=['$(MKLROOT)/lib/intel64'],
-                                      libraries=['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_openmpi_lp64', 'iomp5', 'pthread'],
-                                      #libraries=['mkl_scalapack_lp64', 'mkl_blacs_openmpi_lp64', 'mkl_intel_lp64','mkl_gnu_thread', 'mkl_core', 'iomp5', 'pthread'],
-                                      #libraries=['scalapack-openmpi'],
+                                      include_dirs=[np.get_include()],
+                                      library_dirs=scl_libdir,
+                                      libraries=scl_lib,
                                       extra_compile_args = (['-fopenmp'] + mpicompileargs),
                                       extra_link_args = (['-fopenmp'] + mpilinkargs)
-                                      #extra_compile_args = mpicompileargs,
-                                      #extra_link_args = mpilinkargs
+                                      ),
+                  extension.Extension('scroutine', ['scroutine.pyx'],
+                                      include_dirs=[np.get_include()],
+                                      library_dirs=scl_libdir,
+                                      libraries=scl_lib,
+                                      extra_compile_args = (['-fopenmp'] + mpicompileargs),
+                                      extra_link_args = (['-fopenmp'] + mpilinkargs)
                                       )
                   ],  
     cmdclass = {'build_ext': build_ext}  
     )
+
