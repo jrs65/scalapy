@@ -82,6 +82,30 @@ size_t numrc(size_t N, size_t B, size_t p, size_t p0, size_t P) {
 
 }
 
+int indices_rc(size_t N, size_t B, size_t p, size_t P, int * ind) {
+
+  size_t nt, nb;
+  int i, j;
+
+  nt = numrc(N, B, p, 0, P);
+  nb = num_c_lblocks(N, B, p, P);
+
+  for(i = 0; i < nb; i++) {
+    for(j = 0; j < B; j++) {
+      ind[i*B+j] = (i*P+p)*B+j;
+    }
+  }
+  
+  if(nb * B < nt) {
+    for(j = 0; j < B; j++) {
+      ind[nb*B+j] = (nb*P+p)*B+j;
+    }
+  }
+  
+  return 0;
+  
+}
+
 /*
 int scinit(int argc, char ** argv, int * ictxt, int * Pr, int * Pc, int * pr, int * pc, int * rank, int * size) {
   MPI_Init(&argc, &argv);

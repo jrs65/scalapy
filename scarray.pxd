@@ -14,7 +14,7 @@ cdef class LocalVector(object):
 
     cdef np.ndarray _desc
 
-    cdef object context
+    cdef object _context
 
     cdef readonly int N
     cdef readonly int B
@@ -32,10 +32,8 @@ cdef class LocalMatrix(object):
     #cdef double * data
 
     cdef np.ndarray _local_matrix
-
     cdef np.ndarray _desc
-
-    cdef object context
+    cdef object _context
 
     #Nr = 0
     #Nc = 0

@@ -30,6 +30,8 @@ size_t num_rstride(size_t N, size_t B, size_t stride);
 size_t stride_page(size_t B);
 size_t num_rpage(size_t N, size_t B);
 
+int indices_rc(size_t N, size_t B, size_t p, size_t P, int * ind);
+
 int bc1d_copy_forward(double * src, double *dest, size_t N, size_t B, size_t P, size_t p);
 int bc2d_copy_forward(double * src, double * dest, size_t Nr, size_t Nc, size_t Br, size_t Bc, size_t Pr, size_t Pc, size_t pr, size_t pc);
 

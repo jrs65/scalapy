@@ -50,9 +50,9 @@ def initmpi():
     cdef int rank, size
     comm = MPI.COMM_WORLD
     ct = ProcessContext()
-    ct.rank = comm.Get_rank()
-    ct.size = comm.Get_size()
-    print "MPI: %i of %i" % (ct.rank, ct.size)
+    ct.mpi_rank = comm.Get_rank()
+    ct.mpi_size = comm.Get_size()
+    print "MPI: %i of %i" % (ct.mpi_rank, ct.mpi_size)
     
     Cblacs_pinfo(&pnum, &nprocs)
     print "BLACS pinfo %i %i" % (pnum, nprocs)
@@ -72,7 +72,7 @@ def initmpi():
 
     ct.row = row
     ct.col = col
-    print "MPI %i: position (%i,%i) in %i x %i" % (ct.rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
+    print "MPI %i: position (%i,%i) in %i x %i" % (ct.mpi_rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
 
     _context = ct
 
@@ -233,6 +233,15 @@ def matrix_from_pagealign(matp, size, blocksize):
 
 
 
+def index_array(N, B, p, P):
+    n = numrc(N, B, p, 0, P)
+    ia = np.zeros(n, dtype=np.int32)
+    rv = indices_rc(N, B, p, P, <int *>np_data(ia))
+
+    return ia
+    
+
+
 
 
 cdef void * np_data(np.ndarray a):
@@ -267,7 +276,14 @@ cdef class LocalVector(object):
     property local_vector:
         def __get__(self):
             return self._local_vector
+        
+    property desc:
+        def __get__(self):
+            return self._desc.copy()
     
+    property context:
+        def __get__(self):
+            return self._context
 
     def __init__(self, globalsize, blocksize = None, context = None):
         
@@ -345,8 +361,8 @@ cdef class LocalVector(object):
         return v
 
     
-    def to_file(self, fname):
-        if self.context.rank == 0:
+    def tofile(self, fname):
+        if self.context.mpi_rank == 0:
             length = self.Nr * self.Nc * sizeof(double)
 
         ensure_filelength(fname, length)
@@ -369,6 +385,15 @@ cdef class LocalMatrix(object):
         def __get__(self):
             return self._local_matrix
 
+    
+    property desc:
+        def __get__(self):
+            return self._desc.copy()
+
+    property context:
+        def __get__(self):
+            return self._context
+
     def __init__(self, globalsize, blocksize = None, context = None):
         self.Nr, self.Nc = globalsize
         if not _blocksize and not blocksize:
@@ -378,7 +403,7 @@ cdef class LocalMatrix(object):
             
         if not context and  not _context:
             raise Exception("No supplied or default context.")
-        self.context = context if context else _context
+        self._context = context if context else _context
 
         self._local_matrix = np.empty(self.local_shape(), order='F', dtype=np.float64)
 
@@ -454,8 +479,8 @@ cdef class LocalMatrix(object):
                           self.context.num_rows, self.context.num_cols, 
                           self.context.row, self.context.col)
 
-    def to_file(self, fname):
-        if self.context.rank == 0:
+    def tofile(self, fname):
+        if self.context.mpi_rank == 0:
             length = self.Nr * self.Nc * sizeof(double)
             ensure_filelength(fname, length)
 
@@ -469,7 +494,7 @@ cdef class LocalMatrix(object):
 
 
 def matrix_equal(A, B):
-    if not np.array_equal(A._desc, B._desc):
+    if not np.array_equal(A.desc, B.desc):
         raise Exception("Matrices must be the same size, and equally distributed, for comparison.")
 
     t = np.array(np.array_equal(A.local_matrix, B.local_matrix), dtype=np.uint8)
