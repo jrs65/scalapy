@@ -5,7 +5,10 @@ from Cython.Distutils import extension
 from Cython.Distutils import build_ext  
 
 import subprocess
+import os
 
+## Remove CC variable which Intel compiler modulefiles keep setting
+del os.environ['CC']
 
 def runcommand(cmd):
     process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE)    

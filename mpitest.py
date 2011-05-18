@@ -7,9 +7,7 @@ comm = MPI.COMM_WORLD
 
 blocksize = [4, 4]
 
-scarray._blocksize = blocksize
-
-scarray.initmpi()
+scarray.initmpi(blocksize = blocksize)
 
 x, y = np.meshgrid(np.arange(10, dtype=np.float64), np.arange(10, dtype=np.float64))
 
