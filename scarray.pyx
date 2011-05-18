@@ -387,7 +387,7 @@ cdef class LocalVector(object):
         
         MPI.COMM_WORLD.barrier()
 
-        bc1d_mmap_load(fname, <double *>self._data(), self.N, self.B,
+        bc1d_mmap_save(fname, <double *>self._data(), self.N, self.B,
                        self.context.num_rows, self.context.row) 
 
 
@@ -504,7 +504,7 @@ cdef class LocalMatrix(object):
 
         MPI.COMM_WORLD.barrier()
 
-        bc2d_mmap_load(fname, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+        bc2d_mmap_save(fname, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
                        self.context.num_rows, self.context.num_cols, 
                        self.context.row, self.context.col)
 
