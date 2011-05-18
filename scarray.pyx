@@ -381,7 +381,7 @@ cdef class LocalVector(object):
     
     def tofile(self, fname):
         if self.context.mpi_rank == 0:
-            length = self.N * sizeof(double)
+            length = num_rpage(self.N, self.B) * sizeof(double)
 
         ensure_filelength(fname, length)
         
@@ -499,7 +499,7 @@ cdef class LocalMatrix(object):
 
     def tofile(self, fname):
         if self.context.mpi_rank == 0:
-            length = self.Nr * self.Nc * sizeof(double)
+            length = num_rpage(self.Nr, self.Br) * self.Nc * sizeof(double)
             ensure_filelength(fname, length)
 
         MPI.COMM_WORLD.barrier()

@@ -8,7 +8,9 @@ import subprocess
 import os
 
 ## Remove CC variable which Intel compiler modulefiles keep setting
-del os.environ['CC']
+## as we must use the compiler that compiled python.
+if 'CC' in os.environ:
+    del os.environ['CC']
 
 def runcommand(cmd):
     process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE)    
