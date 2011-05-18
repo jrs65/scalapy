@@ -24,7 +24,7 @@ Pc = 3
 print "Generating matrix"
 
 st = time.time()
-m1 = np.random.standard_normal((5000,5000))
+m1 = np.random.standard_normal((10000,10000))
 m1 = 0.5*(m1 + m1.T)
 
 m2 = scarray.matrix_pagealign(m1, [Br, Bc])

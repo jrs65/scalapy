@@ -43,11 +43,15 @@ _context = None
 _blocksize = None
 
 
-def initmpi():
-    global _context
-    
+def initmpi(gridsize = None, blocksize = None):
+
     cdef int pnum, nprocs, ictxt, row, col, nrows, ncols
     cdef int rank, size
+
+    global _context
+    global _blocksize
+
+    # MPI setup
     comm = MPI.COMM_WORLD
     ct = ProcessContext()
     ct.mpi_rank = comm.Get_rank()
@@ -58,15 +62,26 @@ def initmpi():
     print "BLACS pinfo %i %i" % (pnum, nprocs)
 
     ## Figure out what to do when we have spare MPI procs
-    side = int((nprocs*1.0)**0.5)
+    if not gridsize:
+        side = int((nprocs*1.0)**0.5)
+        gridsize = [side, side]
 
+    gs = gridsize[0]*gridsize[1]
+    if gs > ct.mpi_size:
+        raise Exception("Requested gridsize is larger than number of MPI processes.")
+    if gs < ct.mpi_size:
+        import warnings
+        warnings.warn("More MPI processes than process grid points. This may go crazy (especially for commparisons).")
+
+    # Initialise BLACS process grid
     Cblacs_get(-1, 0, &ictxt)
     ct.blacs_context = ictxt
     print "BLACS context: %i" % ictxt
     
-    Cblacs_gridinit(&ictxt, "Row", side, side)
+    Cblacs_gridinit(&ictxt, "Row", gridsize[0], gridsize[1])
     Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
 
+    # Fill out default ProcessContext
     ct.num_rows = nrows
     ct.num_cols = ncols
 
@@ -75,6 +90,9 @@ def initmpi():
     print "MPI %i: position (%i,%i) in %i x %i" % (ct.mpi_rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
 
     _context = ct
+
+    # Set default blocksize
+    _blocksize = blocksize
 
 
 

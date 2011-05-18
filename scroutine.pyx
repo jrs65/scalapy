@@ -37,7 +37,7 @@ def pdsyevd(mat, destroy = True):
 
     ## Workspace size inquiry
     lwork = -1
-    pdsyevd_("V", "L", &(A.Nr),
+    pdsyevd_("V", "U", &(A.Nr),
              A._data(), &_ONE, &_ONE, A._getdesc(),
              <double *>np_data(evals),
              evecs._data(), &_ONE, &_ONE, evecs._getdesc(),
@@ -49,7 +49,7 @@ def pdsyevd(mat, destroy = True):
     work = <double *>malloc(sizeof(double) * lwork)
 
     ## Compute eigen problem
-    pdsyevd_("V", "L", &(A.Nr),
+    pdsyevd_("V", "U", &(A.Nr),
              A._data(), &_ONE, &_ONE, A._getdesc(),
              <double *>np_data(evals),
              evecs._data(), &_ONE, &_ONE, evecs._getdesc(),
