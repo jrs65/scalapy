@@ -22,11 +22,19 @@ if comm.Get_rank() == 0:
     print "Setting up..."
     st = time.time()
 
-n = 10000
-B = 64
+n = 5000
+B = 512
 gsize = [n, n]
 
-scarray.initmpi(gridsize = [4, 3], blocksize = [B, B])
+nproc = comm.Get_size()
+if nproc == 12:
+    grid = [4,3]
+elif nproc == 16:
+    grid = [4,4]
+else:
+    grid = None
+
+scarray.initmpi(gridsize = grid, blocksize = [B, B])
 
 np.random.seed(0)
 
