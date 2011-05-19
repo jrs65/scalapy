@@ -11,7 +11,7 @@ from mpi4py import MPI
 import os
 import time
 
-os.environ['OMP_NUM_THREADS'] = '1'
+#os.environ['OMP_NUM_THREADS'] = '1'
 
 comm = MPI.COMM_WORLD
 
@@ -22,10 +22,11 @@ if comm.Get_rank() == 0:
     print "Setting up..."
     st = time.time()
 
-n = 5000
+n = 10000
+B = 64
 gsize = [n, n]
 
-scarray.initmpi(gridsize = [4, 3], blocksize = [256, 256])
+scarray.initmpi(gridsize = [4, 3], blocksize = [B, B])
 
 np.random.seed(0)
 
