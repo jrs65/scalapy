@@ -23,7 +23,7 @@ if comm.Get_rank() == 0:
     st = time.time()
 
 n = 5000
-B = 512
+B = 256
 gsize = [n, n]
 
 nproc = comm.Get_size()
@@ -50,6 +50,8 @@ da = np.where(da < na, da, na)
 A.local_matrix[:,:] = f(da)
 #A.local_matrix[:,:] = np.random.standard_normal(A.local_shape())
 
+comm.Barrier()
+
 if comm.Get_rank() == 0:
     et = time.time()
     print "Done. Time: ", et-st
@@ -57,6 +59,8 @@ if comm.Get_rank() == 0:
     print "Starting eigenvalue solve..."
 
 evals1, evecs1 = scroutine.pdsyevd(A)
+
+comm.Barrier()
 
 if comm.Get_rank() == 0:
     et = time.time()
