@@ -56,10 +56,10 @@ def initmpi(gridsize = None, blocksize = None):
     ct = ProcessContext()
     ct.mpi_rank = comm.Get_rank()
     ct.mpi_size = comm.Get_size()
-    print "MPI: %i of %i" % (ct.mpi_rank, ct.mpi_size)
+    #print "MPI: %i of %i" % (ct.mpi_rank, ct.mpi_size)
     
     Cblacs_pinfo(&pnum, &nprocs)
-    print "BLACS pinfo %i %i" % (pnum, nprocs)
+    #print "BLACS pinfo %i %i" % (pnum, nprocs)
 
     ## Figure out what to do when we have spare MPI procs
     if not gridsize:
@@ -76,7 +76,7 @@ def initmpi(gridsize = None, blocksize = None):
     # Initialise BLACS process grid
     Cblacs_get(-1, 0, &ictxt)
     ct.blacs_context = ictxt
-    print "BLACS context: %i" % ictxt
+    #print "BLACS context: %i" % ictxt
     
     Cblacs_gridinit(&ictxt, "Row", gridsize[0], gridsize[1])
     Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
@@ -87,7 +87,7 @@ def initmpi(gridsize = None, blocksize = None):
 
     ct.row = row
     ct.col = col
-    print "MPI %i: position (%i,%i) in %i x %i" % (ct.mpi_rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
+    #print "MPI %i: position (%i,%i) in %i x %i" % (ct.mpi_rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
 
     _context = ct
 
