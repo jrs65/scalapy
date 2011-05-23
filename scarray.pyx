@@ -21,6 +21,7 @@ from posix.unistd cimport *
 cdef extern from "fcntl.h":
     int posix_fallocate(int fd, off_t offset, off_t len)
 
+## Import flags for setting permissions
 cdef extern from "sys/stat.h":
     enum: S_IRUSR
     enum: S_IWUSR
@@ -44,7 +45,24 @@ _blocksize = None
 
 
 def initmpi(gridsize = None, blocksize = None):
+    r"""Initialise Scalapack on the current process.
 
+    This routine sets up the BLACS grid, and sets the default context
+    for this process.
+
+    Parameters
+    ----------
+    gridsize : array_like, optional
+        A two element list (or other tuple etc), containing the
+        requested shape for the process grid e.g. [nprow, npcol]. If
+        None (default) set a square grid using the maximum number of
+        processes.
+    blocksize : array_like, optional
+        The default blocksize for new arrays. A two element, [brow,
+        bcol] list.
+    """
+
+    
     cdef int pnum, nprocs, ictxt, row, col, nrows, ncols
     cdef int rank, size
 
@@ -100,7 +118,19 @@ def initmpi(gridsize = None, blocksize = None):
 
     
 class ProcessContext(object):
-    r"""The position in the process grid."""
+    r"""Stores information about an MPI/BLACS process.
+
+    Attributes
+    ----------
+    num_rows, num_cols : integer
+        The size of the process grid.
+    row, col : integer
+        The position in the process grid.
+    mpi_rank, mpi_size : integer
+        The index, and number of MPI processes.
+    blacs_context : integer
+        The BLACS context.
+    """
     num_rows = 1
     num_cols = 1
 
@@ -252,6 +282,25 @@ def matrix_from_pagealign(matp, size, blocksize):
 
 
 def index_array(N, B, p, P):
+    r"""Which indices of the global array are local to this process.
+
+    Parameters
+    ----------
+    N : integer
+        Size of global array
+    B : integer
+        Size of blocks
+    p : integer
+        Index of process along this side.
+    P : integer
+        Number of processes on this side.
+
+    Returns
+    -------
+    index_array : ndarray
+        An array of integers giving the global positions that would be
+        stored locally.
+    """
     n = numrc(N, B, p, 0, P)
     ia = np.zeros(n, dtype=np.int32)
     rv = indices_rc(N, B, p, P, <int *>np_data(ia))
@@ -268,6 +317,18 @@ cdef void * np_data(np.ndarray a):
 
 
 def ensure_filelength(fname, length):
+    r"""Make sure a file is larger than a given size.
+
+    This will ensure that a file exists, and has a size of at least
+    `length`. If this can't be done, an exception will be raised.
+
+    Parameters
+    ----------
+    fname : string
+        The name of the file.
+    length : integer
+        The requested size of the file in bytes.
+    """
     cdef int fd, res
 
     # I've no idea why umask is not being set correctly.
