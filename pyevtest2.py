@@ -38,7 +38,7 @@ scarray.initmpi(gridsize = grid, blocksize = [B, B])
 
 np.random.seed(0)
 
-A = scarray.LocalMatrix(gsize)
+A = scarray.DistributedMatrix(gsize)
 
 # Construct array of distances between indices (taking into account
 # periodicity).

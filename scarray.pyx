@@ -349,23 +349,56 @@ def ensure_filelength(fname, length):
 
     
 
-cdef class LocalVector(object):
+cdef class DistributedVector(object):
+    r"""A vector distributed over multiple MPI processes.
 
+    Attributes
+    ----------
+    N : integer, readonly
+        The global vector length
+    B : integer, readonly
+        The block length
+    
+    """
 
     property local_vector:
+        r"""The local, block-cyclic packed segment of the vector.
+        
+        This is an ndarray and is readonly. However, only the
+        reference is readonly, the array itself can be modified in
+        place.
+        """
         def __get__(self):
             return self._local_vector
         
     property desc:
+        r"""The Scalapack array descriptor. See [1]_. Returned as an integer
+        ndarray and is readonly.
+        
+        .. [1] http://www.netlib.org/scalapack/slug/node77.html
+        """
         def __get__(self):
             return self._desc.copy()
     
     property context:
+        r"""The ProcessContext of this vector."""
+        
         def __get__(self):
             return self._context
 
     def __init__(self, globalsize, blocksize = None, context = None):
-        
+        r"""Initialise an empty DistributedVector.
+
+        Parameters
+        ----------
+        globalsize : integer
+            The size of the global vector.
+        blocksize: integer, optional
+            The blocking size. If `None` uses the default row blocking
+            (set via `initmpi`).
+        context : ProcessContext, optional
+            The process context. If not set uses the default (recommended). 
+        """
         self.N = globalsize
 
         if not _blocksize and not blocksize:
@@ -382,6 +415,7 @@ cdef class LocalVector(object):
         self._mkdesc()
 
     def _mkdesc(self):
+        ## Fill out the Scalapack array descriptor
         self._desc = np.zeros(9, dtype=np.int32)
 
         self._desc[0] = 1 # Dense matrix
@@ -396,9 +430,27 @@ cdef class LocalVector(object):
     
     @classmethod
     def empty_like(cls, vec):
+        r"""Create a DistributedVector, with the same shape and
+        blocking as `vec`.
+
+        Parameters
+        ----------
+        vec : DistributedVector
+            The vector to copy.
+
+        Returns
+        -------
+        cvec : DistributedVector
+        """
         return cls(vec.N, vec.B)
         
     def local_shape(self):
+        r"""The length of the local vector segment.
+
+        Returns
+        -------
+        nr : integer
+        """
         nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
         return nr
     
@@ -409,6 +461,7 @@ cdef class LocalVector(object):
          return <double *>self._local_vector.data
      
     def _loadfile(self, file):
+        ## Use mmap to load the file.
         bc1d_mmap_load(file, <double *>self._data(), self.N, self.B,
                        self.context.num_rows, self.context.row)
         
@@ -418,7 +471,28 @@ cdef class LocalVector(object):
         
     @classmethod
     def fromfile(cls, file, globalsize, blocksize = None):
+        
+        r"""Create a DistributedVector from a file representing the
+        global vector.
 
+        As the file is read in via mmap, the individual blocks must be
+        page aligned.
+
+        Parameters
+        ----------
+        globalsize : integer
+            The size of the global vector.
+        blocksize: integer, optional
+            The blocking size. If `None` uses the default row blocking
+            (set via `initmpi`).
+        context : ProcessContext, optional
+            The process context. If not set uses the default (recommended).
+
+        Returns
+        -------
+        dv : DistributedVector
+        """
+        
         v = cls(globalsize, blocksize)
         
         if os.path.exists(file):
@@ -429,6 +503,23 @@ cdef class LocalVector(object):
     @classmethod
     def fromarray(cls, array, blocksize = None):
 
+        r"""Create a DistributedVector directly from the global `array`.
+
+        As the file is read in via mmap, the individual blocks must be
+        page aligned.
+
+        Parameters
+        ----------
+        array : ndarray
+            The global array to extract the local segments of.
+        blocksize: integer, optional
+            The blocking size. If `None` uses the default row blocking
+            (set via `initmpi`).
+
+        Returns
+        -------
+        dv : DistributedVector
+        """
         if array.ndim != 1:
             raise Exception("Array must be 2d.")
 
@@ -441,6 +532,21 @@ cdef class LocalVector(object):
 
     
     def tofile(self, fname):
+        r"""Save the distributed vector out to a file.
+
+        This use mmap to write out the local sections of the global
+        matrix. The file will have the global matrix in the canonical
+        order, though each block will be page aligned.
+
+        In order to avoid a race condition, only the rank-0 MPI
+        process will check for the existence of the file, and ensure
+        it is long enough to save the vector to.
+        
+        Parameters
+        ----------
+        fname : string
+            Name of the file to write into.
+        """
         if self.context.mpi_rank == 0:
             length = num_rpage(self.N, self.B) * sizeof(double)
 
@@ -458,22 +564,56 @@ cdef class LocalVector(object):
 
 
 
-cdef class LocalMatrix(object):
+cdef class DistributedMatrix(object):
+    r"""A matrix distributed over multiple MPI processes.
+
+    Attributes
+    ----------
+    Nr, Nc : integer, readonly
+        The number of rows and cokumns of the global matrix.
+    Br, Bc : integer, readonly
+        The block shape.
+    
+    """
 
     property local_matrix:
+        r"""The local, block-cyclic packed segment of the matrix.
+
+        This is an ndarray and is readonly. However, only the
+        reference is readonly, the array itself can be modified in
+        place.
+        """
         def __get__(self):
             return self._local_matrix
 
     
     property desc:
+        r"""The Scalapack array descriptor. See [1]_. Returned as an integer
+        ndarray and is readonly.
+
+        .. [1] http://www.netlib.org/scalapack/slug/node77.html
+        """
         def __get__(self):
             return self._desc.copy()
 
     property context:
+        r"""The ProcessContext of this matrix."""
         def __get__(self):
             return self._context
 
     def __init__(self, globalsize, blocksize = None, context = None):
+        r"""Initialise an empty DistributedMatrix.
+
+        Parameters
+        ----------
+        globalsize : list of integers
+            The size of the global matrix eg. [Nr, Nc].
+        blocksize: list of integers, optional
+            The blocking size, packed as [Br, Bc]. If `None` uses the default blocking
+            (set via `initmpi`).
+        context : ProcessContext, optional
+            The process context. If not set uses the default (recommended). 
+        """
         self.Nr, self.Nc = globalsize
         if not _blocksize and not blocksize:
             raise Exception("No supplied or default blocksize.")
@@ -492,7 +632,26 @@ cdef class LocalMatrix(object):
         
     @classmethod
     def fromfile(cls, file, globalsize, blocksize = None):
+        r"""Create a DistributedMatrix from a file representing the
+        global matrix.
 
+        As the file is read in via mmap, the individual blocks must be
+        page aligned.
+
+        Parameters
+        ----------
+        globalsize : list of integers
+            The size of the global matrix, as [Nr, Nc].
+        blocksize: list of integers, optional
+            The blocking size as [Br, Bc]. If `None` uses the default blocking
+            (set via `initmpi`).
+        context : ProcessContext, optional
+            The process context. If not set uses the default (recommended).
+
+        Returns
+        -------
+        dm : DsitributedMatrix
+        """
         m = cls(globalsize, blocksize)
         
         if os.path.exists(file):
@@ -503,6 +662,23 @@ cdef class LocalMatrix(object):
     @classmethod
     def fromarray(cls, array, blocksize = None):
 
+        r"""Create a DistributedMatrix directly from the global `array`.
+
+        As the file is read in via mmap, the individual blocks must be
+        page aligned.
+
+        Parameters
+        ----------
+        array : ndarray
+            The global array to extract the local segments of.
+        blocksize: list of integers, optional
+            The blocking size in [Br, Bc]. If `None` uses the default
+            blocking (set via `initmpi`).
+
+        Returns
+        -------
+        dm : DistributedMatrix
+        """
         if array.ndim != 2:
             raise Exception("Array must be 2d.")
 
@@ -517,10 +693,29 @@ cdef class LocalMatrix(object):
 
     @classmethod
     def empty_like(cls, mat):
+        r"""Create a DistributedMatrix, with the same shape and
+        blocking as `mat`.
+
+        Parameters
+        ----------
+        mat : DistributedMatrix
+            The matrix to copy.
+
+        Returns
+        -------
+        cmat : DistributedMatrix
+        """
         return cls([mat.Nr, mat.Nc], [mat.Br, mat.Bc])
         
 
     def local_shape(self):
+        r"""The shape of the local matrix segment.
+        
+        Returns
+        -------
+        shape : list of integers
+            The shape as [rows, cols].
+        """
         nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
         nc = numrc(self.Nc, self.Bc, self.context.col, 0, self.context.num_cols)
 
@@ -559,6 +754,22 @@ cdef class LocalMatrix(object):
                           self.context.row, self.context.col)
 
     def tofile(self, fname):
+        r"""Save the distributed matrix out to a file.
+        
+        This use mmap to write out the local sections of the global
+        matrix. The file will have the global matrix in the canonical
+        order, though each block will be page aligned.
+
+        In order to avoid a race condition, only the rank-0 MPI
+        process will check for the existence of the file, and ensure
+        it is long enough to save the vector to.
+        
+        Parameters
+        ----------
+        fname : string
+            Name of the file to write into.
+        """
+         
         if self.context.mpi_rank == 0:
             length = num_rpage(self.Nr, self.Br) * self.Nc * sizeof(double)
             ensure_filelength(fname, length)
@@ -570,6 +781,35 @@ cdef class LocalMatrix(object):
                        self.context.row, self.context.col)
 
     def indices(self, full=False):
+        r"""The indices of the elements stored in the local matrix.
+
+        This can be used to easily build up distributed matrices that
+        depend on their co-ordinates.
+
+        Parameters
+        ----------
+        full : boolean, optional
+            If False (default), the matrices of indices are not
+            fleshed out, if True the full matrices are returned. This
+            is like the difference between np.ogrid and np.mgrid.
+
+        Returns
+        -------
+        im : tuple of ndarrays
+            The first element contains the matrix of row indices and
+            the second of column indices.
+
+        Notes
+        -----
+
+        As an example a DistributedMatrix defined globally as
+        :math:`M_{ij} = i + j` can be created by:
+
+        >>> dm = DistributedMatrix(100, 100)
+        >>> rows, cols = dm.indices()
+        >>> dm.local_matrix[:] = rows + cols
+
+        """
 
         if full:
             lr, lc = self.local_shape()
@@ -586,6 +826,21 @@ cdef class LocalMatrix(object):
 
 
 def matrix_equal(A, B):
+    r"""Test if two matrices are identical.
+
+    Does a comparison of the global matrices. Uses MPI to test
+    equality of all segments, and returns the global result for all.
+
+    Parameters
+    ----------
+    A, B : DistributedMatrix
+        Matrices to compare
+
+    Returns
+    -------
+    cmp : boolean
+        Whether equal or not.
+    """
     if not np.array_equal(A.desc, B.desc):
         raise Exception("Matrices must be the same size, and equally distributed, for comparison.")
 

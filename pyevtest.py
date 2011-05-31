@@ -18,7 +18,7 @@ np.random.seed(0)
 
 A = np.random.standard_normal(gsize).astype(np.float64)
 
-Am = scarray.LocalMatrix.fromarray(A)
+Am = scarray.DistributedMatrix.fromarray(A)
 
 evals1, evecs1 = scroutine.pdsyevd(Am)
 

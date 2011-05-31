@@ -11,8 +11,8 @@ scarray.initmpi(blocksize = blocksize)
 
 x, y = np.meshgrid(np.arange(10, dtype=np.float64), np.arange(10, dtype=np.float64))
 
-xm = scarray.LocalMatrix.fromarray(x)
-ym = scarray.LocalMatrix.fromarray(y)
+xm = scarray.DistributedMatrix.fromarray(x)
+ym = scarray.DistributedMatrix.fromarray(y)
 
 for i in range(comm.Get_size()):
     comm.Barrier()
@@ -35,11 +35,11 @@ if comm.Get_rank() == 0:
 
 comm.Barrier()
 
-xm2 = scarray.LocalMatrix.fromfile("x.dat", [10, 10])
-ym2 = scarray.LocalMatrix.fromfile("y.dat", [10, 10])
+xm2 = scarray.DistributedMatrix.fromfile("x.dat", [10, 10])
+ym2 = scarray.DistributedMatrix.fromfile("y.dat", [10, 10])
 
-xm3 = scarray.LocalMatrix.fromfile("xa.dat", [10, 10])
-ym3 = scarray.LocalMatrix.fromfile("ya.dat", [10, 10])
+xm3 = scarray.DistributedMatrix.fromfile("xa.dat", [10, 10])
+ym3 = scarray.DistributedMatrix.fromfile("ya.dat", [10, 10])
 
 for i in range(comm.Get_size()):
     comm.Barrier()
@@ -51,7 +51,7 @@ for i in range(comm.Get_size()):
         print
 
 
-xm4 = scarray.LocalMatrix.fromarray(x)
+xm4 = scarray.DistributedMatrix.fromarray(x)
 
 print "xm == ym:", scarray.matrix_equal(xm, ym)
 print "xm == xm2:", scarray.matrix_equal(xm, xm2)

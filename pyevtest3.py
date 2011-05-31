@@ -44,7 +44,7 @@ if len(sys.argv) > 5:
 
 scarray.initmpi(gridsize = [npx, npy], blocksize = [B, B])
 
-A = scarray.LocalMatrix([n, n])
+A = scarray.DistributedMatrix([n, n])
 
 
 

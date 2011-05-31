@@ -22,14 +22,14 @@ def pdsyevd(mat, destroy = True):
     cdef double * work
     cdef double wl
     cdef int * iwork
-    cdef LocalMatrix A, evecs
+    cdef DistributedMatrix A, evecs
 
     cdef int info
     cdef np.ndarray evals
     
     A = mat if destroy else mat.copy()
 
-    evecs = LocalMatrix.empty_like(A)
+    evecs = DistributedMatrix.empty_like(A)
     evals = np.empty(A.Nr, dtype=np.float64)
 
     liwork = 7*A.Nr + 8*A.context.num_cols + 2

@@ -7,7 +7,7 @@ cdef void * np_data(np.ndarray a)
 
     
 
-cdef class LocalVector(object):
+cdef class DistributedVector(object):
 
 
     cdef np.ndarray _local_vector
@@ -27,7 +27,7 @@ cdef class LocalVector(object):
 
 
 
-cdef class LocalMatrix(object):
+cdef class DistributedMatrix(object):
 
     #cdef double * data
 
