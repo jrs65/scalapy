@@ -35,7 +35,9 @@ export OMP_NUM_THREADS=%(nomp)i
 mpirun -np %(numproc)i -npernode %(pernode)i python pyevtest3.py %(gsize)i %(bsize)i %(pside)i &> /scratch/jrs65/scalapack/jobout_%(name)s.log
 """
 
-script = script % { 'nodes':nodes, 'ppn':ppn, 'name':name, 'nomp':nomp, 'numproc': numproc, 'pernode':pernode, 'gsize':gsize, 'bsize': bsize, 'pside':pside}
+script = script % { 'nodes':nodes, 'ppn':ppn, 'name':name, 'nomp':nomp,
+                    'numproc': numproc, 'pernode':pernode, 'gsize':gsize,
+                    'bsize': bsize, 'pside':pside}
 
 scriptname = "jobscript_%s.sh" % name
 
