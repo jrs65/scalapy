@@ -32,7 +32,7 @@ module load gcc/4.4.0 python/2.7.1 intel/intel-v12.0.0.084 openmpi/1.4.3-gcc-v4.
 
 cd /home/jrs65/scalapack/pyscalapack
 export OMP_NUM_THREADS=%(nomp)i
-mpirun -np %(numproc)i -npernode %(pernode)i python pyevtest3.py %(gsize)i %(bsize)i %(pside)i &> /scratch/jrs65/scalapack/jobout_%(name)s.log
+mpirun -np %(numproc)i -npernode %(pernode)i python benchmark.py %(gsize)i %(bsize)i %(pside)i /scratch/jrs65/scalapack/jobtime_%(name)s.dat &> /scratch/jrs65/scalapack/jobout_%(name)s.log
 """
 
 script = script % { 'nodes':nodes, 'ppn':ppn, 'name':name, 'nomp':nomp,

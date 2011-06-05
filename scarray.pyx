@@ -410,7 +410,7 @@ cdef class DistributedVector(object):
             raise Exception("No supplied or default context.")
         self.context = context if context else _context
         
-        self.local_vector = np.empty(self.local_shape(), dtype=np.float64)
+        self.local_vector = np.zeros(self.local_shape(), dtype=np.float64)
 
         self._mkdesc()
 
@@ -624,7 +624,7 @@ cdef class DistributedMatrix(object):
             raise Exception("No supplied or default context.")
         self._context = context if context else _context
 
-        self._local_matrix = np.empty(self.local_shape(), order='F', dtype=np.float64)
+        self._local_matrix = np.zeros(self.local_shape(), order='F', dtype=np.float64)
 
         self._mkdesc()
 
@@ -821,6 +821,20 @@ cdef class DistributedMatrix(object):
             ci = index_array(self.Nc, self.Bc, self.context.col, self.context.num_cols)[np.newaxis,:]
 
         return (ri, ci)
+
+
+    def copy(self):
+        r"""Make a deep copy of the matrix.
+
+        Returns
+        -------
+        c : DistributedMatrix
+            A copy of this DistributedMatrix.
+        """
+        c = DistributedMatrix.empty_like(self)
+        c.local_matrix[:] = self.local_matrix
+
+        return c
 
 
 

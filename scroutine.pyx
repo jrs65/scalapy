@@ -93,7 +93,7 @@ def pdsyevd(mat, destroy = True, upper = True):
 
 
 
-def pdgemm(A, B, C = None, alpha = 1.0, beta = 1.0, transa = False, transb = False, destroyc = True):
+def pdgemm(DistributedMatrix A, DistributedMatrix B, DistributedMatrix C = None, alpha = 1.0, beta = 1.0, transa = False, transb = False, destroyc = True):
     r"""Compute the eigen-decomposition of a symmetric matrix.
 
     Use Scalapack to compute the eigenvalues and eigenvectors of a
@@ -121,6 +121,10 @@ def pdgemm(A, B, C = None, alpha = 1.0, beta = 1.0, transa = False, transb = Fal
     cdef int m, n, k
     cdef DistributedMatrix Cm
     cdef int info
+    cdef double a, b
+
+    a = alpha
+    b = beta
 
     m = A.Nr if not transa else A.Nc
     k = A.Nc if not transa else A.Nr
@@ -140,15 +144,15 @@ def pdgemm(A, B, C = None, alpha = 1.0, beta = 1.0, transa = False, transb = Fal
         Cm = C if destroyc else C.copy()
 
     else:
-        Cm = DistributedMatrix(globalsize = [m, n], blocksize = [A.Br, A.Bc], context = self._context)
+        Cm = DistributedMatrix(globalsize = [m, n], blocksize = [A.Br, A.Bc], context = A._context)
 
     tA = "N" if not transa else "T"
     tB = "N" if not transb else "T"
 
-    pdgemm_(tA, tB, &m, &n, &k, alpha
+    pdgemm_(tA, tB, &m, &n, &k, &a,
             A._data(), &_ONE, &_ONE, A._getdesc(),
             B._data(), &_ONE, &_ONE, B._getdesc(),
-            beta,
+            &b,
             Cm._data(), &_ONE, &_ONE, Cm._getdesc())
 
     return Cm
@@ -195,5 +199,14 @@ def pdpotrf(mat, destroy = True, upper = True):
     elif info > 0:
         raise Exception("Matrix is not positive definite.")
 
+    ## Zero other triangle
+    # by default scalapack doesn't touch the other triangle
+    # (determined by upper arg). We explicitly zero it here.
+    ri, ci = A.indices()
+    if upper:
+        A.local_matrix[np.where(ci - ri < 0)] = 0.0
+    else:
+        A.local_matrix[np.where(ci - ri > 0)] = 0.0
+        
     return A
 
