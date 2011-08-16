@@ -22,12 +22,21 @@ def runcommand(cmd):
     return c[0]
 
 
-mpilinkargs = runcommand('mpicc -showme:link').split()
-mpicompileargs = runcommand('mpicc -showme:compile').split()
+#mpilinkargs = runcommand('mpicc -showme:link').split()
+#mpicompileargs = runcommand('mpicc -showme:compile').split()
 
 
-scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_openmpi_lp64', 'iomp5', 'pthread']
+intelargs=' -ldl -ldl -ldl -ldl -I/scinet/gpc/intel/impi/4.0.0.027//intel64/include -L/scinet/gpc/intel/impi/4.0.0.027//intel64/lib -L/scinet/gpc/intel/impi/4.0.0.027//intel64/lib -Xlinker --enable-new-dtags -Xlinker -rpath -Xlinker /scinet/gpc/intel/impi/4.0.0.027//intel64/lib -Xlinker -rpath -Xlinker /opt/intel/mpi-rt/4.0.0 -lmpi -lmpigf -lmpigi -lpthread -lpthread -lpthread -lpthread -lrt'.split()
+
+mpilinkargs=intelargs
+mpicompileargs=intelargs
+
+#scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_openmpi_lp64', 'iomp5', 'pthread']
+#scl_libdir = ['$(MKLROOT)/lib/intel64']
+
+scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_intelmpi_lp64', 'iomp5', 'pthread']
 scl_libdir = ['$(MKLROOT)/lib/intel64']
+
 
 import numpy as np
 
