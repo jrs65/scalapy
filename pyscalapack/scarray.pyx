@@ -334,17 +334,17 @@ def ensure_filelength(fname, length):
     # I've no idea why umask is not being set correctly.
     fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)
     if fd == -1:
-        raise Exception("Error opening file: %s" % fname)
+        raise IOError("Error opening file: %s" % fname)
 
     res = posix_fallocate(fd, 0, <size_t>length)
     close(fd)
     
     if res != 0:
-        raise Exception("Allocating file %s length %i bytes failed." % (fname, length))
+        raise IOError("Allocating file %s length %i bytes failed." % (fname, length))
 
     st = os.stat(fname)
     if st.st_size < length:
-        raise Exception("Allocating file %s length %i bytes failed in some odd way.")
+        raise IOError("Allocating file %s length %i bytes failed in some odd way.")
     
 
     
@@ -865,3 +865,4 @@ def matrix_equal(A, B):
     MPI.COMM_WORLD.Allgather([t, MPI.BYTE], [tv, MPI.BYTE])
 
     return tv.astype(np.bool).all()
+
