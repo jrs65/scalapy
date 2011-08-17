@@ -1,16 +1,11 @@
 from distutils.core import setup
 import distutils.ccompiler
-#from distutils.extension import Extension  
 from Cython.Distutils import extension  
 from Cython.Distutils import build_ext  
 
 import subprocess
 import os
-
-## Remove CC variable which Intel compiler modulefiles keep setting
-## as we must use the compiler that compiled python.
-if 'CC' in os.environ:
-    del os.environ['CC']
+import numpy as np
 
 def runcommand(cmd):
     process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE)    
@@ -22,26 +17,53 @@ def runcommand(cmd):
     return c[0]
 
 
-#mpilinkargs = runcommand('mpicc -showme:link').split()
-#mpicompileargs = runcommand('mpicc -showme:compile').split()
 
 
-intelargs=' -ldl -ldl -ldl -ldl -I/scinet/gpc/intel/impi/4.0.0.027//intel64/include -L/scinet/gpc/intel/impi/4.0.0.027//intel64/lib -L/scinet/gpc/intel/impi/4.0.0.027//intel64/lib -Xlinker --enable-new-dtags -Xlinker -rpath -Xlinker /scinet/gpc/intel/impi/4.0.0.027//intel64/lib -Xlinker -rpath -Xlinker /opt/intel/mpi-rt/4.0.0 -lmpi -lmpigf -lmpigi -lpthread -lpthread -lpthread -lpthread -lrt'.split()
+################# Configuration options to tweak. #########################
 
-mpilinkargs=intelargs
-mpicompileargs=intelargs
+# Which mpi version? Should be either 'intelmpi' or 'openmpi'.
+mpiversion = 'intelmpi'
 
-#scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_openmpi_lp64', 'iomp5', 'pthread']
-#scl_libdir = ['$(MKLROOT)/lib/intel64']
+# Which ScaLapack version to use? Only 'intel' is supported at the moment.
+scalapackversion = 'intel'
 
-scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_intelmpi_lp64', 'iomp5', 'pthread']
-scl_libdir = ['$(MKLROOT)/lib/intel64']
+############################################################################
 
 
-import numpy as np
+
+
+
+
+## Remove CC variable which Intel compiler modulefiles keep setting
+## as we must use the compiler that compiled python.
+if 'CC' in os.environ:
+    del os.environ['CC']
+
+
+if mpiversion == 'intelmpi':
+    # Fetch command line, convert to a list, and remove the first item (the command).
+    intelargs =  runcommand('mpicc -show').split()[1:]  
+    mpilinkargs=intelargs
+    mpicompileargs=intelargs
+elif mpiversion == 'openmpi':
+    # Fetch the arguments for linking and compiling.
+    mpilinkargs = runcommand('mpicc -showme:link').split()
+    mpicompileargs = runcommand('mpicc -showme:compile').split()
+else:
+    raise Exception("MPI library unsupported. Please modify setup.py manually.")
+
+
+if scalapackversion == 'intel':
+    # Set library includes (taking into account which MPI library we are using)."
+    scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_'+mpiversion+'_lp64', 'iomp5', 'pthread']
+    scl_libdir = ['$(MKLROOT)/lib/intel64']
+    
+else:
+    raise Exception("Scalapack distribution unsupported. Please modify setup.py manually.")
+
 
 setup(  
-    name = 'PyScalapack',  
+    name = 'PyScalapack',
     ext_modules=[ extension.Extension('scarray', ['scarray.pyx', 'bcutil.c'],
                                       include_dirs=[np.get_include()],
                                       library_dirs=scl_libdir,
@@ -56,7 +78,6 @@ setup(
                                       extra_compile_args = (['-fopenmp'] + mpicompileargs),
                                       extra_link_args = (['-fopenmp'] + mpilinkargs)
                                       )
-                  ],  
-    cmdclass = {'build_ext': build_ext}  
-    )
+                ],  
+    cmdclass = {'build_ext': build_ext} )
 
