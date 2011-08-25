@@ -23,7 +23,7 @@ To build just go into ``pyscalapack/`` and run the ::
 
 and then point your python path at the root directory. You may need to modify setup.py to change the MPI or Scalapack version.
 
-Building this is a little bit of an art, as Cython forces the use of the compiler that built python itself (when linking). This mean mpicc cannot simply be used, and we need to manually fetch the flags required for building with MPI. This is likely to be the source of any difficulties building.
+Building this is a little bit of an art, as Cython forces the use of the compiler that built python itself (when linking). This mean ``mpicc`` cannot simply be used, and we need to manually fetch the flags required for building with MPI. This is likely to be the source of any difficulties building.
 
 
 
