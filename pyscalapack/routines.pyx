@@ -8,7 +8,7 @@ from libc.stdlib cimport malloc, free
 
 from scalapack cimport *
 
-from scarray cimport *
+from pyscalapack.core cimport *
 #from scarray import *
 
 
@@ -50,6 +50,9 @@ def pdsyevd(mat, destroy = True, upper = True):
     cdef int info
     cdef np.ndarray evals
 
+    if mat.dtype != np.float64:
+        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(mat.dtype), repr(np.float64)))
+
     if mat.Nr != mat.Nc:
         raise Exception("Matrix must be square eigen-decomposition.")
     
@@ -66,9 +69,9 @@ def pdsyevd(mat, destroy = True, upper = True):
     ## Workspace size inquiry
     lwork = -1
     pdsyevd_("V", uplo, &(A.Nr),
-             A._data(), &_ONE, &_ONE, A._getdesc(),
+             <double *>A._data(), &_ONE, &_ONE, A._getdesc(),
              <double *>np_data(evals),
-             evecs._data(), &_ONE, &_ONE, evecs._getdesc(),
+             <double *>evecs._data(), &_ONE, &_ONE, evecs._getdesc(),
              &wl, &lwork, iwork, &liwork,
              &info);
     
@@ -78,9 +81,9 @@ def pdsyevd(mat, destroy = True, upper = True):
 
     ## Compute eigen problem
     pdsyevd_("V", uplo, &(A.Nr),
-             A._data(), &_ONE, &_ONE, A._getdesc(),
+             <double *>A._data(), &_ONE, &_ONE, A._getdesc(),
              <double *>np_data(evals),
-             evecs._data(), &_ONE, &_ONE, evecs._getdesc(),
+             <double *>evecs._data(), &_ONE, &_ONE, evecs._getdesc(),
              work, &lwork, iwork, &liwork,
              &info);
 
@@ -123,6 +126,15 @@ def pdgemm(DistributedMatrix A, DistributedMatrix B, DistributedMatrix C = None,
     cdef int info
     cdef double a, b
 
+    if A.dtype != np.float64:
+        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(A.dtype), repr(np.float64)))
+
+    if B.dtype != np.float64:
+        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(A.dtype), repr(np.float64)))
+
+    if C.dtype != np.float64:
+        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(A.dtype), repr(np.float64)))
+    
     a = alpha
     b = beta
 
@@ -144,16 +156,16 @@ def pdgemm(DistributedMatrix A, DistributedMatrix B, DistributedMatrix C = None,
         Cm = C if destroyc else C.copy()
 
     else:
-        Cm = DistributedMatrix(globalsize = [m, n], blocksize = [A.Br, A.Bc], context = A._context)
+        Cm = DistributedMatrix(globalsize = [m, n], dtype=A.dtype, blocksize = [A.Br, A.Bc], context = A._context)
 
     tA = "N" if not transa else "T"
     tB = "N" if not transb else "T"
 
     pdgemm_(tA, tB, &m, &n, &k, &a,
-            A._data(), &_ONE, &_ONE, A._getdesc(),
-            B._data(), &_ONE, &_ONE, B._getdesc(),
+            <double *>A._data(), &_ONE, &_ONE, A._getdesc(),
+            <double *>B._data(), &_ONE, &_ONE, B._getdesc(),
             &b,
-            Cm._data(), &_ONE, &_ONE, Cm._getdesc())
+            <double *>Cm._data(), &_ONE, &_ONE, Cm._getdesc())
 
     return Cm
 
@@ -183,6 +195,9 @@ def pdpotrf(mat, destroy = True, upper = True):
 
     cdef int info
 
+    if mat.dtype != np.float64:
+        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(mat.dtype), repr(np.float64)))
+                            
     if mat.Nr != mat.Nc:
         raise Exception("Matrix must be square for Cholesky")
     
@@ -191,7 +206,7 @@ def pdpotrf(mat, destroy = True, upper = True):
     uplo = "U" if upper else "L"
     
     pdpotrf_(uplo, &(A.Nr),
-             A._data(), &_ONE, &_ONE, A._getdesc(),
+             <double *>A._data(), &_ONE, &_ONE, A._getdesc(),
              &info)
 
     if info < 0:
@@ -204,9 +219,9 @@ def pdpotrf(mat, destroy = True, upper = True):
     # (determined by upper arg). We explicitly zero it here.
     ri, ci = A.indices()
     if upper:
-        A.local_matrix[np.where(ci - ri < 0)] = 0.0
+        A.local_array[np.where(ci - ri < 0)] = 0.0
     else:
-        A.local_matrix[np.where(ci - ri > 0)] = 0.0
+        A.local_array[np.where(ci - ri > 0)] = 0.0
         
     return A
 

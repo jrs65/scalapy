@@ -1,6 +1,5 @@
-
-import scarray
-import scroutine
+import pyscalapack as pysc
+import pyscalapack.routines as scrt
 
 import numpy as np
 
@@ -42,9 +41,9 @@ if len(sys.argv) > 5:
     os.environ['OMP_NUM_THREADS'] = int(sys.argv[5])
 
 
-scarray.initmpi(gridsize = [npx, npy], blocksize = [B, B])
+pysc.initmpi(gridsize = [npx, npy], blocksize = [B, B])
 
-A = scarray.DistributedMatrix([n, n])
+A = pysc.DistributedMatrix([n, n], dtype=np.float64)
 
 
 
@@ -74,8 +73,8 @@ da = np.abs(ri-ci)
 na = n - da
 da = np.where(da < na, da, na)
 
-A.local_matrix[:,:] = f(da)
-#A.local_matrix[:,:] = np.random.standard_normal(A.local_shape())
+A.local_array[:,:] = f(da)
+#A.local_array[:,:] = np.random.standard_normal(A.local_shape())
 
 comm.Barrier()
 
@@ -85,7 +84,7 @@ if comm.Get_rank() == 0:
     st = time.time()
     print "Starting eigenvalue solve..."
 
-evals1, evecs1 = scroutine.pdsyevd(A)
+evals1, evecs1 = scrt.pdsyevd(A)
 
 comm.Barrier()
 
