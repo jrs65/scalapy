@@ -64,15 +64,15 @@ else:
 
 setup(  
     name = 'PyScalapack',
-    ext_modules=[ extension.Extension('scarray', ['scarray.pyx', 'bcutil.c'],
-                                      include_dirs=[np.get_include(), '.'],
+    ext_modules=[ extension.Extension('core', ['core.pyx', 'bcutil.c'],
+                                      include_dirs=['.', np.get_include()],
                                       library_dirs=scl_libdir,
                                       libraries=scl_lib,
                                       extra_compile_args = (['-openmp'] + mpicompileargs),
                                       extra_link_args = (['-openmp'] + mpilinkargs)
                                       ),
-                  extension.Extension('scroutine', ['scroutine.pyx'],
-                                      include_dirs=[np.get_include(), '.'],
+                  extension.Extension('routines', ['routines.pyx'],
+                                      include_dirs=['.', np.get_include()],
                                       library_dirs=scl_libdir,
                                       libraries=scl_lib,
                                       extra_compile_args = (['-openmp'] + mpicompileargs),

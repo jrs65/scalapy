@@ -1,14 +1,13 @@
 import os
 import os.path
 import sys
+
 import numpy as np
 cimport numpy as np
-import sys
 
 from mpi4py import MPI
 
 
-#ctypedef unsigned long size_t
 from libc.stddef cimport size_t
 from libc.stdlib cimport malloc, free
 
@@ -74,10 +73,8 @@ def initmpi(gridsize = None, blocksize = None):
     ct = ProcessContext()
     ct.mpi_rank = comm.Get_rank()
     ct.mpi_size = comm.Get_size()
-    #print "MPI: %i of %i" % (ct.mpi_rank, ct.mpi_size)
     
     Cblacs_pinfo(&pnum, &nprocs)
-    #print "BLACS pinfo %i %i" % (pnum, nprocs)
 
     ## Figure out what to do when we have spare MPI procs
     if not gridsize:
@@ -94,7 +91,6 @@ def initmpi(gridsize = None, blocksize = None):
     # Initialise BLACS process grid
     Cblacs_get(-1, 0, &ictxt)
     ct.blacs_context = ictxt
-    #print "BLACS context: %i" % ictxt
     
     Cblacs_gridinit(&ictxt, "Row", gridsize[0], gridsize[1])
     Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
@@ -105,7 +101,6 @@ def initmpi(gridsize = None, blocksize = None):
 
     ct.row = row
     ct.col = col
-    #print "MPI %i: position (%i,%i) in %i x %i" % (ct.mpi_rank, ct.row, ct.col, ct.num_rows, ct.num_cols)
 
     _context = ct
 
@@ -143,37 +138,6 @@ class ProcessContext(object):
     blacs_context = 0
 
 
-def vector_pagealign(vec, blocksize):
-    r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
-
-    Parameters
-    ==========
-    vec : ndarray
-        The vector to page align (can either by C or Fortran ordered).
-    blocksize : scalar
-        The blocksize of the vector.
-
-    Returns
-    =======
-    v2 : ndarray
-        The page aligned vector.
-    """
-    cdef np.ndarray[np.float64_t, ndim=1] v1
-    cdef np.ndarray[np.float64_t, ndim=1] v2
-
-    v1 = np.ascontiguousarray(vec)
-
-    N = vec.shape[0]
-    B = blocksize
-
-    nr = num_rpage(N, B)
-
-    v2 = np.empty(nr, order='F')
-
-    bc1d_copy_pagealign(<double *>v1.data, <double *>v2.data, N, B)
-
-    return v2
-
 
 def matrix_pagealign(mat, blocksize):
     r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
@@ -191,56 +155,22 @@ def matrix_pagealign(mat, blocksize):
     m2 : ndarray
         The page aligned matrix.
     """
-    cdef np.ndarray[np.float64_t, ndim=2] m1
-    cdef np.ndarray[np.float64_t, ndim=2] m2
+    #cdef np.ndarray[np.float64_t, ndim=2] m1
+    #cdef np.ndarray[np.float64_t, ndim=2] m2
 
     m1 = np.asfortranarray(mat)
 
     Nr, Nc = mat.shape
     Br, Bc = blocksize
 
-    nr = num_rpage(Nr, Br)
+    nr = num_rpage(Nr, Br, mat.dtype.itemsize)
 
     m2 = np.empty((nr, Nc), order='F')
 
-    bc2d_copy_pagealign(<double *>m1.data, <double *>m2.data, Nr, Nc, Br, Bc)
+    bc2d_copy_pagealign(np_data(m1), np_data(m2), mat.dtype.itemsize, Nr, Nc, Br, Bc)
 
     return m2
 
-
-def vector_from_pagealign(vecp, size, blocksize):
-    r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
-
-    Parameters
-    ==========
-    vecp : ndarray
-        The vector to page align (can either by C or Fortran ordered).
-    blocksize : scalar
-        The blocksize of the vector.
-
-    Returns
-    =======
-    v2 : ndarray
-        The page aligned vector.
-    """
-    cdef np.ndarray[np.float64_t, ndim=1] v1
-    cdef np.ndarray[np.float64_t, ndim=1] v2
-
-    v1 = vecp
-
-    N = size
-    B = blocksize
-
-    nr = num_rpage(N, B)
-
-    if len(v1) < nr:
-        raise Exception("Source vector not long enough.")
-
-    v2 = np.empty(N, order='F')
-
-    bc1d_from_pagealign(<double *>v1.data, <double *>v2.data, N, B)
-
-    return v2
 
 
 def matrix_from_pagealign(matp, size, blocksize):
@@ -259,8 +189,8 @@ def matrix_from_pagealign(matp, size, blocksize):
     m2 : ndarray
         The page aligned matrix.
     """
-    cdef np.ndarray[np.float64_t, ndim=1] m1
-    cdef np.ndarray[np.float64_t, ndim=2] m2
+    #cdef np.ndarray[np.float64_t, ndim=1] m1
+    #cdef np.ndarray[np.float64_t, ndim=2] m2
 
     #m1 = matp.flatten()
     m1 = matp.reshape(-1, order='A')
@@ -268,14 +198,14 @@ def matrix_from_pagealign(matp, size, blocksize):
     Nr, Nc = size
     Br, Bc = blocksize
 
-    nr = num_rpage(Nr, Br)
+    nr = num_rpage(Nr, Br, matp.dtype.itemsize)
 
     if np.size(m1) < nr*Nc:
         raise Exception("Source matrix not long enough. Is %i x %i, should be %i x %i." % (matp.shape[0], matp.shape[1], nr, Nc))
 
     m2 = np.empty((Nr, Nc), order='F')
 
-    bc2d_from_pagealign(<double *>m1.data, <double *>m2.data, Nr, Nc, Br, Bc)
+    bc2d_from_pagealign(np_data(m1), np_data(m2), matp.dtype.itemsize, Nr, Nc, Br, Bc)
 
     return m2
 
@@ -311,8 +241,8 @@ def index_array(N, B, p, P):
 
 
 
-cdef void * np_data(np.ndarray a):
-    return a.data
+cdef char * np_data(np.ndarray a):
+    return <char *>a.data
 
 
 
@@ -349,215 +279,6 @@ def ensure_filelength(fname, length):
 
     
 
-cdef class DistributedVector(object):
-    r"""A vector distributed over multiple MPI processes.
-
-    Attributes
-    ----------
-    N : integer, readonly
-        The global vector length
-    B : integer, readonly
-        The block length
-    
-    """
-
-    property local_vector:
-        r"""The local, block-cyclic packed segment of the vector.
-        
-        This is an ndarray and is readonly. However, only the
-        reference is readonly, the array itself can be modified in
-        place.
-        """
-        def __get__(self):
-            return self._local_vector
-        
-    property desc:
-        r"""The Scalapack array descriptor. See [1]_. Returned as an integer
-        ndarray and is readonly.
-        
-        .. [1] http://www.netlib.org/scalapack/slug/node77.html
-        """
-        def __get__(self):
-            return self._desc.copy()
-    
-    property context:
-        r"""The ProcessContext of this vector."""
-        
-        def __get__(self):
-            return self._context
-
-    def __init__(self, globalsize, blocksize = None, context = None):
-        r"""Initialise an empty DistributedVector.
-
-        Parameters
-        ----------
-        globalsize : integer
-            The size of the global vector.
-        blocksize: integer, optional
-            The blocking size. If `None` uses the default row blocking
-            (set via `initmpi`).
-        context : ProcessContext, optional
-            The process context. If not set uses the default (recommended). 
-        """
-        self.N = globalsize
-
-        if not _blocksize and not blocksize:
-            raise Exception("No supplied or default blocksize.")
-
-        self.B = blocksize if blocksize else _blocksize[0]
-        
-        if not context and  not _context:
-            raise Exception("No supplied or default context.")
-        self.context = context if context else _context
-        
-        self.local_vector = np.zeros(self.local_shape(), dtype=np.float64)
-
-        self._mkdesc()
-
-    def _mkdesc(self):
-        ## Fill out the Scalapack array descriptor
-        self._desc = np.zeros(9, dtype=np.int32)
-
-        self._desc[0] = 1 # Dense matrix
-        self._desc[1] = self.context.blacs_context
-        self._desc[2] = self.N
-        self._desc[3] = 1
-        self._desc[4] = self.B
-        self._desc[5] = 1
-        self._desc[6] = 0
-        self._desc[7] = 0
-        self._desc[8] = self.local_shape()
-    
-    @classmethod
-    def empty_like(cls, vec):
-        r"""Create a DistributedVector, with the same shape and
-        blocking as `vec`.
-
-        Parameters
-        ----------
-        vec : DistributedVector
-            The vector to copy.
-
-        Returns
-        -------
-        cvec : DistributedVector
-        """
-        return cls(vec.N, vec.B)
-        
-    def local_shape(self):
-        r"""The length of the local vector segment.
-
-        Returns
-        -------
-        nr : integer
-        """
-        nr = numrc(self.Nr, self.Br, self.context.row, 0, self.context.num_rows)
-        return nr
-    
-    cdef int * _getdesc(self):
-        return <int *>self._desc.data
-    
-    cdef double * _data(self):
-         return <double *>self._local_vector.data
-     
-    def _loadfile(self, file):
-        ## Use mmap to load the file.
-        bc1d_mmap_load(file, <double *>self._data(), self.N, self.B,
-                       self.context.num_rows, self.context.row)
-        
-    def _loadarray(self, array):
-        bc1d_copy_forward(<double *>np_data(array), <double *>self._data(), self.N, self.B, 
-                          self.context.num_rows, self.context.row)
-        
-    @classmethod
-    def fromfile(cls, file, globalsize, blocksize = None):
-        
-        r"""Create a DistributedVector from a file representing the
-        global vector.
-
-        As the file is read in via mmap, the individual blocks must be
-        page aligned.
-
-        Parameters
-        ----------
-        globalsize : integer
-            The size of the global vector.
-        blocksize: integer, optional
-            The blocking size. If `None` uses the default row blocking
-            (set via `initmpi`).
-        context : ProcessContext, optional
-            The process context. If not set uses the default (recommended).
-
-        Returns
-        -------
-        dv : DistributedVector
-        """
-        
-        v = cls(globalsize, blocksize)
-        
-        if os.path.exists(file):
-            v._loadfile(file)
-
-        return v
-
-    @classmethod
-    def fromarray(cls, array, blocksize = None):
-
-        r"""Create a DistributedVector directly from the global `array`.
-
-        As the file is read in via mmap, the individual blocks must be
-        page aligned.
-
-        Parameters
-        ----------
-        array : ndarray
-            The global array to extract the local segments of.
-        blocksize: integer, optional
-            The blocking size. If `None` uses the default row blocking
-            (set via `initmpi`).
-
-        Returns
-        -------
-        dv : DistributedVector
-        """
-        if array.ndim != 1:
-            raise Exception("Array must be 2d.")
-
-        v = cls(array.shape, blocksize)
-        
-        ac = np.asfortranarray(array)
-        v._loadarray(ac)
-
-        return v
-
-    
-    def tofile(self, fname):
-        r"""Save the distributed vector out to a file.
-
-        This use mmap to write out the local sections of the global
-        matrix. The file will have the global matrix in the canonical
-        order, though each block will be page aligned.
-
-        In order to avoid a race condition, only the rank-0 MPI
-        process will check for the existence of the file, and ensure
-        it is long enough to save the vector to.
-        
-        Parameters
-        ----------
-        fname : string
-            Name of the file to write into.
-        """
-        if self.context.mpi_rank == 0:
-            length = num_rpage(self.N, self.B) * sizeof(double)
-
-        ensure_filelength(fname, length)
-        
-        MPI.COMM_WORLD.barrier()
-
-        bc1d_mmap_save(fname, <double *>self._data(), self.N, self.B,
-                       self.context.num_rows, self.context.row) 
-
-
 
 
 
@@ -576,7 +297,7 @@ cdef class DistributedMatrix(object):
     
     """
 
-    property local_matrix:
+    property local_array:
         r"""The local, block-cyclic packed segment of the matrix.
 
         This is an ndarray and is readonly. However, only the
@@ -584,7 +305,7 @@ cdef class DistributedMatrix(object):
         place.
         """
         def __get__(self):
-            return self._local_matrix
+            return self._local_array
 
     
     property desc:
@@ -596,24 +317,45 @@ cdef class DistributedMatrix(object):
         def __get__(self):
             return self._desc.copy()
 
+
     property context:
         r"""The ProcessContext of this matrix."""
         def __get__(self):
             return self._context
 
-    def __init__(self, globalsize, blocksize = None, context = None):
+
+    property dtype:
+        r"""The datatype of this matrix."""
+        def __get__(self):
+            return self._dtype
+
+
+    def __init__(self, globalsize, dtype = np.float64, blocksize = None, context = None):
         r"""Initialise an empty DistributedMatrix.
 
         Parameters
         ----------
         globalsize : list of integers
             The size of the global matrix eg. [Nr, Nc].
+        dtype : np.dtype, optional
+            The datatype of the array. Only `float32`, `float64` (default) and
+            `complex128` are supported by Scalapack.
         blocksize: list of integers, optional
             The blocking size, packed as [Br, Bc]. If `None` uses the default blocking
             (set via `initmpi`).
         context : ProcessContext, optional
             The process context. If not set uses the default (recommended). 
         """
+
+        ## Check and set data type
+        dtypes = [np.float32, np.float64, np.complex128]
+
+        if dtype not in dtypes:
+            raise Exception("Requested dtype not supported by Scalapack.")
+
+        self._dtype = np.dtype(dtype)
+
+        ## Check and set globalsize, and blocksize
         self.Nr, self.Nc = globalsize
         if not _blocksize and not blocksize:
             raise Exception("No supplied or default blocksize.")
@@ -624,14 +366,13 @@ cdef class DistributedMatrix(object):
             raise Exception("No supplied or default context.")
         self._context = context if context else _context
 
-        self._local_matrix = np.zeros(self.local_shape(), order='F', dtype=np.float64)
+        self._local_array = np.zeros(self.local_shape(), order='F', dtype=dtype)
 
         self._mkdesc()
 
-
         
     @classmethod
-    def fromfile(cls, file, globalsize, blocksize = None):
+    def fromfile(cls, file, globalsize, dtype, blocksize = None):
         r"""Create a DistributedMatrix from a file representing the
         global matrix.
 
@@ -640,8 +381,13 @@ cdef class DistributedMatrix(object):
 
         Parameters
         ----------
+        file : string
+            Name of file to read.
         globalsize : list of integers
             The size of the global matrix, as [Nr, Nc].
+        dtype : np.dtype
+            The datatype of the array. Only `float32`, `float64` and
+            `complex128` are supported by Scalapack.
         blocksize: list of integers, optional
             The blocking size as [Br, Bc]. If `None` uses the default blocking
             (set via `initmpi`).
@@ -650,22 +396,20 @@ cdef class DistributedMatrix(object):
 
         Returns
         -------
-        dm : DsitributedMatrix
+        dm : DistributedMatrix
         """
-        m = cls(globalsize, blocksize)
+        m = cls(globalsize, blocksize=blocksize, dtype=dtype)
         
         if os.path.exists(file):
             m._loadfile(file)
 
         return m
 
+
     @classmethod
     def fromarray(cls, array, blocksize = None):
 
         r"""Create a DistributedMatrix directly from the global `array`.
-
-        As the file is read in via mmap, the individual blocks must be
-        page aligned.
 
         Parameters
         ----------
@@ -682,13 +426,12 @@ cdef class DistributedMatrix(object):
         if array.ndim != 2:
             raise Exception("Array must be 2d.")
 
-        m = cls(array.shape, blocksize)
+        m = cls(array.shape, blocksize=blocksize, dtype=array.dtype)
         
         ac = np.asfortranarray(array)
         m._loadarray(ac)
 
         return m
-
 
 
     @classmethod
@@ -705,7 +448,7 @@ cdef class DistributedMatrix(object):
         -------
         cmat : DistributedMatrix
         """
-        return cls([mat.Nr, mat.Nc], [mat.Br, mat.Bc])
+        return cls([mat.Nr, mat.Nc], blocksize=[mat.Br, mat.Bc], dtype=mat.dtype, context=mat.context)
         
 
     def local_shape(self):
@@ -735,23 +478,30 @@ cdef class DistributedMatrix(object):
         self._desc[7] = 0
         self._desc[8] = self.local_shape()[0]
 
+
     cdef int * _getdesc(self):
         return <int *>self._desc.data
 
 
-    cdef double * _data(self):
-         return <double *>self._local_matrix.data
+    cdef char * _data(self):
+         return <char *>self._local_array.data
 
 
     def _loadfile(self, file):
-        bc2d_mmap_load(file, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+        bc2d_mmap_load(file, self._data(), self.dtype.itemsize, self.Nr, self.Nc, self.Br, self.Bc, 
                        self.context.num_rows, self.context.num_cols, 
                        self.context.row, self.context.col)
 
+
     def _loadarray(self, array):
-        bc2d_copy_forward(<double *>np_data(array), <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
-                          self.context.num_rows, self.context.num_cols, 
+        if array.dtype != self.dtype:
+            raise Exception("Incompatible data types.")
+        
+        bc2d_copy_forward(<char *>np_data(array), <char *>self._data(),
+                          self.dtype.itemsize, self.Nr, self.Nc, self.Br, self.Bc,
+                          self.context.num_rows, self.context.num_cols,
                           self.context.row, self.context.col)
+
 
     def tofile(self, fname):
         r"""Save the distributed matrix out to a file.
@@ -771,14 +521,16 @@ cdef class DistributedMatrix(object):
         """
          
         if self.context.mpi_rank == 0:
-            length = num_rpage(self.Nr, self.Br) * self.Nc * sizeof(double)
+            length = num_rpage(self.Nr, self.Br, self.dtype.itemsize) * self.Nc * self.dtype.itemsize
             ensure_filelength(fname, length)
 
         MPI.COMM_WORLD.barrier()
 
-        bc2d_mmap_save(fname, <double *>self._data(), self.Nr, self.Nc, self.Br, self.Bc, 
+        bc2d_mmap_save(fname, <char *>self._data(), self.dtype.itemsize,
+                       self.Nr, self.Nc, self.Br, self.Bc, 
                        self.context.num_rows, self.context.num_cols, 
                        self.context.row, self.context.col)
+
 
     def indices(self, full=False):
         r"""The indices of the elements stored in the local matrix.
@@ -807,7 +559,7 @@ cdef class DistributedMatrix(object):
 
         >>> dm = DistributedMatrix(100, 100)
         >>> rows, cols = dm.indices()
-        >>> dm.local_matrix[:] = rows + cols
+        >>> dm.local_array[:] = rows + cols
 
         """
 
@@ -832,7 +584,7 @@ cdef class DistributedMatrix(object):
             A copy of this DistributedMatrix.
         """
         c = DistributedMatrix.empty_like(self)
-        c.local_matrix[:] = self.local_matrix
+        c.local_array[:] = self.local_array
 
         return c
 
@@ -858,7 +610,7 @@ def matrix_equal(A, B):
     if not np.array_equal(A.desc, B.desc):
         raise Exception("Matrices must be the same size, and equally distributed, for comparison.")
 
-    t = np.array(np.array_equal(A.local_matrix, B.local_matrix), dtype=np.uint8)
+    t = np.array(np.array_equal(A.local_array, B.local_array), dtype=np.uint8)
 
     tv = np.zeros(A.context.mpi_size, dtype=np.uint8)
 

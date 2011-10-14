@@ -4,9 +4,10 @@
 
 PyScalapack, as the name implies, is a wrapping of Scalapack such that it can be called by Python in a friendly manner.
 
-Operations are performed on ``DistributedMatrix`` and ``DistributedVector`` objects which can be easily created whilst hiding all the nasty details of block cyclic distribution.
+Operations are performed on ``DistributedMatrix`` objects which can be easily created whilst hiding all the nasty details of block cyclic distribution.
 
-Currently this package is limited to double precision. Removing this restriction is on the cards.
+The core of this package supports different precisions, though at the moment the
+few routines wrapped are all double precisions.
 
 
 Dependencies
