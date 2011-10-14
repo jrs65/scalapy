@@ -22,7 +22,7 @@ def runcommand(cmd):
 ################# Configuration options to tweak. #########################
 
 # Which mpi version? Should be either 'intelmpi' or 'openmpi'.
-mpiversion = 'intelmpi'
+mpiversion = 'openmpi'
 
 # Which ScaLapack version to use? Only 'intel' is supported at the moment.
 scalapackversion = 'intel'
@@ -56,7 +56,7 @@ else:
 if scalapackversion == 'intel':
     # Set library includes (taking into account which MPI library we are using)."
     scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_'+mpiversion+'_lp64', 'iomp5', 'pthread']
-    scl_libdir = ['$(MKLROOT)/lib/intel64']
+    scl_libdir = [os.environ['MKLROOT']+'/lib/intel64' if 'MKLROOT' in os.environ else '']
     
 else:
     raise Exception("Scalapack distribution unsupported. Please modify setup.py manually.")
@@ -65,18 +65,18 @@ else:
 setup(  
     name = 'PyScalapack',
     ext_modules=[ extension.Extension('scarray', ['scarray.pyx', 'bcutil.c'],
-                                      include_dirs=[np.get_include()],
+                                      include_dirs=[np.get_include(), '.'],
                                       library_dirs=scl_libdir,
                                       libraries=scl_lib,
-                                      extra_compile_args = (['-fopenmp'] + mpicompileargs),
-                                      extra_link_args = (['-fopenmp'] + mpilinkargs)
+                                      extra_compile_args = (['-openmp'] + mpicompileargs),
+                                      extra_link_args = (['-openmp'] + mpilinkargs)
                                       ),
                   extension.Extension('scroutine', ['scroutine.pyx'],
-                                      include_dirs=[np.get_include()],
+                                      include_dirs=[np.get_include(), '.'],
                                       library_dirs=scl_libdir,
                                       libraries=scl_lib,
-                                      extra_compile_args = (['-fopenmp'] + mpicompileargs),
-                                      extra_link_args = (['-fopenmp'] + mpilinkargs)
+                                      extra_compile_args = (['-openmp'] + mpicompileargs),
+                                      extra_link_args = (['-openmp'] + mpilinkargs)
                                       )
                 ],  
     cmdclass = {'build_ext': build_ext} )
