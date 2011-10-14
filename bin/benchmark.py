@@ -1,6 +1,6 @@
 
-import scarray
-import scroutine
+from pyscalapack import core as pscore
+from pyscalapack import routines as psroutine
 
 import numpy as np
 
@@ -42,9 +42,9 @@ bfile = sys.argv[6]
 
 os.environ['OMP_NUM_THREADS'] = repr(nthread)
 
-scarray.initmpi(gridsize = [npx, npy], blocksize = [B, B])
+pscore.initmpi(gridsize = [npx, npy], blocksize = [B, B])
 
-A = scarray.DistributedMatrix([n, n])
+A = pscore.DistributedMatrix([n, n])
 
 
 
@@ -74,8 +74,8 @@ da = np.abs(ri-ci)
 na = n - da
 da = np.where(da < na, da, na)
 
-A.local_matrix[:,:] = f(da)
-#A.local_matrix[:,:] = np.random.standard_normal(A.local_shape())
+A.local_array[:,:] = f(da)
+#A.local_array[:,:] = np.random.standard_normal(A.local_shape())
 
 comm.Barrier()
 
@@ -85,7 +85,7 @@ if comm.Get_rank() == 0:
     st = time.time()
     print "Starting eigenvalue solve..."
 
-evals1, evecs1 = scroutine.pdsyevd(A, destroy = False)
+evals1, evecs1 = psroutine.pdsyevd(A, destroy = False)
 
 comm.Barrier()
 
@@ -101,7 +101,7 @@ if comm.Get_rank() == 0:
     st = time.time()
     print "Starting Cholesky..."
 
-U = scroutine.pdpotrf(A, destroy = False)
+U = psroutine.pdpotrf(A, destroy = False)
 
 comm.Barrier()
 
@@ -115,7 +115,7 @@ if comm.Get_rank() == 0:
     print "Starting matrix multiply..."
 
 
-A2 = scroutine.pdgemm(U, U, transa = True)
+A2 = psroutine.pdgemm(U, U, transa = True)
 
 
 comm.Barrier()
@@ -135,13 +135,13 @@ x = np.arange(n, dtype=np.float64)
 px = np.where(x < n-x, x, n-x)
 evals2 = np.sort(np.fft.fft(f(px)).real)
 
-me = scarray.matrix_equal(A, A2)
+me = pscore.matrix_equal(A, A2)
 
 if comm.Get_rank() == 0:
     print "Max diff:", np.abs((evals1 - evals2) / evals1).max()
 
     print "A == A2:", me
-    print "Max diff A, rnk 0:", np.abs(A.local_matrix - A2.local_matrix).max() / np.abs(A.local_matrix).max()
+    print "Max diff A, rnk 0:", np.abs(A.local_array - A2.local_array).max() / np.abs(A.local_array).max()
 
     #bfile = bfile + "_%i_%i_%i_%i_%i.dat" % (n, B, npx, npy, nthread)
 
