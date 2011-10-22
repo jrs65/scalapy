@@ -2,8 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include "mpi.h"
+#include <math.h>
 
-#include <time.h>
+#include <sys/time.h>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 
 int main(int argc, char **argv) {
@@ -14,11 +19,11 @@ int main(int argc, char **argv) {
 
   int i, j;
 
-  char *typeA = "N", *typeB = "N";
+  char *typeA = "N", *typeB = "N", *fname;
   
   int info, ZERO=0, ONE=1;
 
-  time_t st, et;
+  struct timeval st, et;
 
   /* Initialising MPI stuff */
   MPI_Init(&argc, &argv);
@@ -29,27 +34,35 @@ int main(int argc, char **argv) {
 
 
   /* Parsing arguments */
-  if(argc < 5) {
+  if(argc < 6) {
     exit(-3);
   }
 
-  if(argc > 6) {
-    typeA = argv[5];
-    typeB = argv[6];
+  if(argc > 7) {
+    typeA = argv[6];
+    typeB = argv[7];
   }
 
   nside = atoi(argv[1]);
   ngrid = atoi(argv[2]);
   nblock = atoi(argv[3]);
   nthread = atoi(argv[4]);
+  fname = argv[5];
 
   if(rank == 0) {
     printf("Multiplying matrices of size %i x %i\n", nside, nside);
     printf("Process grid size %i x %i\n", ngrid, ngrid);
     printf("Block size %i x %i\n", nblock, nblock);
     printf("Using %i OpenMP threads\n", nthread);
+    printf("Operation type %s %s\n", typeA, typeB);
   }
-  printf("Filling matrices.\n");
+
+
+
+  #ifdef _OPENMP
+  if(rank == 0) printf("Setting OMP_NUM_THREADS=%i\n", nthread);
+  omp_set_num_threads(nthread);
+  #endif
 
   /* Setting up BLACS */
   Cblacs_pinfo( &rank, &size ) ;
@@ -62,29 +75,27 @@ int main(int argc, char **argv) {
   /* Fetch local array sizes */
   int Ar, Ac, Br, Bc, Cr, Cc;
 
-  printf("Filling matrices.\n");
   Ar = numroc_( &nside, &nblock, &ir, &ZERO, &nr);
-  Ac = numroc_( &nside, &nblock, &ic, &ZERO, &nr);
+  Ac = numroc_( &nside, &nblock, &ic, &ZERO, &nc);
 
   Br = numroc_( &nside, &nblock, &ir, &ZERO, &nr);
-  Bc = numroc_( &nside, &nblock, &ic, &ZERO, &nr);
+  Bc = numroc_( &nside, &nblock, &ic, &ZERO, &nc);
 
-  Br = numroc_( &nside, &nblock, &ir, &ZERO, &nr);
-  Bc = numroc_( &nside, &nblock, &ic, &ZERO, &nr);
+  Cr = numroc_( &nside, &nblock, &ir, &ZERO, &nr);
+  Cc = numroc_( &nside, &nblock, &ic, &ZERO, &nc);
 
-  printf("Filling matrices.\n");
+  printf("Local array section %i x %i\n", Ar, Ac);
+
   /* Set descriptors */
   descinit_(descA, &nside, &nside, &nblock, &nblock, &ZERO, &ZERO, &ictxt, &Ar, &info);
   descinit_(descB, &nside, &nside, &nblock, &nblock, &ZERO, &ZERO, &ictxt, &Br, &info);
   descinit_(descC, &nside, &nside, &nblock, &nblock, &ZERO, &ZERO, &ictxt, &Cr, &info);
 
-  printf("Filling matrices.\n");
   /* Initialise and fill arrays */
   double *A = (double *)malloc(Ar*Ac*sizeof(double));
   double *B = (double *)malloc(Br*Bc*sizeof(double));
   double *C = (double *)malloc(Cr*Cc*sizeof(double));
 
-  printf("Filling matrices.\n");
 
   for(i = 0; i < Ar; i++) {
     for(j = 0; j < Ac; j++) {
@@ -102,9 +113,9 @@ int main(int argc, char **argv) {
 
 
   Cblacs_barrier(ictxt,"A");
-  st = time(NULL);
+  gettimeofday(&st, NULL);
 
-  pdgemm_(&typeA, &typeB, &nside, &nside,
+  pdgemm_(typeA, typeB, &nside, &nside, &nside,
 	  &alpha,
 	  A, &ONE, &ONE, descA,
 	  B, &ONE, &ONE, descB,
@@ -112,10 +123,26 @@ int main(int argc, char **argv) {
 	  C, &ONE, &ONE, descC );
 
   Cblacs_barrier(ictxt,"A");
-  et = time(NULL);
+  gettimeofday(&et, NULL);
 
   if(rank == 0) {
-    printf("=========\nTime taken: %g s\n=========\n", (et-st));
+    double gfpc;
+    double dt;
+    FILE * fd;
+    int ita = 0, itb = 0;
+    if(! strcmp(typeA, "T")) ita = 1;
+    if(! strcmp(typeB, "T")) itb = 1;
+
+    dt = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
+    printf("=========\nTime taken: %g s\n", dt);
+
+    gfpc = 2.0*pow(nside, 3) / (dt * 1e9 * ngrid * ngrid * nthread);
+
+    printf("GFlops per core: %g\n=========\n", gfpc);
+
+    fd = fopen(fname, "w");
+    fprintf(fd, "%g %i %i %i %i %g %i %i\n", gfpc, nside, ngrid, nblock, nthread, dt, ita, itb);
+    fclose(fd);
   }
 
   Cblacs_gridexit( 0 );
