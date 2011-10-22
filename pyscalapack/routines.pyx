@@ -16,6 +16,43 @@ cdef int _ONE = 1
 cdef int _ZERO = 0
 
 
+def flatten(x):
+    """flatten(sequence) -> list
+
+    Returns a single, flat list which contains all elements retrieved
+    from the sequence and all recursively contained sub-sequences
+    (iterables).
+
+    Examples:
+    >>> [1, 2, [3,4], (5,6)]
+    [1, 2, [3, 4], (5, 6)]
+    >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, MyVector(8,9,10)])
+    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]"""
+
+    result = []
+    for el in x:
+        #if isinstance(el, (list, tuple)):
+        if hasattr(el, "__iter__") and not isinstance(el, basestring):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
+
+
+def assert_square(A):
+    Alist = flatten([A])
+    for A in Alist:
+        if A.Nr != A.Nc:
+            raise Exception("Matrix must be square (has dimensions %i x %i)." % (A.Nr, A.Nc))
+
+def assert_type(A, dtype):
+    Alist = flatten([A])
+    for A in Alist:
+        if A.dtype != dtype:
+            raise Exception("Expected Matrix to be of type %s, got %s." % (repr(dtype), repr(A.dtype)))
+    
+
+
 def pdsyevd(mat, destroy = True, upper = True):
     r"""Compute the eigen-decomposition of a symmetric matrix.
 
@@ -50,11 +87,9 @@ def pdsyevd(mat, destroy = True, upper = True):
     cdef int info
     cdef np.ndarray evals
 
-    if mat.dtype != np.float64:
-        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(mat.dtype), repr(np.float64)))
-
-    if mat.Nr != mat.Nc:
-        raise Exception("Matrix must be square eigen-decomposition.")
+    ## Check input
+    assert_type(mat, np.float64)
+    assert_square(mat)
     
     A = mat if destroy else mat.copy()
 
@@ -126,14 +161,7 @@ def pdgemm(DistributedMatrix A, DistributedMatrix B, DistributedMatrix C = None,
     cdef int info
     cdef double a, b
 
-    if A.dtype != np.float64:
-        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(A.dtype), repr(np.float64)))
-
-    if B.dtype != np.float64:
-        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(A.dtype), repr(np.float64)))
-
-    if C.dtype != np.float64:
-        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(A.dtype), repr(np.float64)))
+    assert_type([A, B, C], np.float64)
     
     a = alpha
     b = beta
@@ -195,11 +223,10 @@ def pdpotrf(mat, destroy = True, upper = True):
 
     cdef int info
 
-    if mat.dtype != np.float64:
-        raise Exception("Incorrect dtype. Got %s, expected %s" % (repr(mat.dtype), repr(np.float64)))
-                            
-    if mat.Nr != mat.Nc:
-        raise Exception("Matrix must be square for Cholesky")
+
+    ## Check input
+    assert_type(mat, np.float64)
+    assert_square(mat)
     
     A = mat if destroy else mat.copy()
 
