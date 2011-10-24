@@ -20,6 +20,9 @@ nomp = nthread
 numproc = pside**2
 pernode = 1
 
+timingest = 5*int(5.0 * ((25.0 * 8) / (pside**2 * nthread)) * (gsize**3 / 5e4**3)) + 1
+
+print "Timing estimate: %i minutes, requesting %i minutes" % (timingest, 2*timingest)
 
 script="""
 #!/bin/bash
@@ -27,7 +30,7 @@ script="""
 #PBS -q batch
 #PBS -r n
 #PBS -m abe
-#PBS -l walltime=00:30:00
+#PBS -l walltime=%(timing)i:00
 #PBS -N pdgemm_%(name)s
 
 module load gcc/4.4.0 python/2.7.1 intel/intel-v12.0.0.084 intelmpi
@@ -41,7 +44,7 @@ mpirun --mca btl self,sm,openib -np %(numproc)i -npernode %(pernode)i ./pdgemm_b
 
 script = script % { 'nodes':nodes, 'ppn':ppn, 'name':name, 'nomp':nomp,
                     'numproc': numproc, 'pernode':pernode, 'gsize':gsize,
-                    'bsize': bsize, 'pside':pside}
+                    'bsize': bsize, 'pside':pside, 'timing' : 2*timingest}
 
 scriptname = "jobscript_%s.sh" % name
 
