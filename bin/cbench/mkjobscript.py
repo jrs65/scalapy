@@ -22,7 +22,7 @@ pernode = 1
 
 timingest = 5*int(5.0 * ((25.0 * 8) / (pside**2 * nthread)) * (gsize**3 / 5e4**3)) + 1
 
-print "Timing estimate: %i minutes, requesting %i minutes" % (timingest, 2*timingest)
+print "Timing estimate: %i minutes, requesting %i minutes" % (timingest, 2*timingest+5)
 
 script="""
 #!/bin/bash
@@ -44,7 +44,7 @@ mpirun --mca btl self,sm,openib -np %(numproc)i -npernode %(pernode)i ./pdgemm_b
 
 script = script % { 'nodes':nodes, 'ppn':ppn, 'name':name, 'nomp':nomp,
                     'numproc': numproc, 'pernode':pernode, 'gsize':gsize,
-                    'bsize': bsize, 'pside':pside, 'timing' : 2*timingest}
+                    'bsize': bsize, 'pside':pside, 'timing' : 2*timingest + 5}
 
 scriptname = "jobscript_%s.sh" % name
 
