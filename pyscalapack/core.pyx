@@ -482,9 +482,9 @@ cdef class DistributedMatrix(object):
         if len(shape) != 2:
             msg = "Distributed matrices must be 2D arrays"
             raise ValueError(msg)
-        if order_overide == 'C':
+        if order_override == 'C':
             fortran_order = False
-        elif order_overide == 'F':
+        elif order_override == 'F':
             fortran_order = True
         if fortran_order:
             order = 'F'
@@ -499,10 +499,10 @@ cdef class DistributedMatrix(object):
         if file_size < np.dtype(dtype).itemsize * array_size + offset:
             raise RuntimeError("File isn't big enough")
 
-        m = cls.(shape, blocksize=blocksize, dtype=np.dtype(dtype))
+        m = cls(shape, blocksize=blocksize, dtype=np.dtype(dtype))
         m.local_array[...] = blockcyclic.mpi_readmatrix(fname, MPI.COMM_WORLD,
                                 shape, dtype, blocksize, 
-                                (self.context.num_rows, self.context.num_cols),
+                                (m.context.num_rows, m.context.num_cols),
                                 order=order, displacement=offset)
         return m
 
@@ -622,12 +622,12 @@ cdef class DistributedMatrix(object):
         header_data = npyutils.pack_header(shape, fortran_order, self._dtype)
         header_len = npyutils.get_header_length(header_data)
         
-        def mpi_writematrix(fname, self.local_array, MPI.COMM_WORLD, 
-                            (self.Nr, self.Nc), self._dtype,
-                            self.blocksize, 
-                            (self.context.num_rows, self.context.num_cols),
-                            order=order, displacement=header_len)
-
+        blockcyclic.mpi_writematrix(fname, self.local_array, MPI.COMM_WORLD, 
+                                    (self.Nr, self.Nc), self._dtype,
+                                    self.blocksize, (self.context.num_rows, 
+                                                     self.context.num_cols),
+                                    order=order, displacement=header_len)
+ 
         # Write the header data.
         if self.context.mpi_rank == 0:
             npyutils.write_header_data(fname, header_data)
