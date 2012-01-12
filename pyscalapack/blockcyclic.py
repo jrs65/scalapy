@@ -101,9 +101,10 @@ def indices_rc(N, B, p, P):
 
 
 def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F', displacement=0):
-    """Distribute a block cyclic matrix read from a file.
-    
-    Uses MPI-IO to do all the work.
+    """Distribute a block cyclic matrix read from a file (using MPI-IO).
+
+    The order flag specifies in which order (either C or Fortran) the array is
+    on disk. Importantly the returned `local_array` is ordered the *same* way.
     
     Parameters
     ----------
@@ -120,8 +121,8 @@ def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F
         The shape of the process grid. Must be the same total size as
         comm.Get_rank(), and match the BLACS grid (if using Scalapack).
     order : 'F' or 'C', optional
-        Is the matrix on disk in Fortran (column major) 'F', or C (row major)
-        'C'. Defaults to Fortran ordered.
+        Is the matrix on disk is 'F' (Fortran/column major), or 'C' (C/row
+        major) order. Defaults to Fortran ordered.
     displacement : integer, optional
         Use a displacement from the start of the file. That is ignore the first
         `displacement` bytes.
@@ -142,9 +143,8 @@ def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F
     if order not in ['F', 'C']:
         raise Exception("Order must be 'F' (Fortran) or 'C'")
 
-    mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C # Check what we need to do here for loading C
-                                 # ordered files.
-
+    # Set file ordering
+    mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C 
 
     # Get MPI process info
     rank = comm.Get_rank()
@@ -188,9 +188,11 @@ def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F
 def mpi_writematrix(fname, local_array, comm, gshape, dtype,
                     blocksize, process_grid, order='F', displacement=0):
     
-    """Write a block cyclic distributed matrix to a file.
-    
-    Uses MPI-IO to do all the work.
+    """Write a block cyclic distributed matrix to a file (using MPI-IO).
+
+    The order flag specifies in which order (either C or Fortran) the array
+    should be on on disk. Importantly the input `local_array` *must* be ordered
+    in the same way.
     
     Parameters
     ----------
@@ -209,8 +211,8 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
         The shape of the process grid. Must be the same total size as
         comm.Get_rank(), and match the BLACS grid (if using Scalapack).
     order : 'F' or 'C', optional
-        Is the matrix on disk in Fortran (column major) 'F', or C (row major)
-        'C'. Defaults to Fortran ordered.
+        Is the matrix on disk is 'F' (Fortran/column major), or 'C' (C/row
+        major) order. Defaults to Fortran ordered.
     displacement : integer, optional
         Use a displacement from the start of the file. That is ignore the first
         `displacement` bytes.
@@ -228,8 +230,7 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
     if order not in ['F', 'C']:
         raise Exception("Order must be 'F' (Fortran) or 'C'")
 
-    mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C # Check what we need to do here for loading C
-                                 # ordered files.
+    mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C 
 
 
     # Get MPI process info
@@ -261,7 +262,8 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
 
     # Preallocate to ensure file is long enough for writing.
     f.Preallocate(filelength)
-    
+
+    # Set view and write out.
     f.Set_view(displacement, mpitype, darr, "native")
     f.Write_all(local_array)
     f.Close()
