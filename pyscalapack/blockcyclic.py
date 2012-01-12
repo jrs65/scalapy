@@ -142,7 +142,7 @@ def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F
     if order not in ['F', 'C']:
         raise Exception("Order must be 'F' (Fortran) or 'C'")
 
-    mpiorder = MPI.ORDER_FORTRAN # Check what we need to do here for loading C
+    mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C # Check what we need to do here for loading C
                                  # ordered files.
 
 
@@ -228,7 +228,7 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
     if order not in ['F', 'C']:
         raise Exception("Order must be 'F' (Fortran) or 'C'")
 
-    mpiorder = MPI.ORDER_FORTRAN # Check what we need to do here for loading C
+    mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C # Check what we need to do here for loading C
                                  # ordered files.
 
 
@@ -252,7 +252,9 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
         raise Exception("Local array size is not consistent with array description.")
 
     # Length of filename required for write (in bytes).
-    filelength = displacement + darr.Get_size()
+    filelength = displacement + gshape[0]*gshape[1]
+
+    print filelength, darr.Get_size()
 
     # Open the file, and read out the segments
     f = MPI.File.Open(comm, fname, MPI.MODE_RDWR | MPI.MODE_CREATE)
