@@ -6,6 +6,7 @@ import numpy as np
 cimport numpy as np
 
 from mpi4py import MPI
+import npyutils
 
 
 from libc.stddef cimport size_t
@@ -449,7 +450,52 @@ cdef class DistributedMatrix(object):
         cmat : DistributedMatrix
         """
         return cls([mat.Nr, mat.Nc], blocksize=[mat.Br, mat.Bc], dtype=mat.dtype, context=mat.context)
+    
+    
+    @classmethod
+    def from_npy(cls, fname, blocksize=None, shape_override=None,
+                order_override=None):
+        r"""Create a distributed matrix by reading a .npy file.
+
+        Parameters
+        ----------
+        fname : str
+            File name to read.
+        blocksize : list of integers, optional
+            The blocking size in [Br, Bc]. If `None` uses the default
+            blocking (set via `initmpi`).
+        shape_override : tuple of integers or None
+            If not None, ignore the array shape stored in the .npy header and
+            use this instead.  This is like a reshape on read operation.
+        order_override : "C", "F" or None
+            If not None, ignore the axis ordering specified in the .npy header
+            and use the ordering specified by this parameter. This might be a
+            good idea if your matrix is symetric and C ordered and you'dd
+            rather read it as Fortran ordered which should be faster.
+        """
+
+        shape, fortran_order, dtype, offset = npyutils.read_header_data(fname)
+
+        if shape_override:
+            shape = shape_override
+        if len(shape) != 2:
+            msg = "Distributed matrices must be 2D arrays"
+            raise ValueError(msg)
+        if order_overide == 'C':
+            fortran_order = False
+        elif order_overide == 'F':
+            fortran_order = True
+
+        m = cls.(shape, blocksize=blocksize, dtype=np.dtype(dtype))
         
+        # XXX This is wrong.  Need to wait for new load routines.
+        # XXX Should check that the shape and offset is compatible with the file
+        # size.
+        #if os.path.exists(file):
+        #    m._loadfile(file, order, fortran_order)
+
+        return m
+
 
     def local_shape(self):
         r"""The shape of the local matrix segment.
@@ -501,7 +547,7 @@ cdef class DistributedMatrix(object):
                           self.dtype.itemsize, self.Nr, self.Nc, self.Br, self.Bc,
                           self.context.num_rows, self.context.num_cols,
                           self.context.row, self.context.col)
-
+    
 
     def tofile(self, fname):
         r"""Save the distributed matrix out to a file.
@@ -530,6 +576,49 @@ cdef class DistributedMatrix(object):
                        self.Nr, self.Nc, self.Br, self.Bc, 
                        self.context.num_rows, self.context.num_cols, 
                        self.context.row, self.context.col)
+
+
+    def to_npy(self, fname, fortran_order=True, shape_override=None):
+        r"""same the distributed matrix out to a .npy file.
+
+        Parameters
+        ----------
+        fname : str
+            File name to save to.
+        fortran_order : boolian
+            Order the matrix in Fortran order on disk as opposed to C order.
+        shape_override : tuple of integers
+            What shape to write to the header of the .npy file.  This is like a
+            reshape on write operaton.
+        """
+
+        if shape_override:
+            size = 1
+            for s in shape_override:
+                size *= s
+            # Might consider relaxing this restriction.
+            if size != self.Nr * self.Nc:
+                msg = "Total size of the array cannot change."
+                raise ValueError(msg)
+            shape = shape_override
+        else:
+            size = self.Nr * self.Nc
+            shape = (self.Nr, self.Nc)
+
+        header_data = npyutils.pack_header(shape, fortran_order, self._dtype)
+        header_len = npyutils.get_header_length(header_data)
+
+        file_size = header_len + size * self._dtype.itemsize
+        # XXX Make an empty file that big using mpi-io.
+
+        # Write the header data.
+        if self.context.mpi_rank == 0:
+            npyutils.write_header_data(fname, header_data)
+
+        MPI.COMM_WORLD.barrier()
+
+        # XXX Do the parralelle write.
+        # save(self, offset, fortran_order)
 
 
     def indices(self, full=False):

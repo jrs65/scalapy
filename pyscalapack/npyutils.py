@@ -27,12 +27,13 @@ def pack_header_data(shape, fortran_order, dtype):
     # We need repr() to work perfectly.
     msg = "`shape` must me a tuple of intergers."
     if type(shape) != type(()):
-        raise ValueError(msg)
+        raise TypeError(msg)
     for s in shape:
         if type(s) != type(1):
-            raise ValueError(msg)
+            raise TypeError(msg)
     if type(fortran_order) != type(bool):
         msg = "`fortran_order` must be boolian."
+        raise TypeError(msg)
 
     header_data = {}
     header_data['shape'] = shape
