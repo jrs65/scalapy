@@ -621,7 +621,7 @@ cdef class DistributedMatrix(object):
             size = self.Nr * self.Nc
             shape = (self.Nr, self.Nc)
         # Axis ordering.
-       if fortran_order:
+        if fortran_order:
             order = 'F'
         else:
             order = 'C'
