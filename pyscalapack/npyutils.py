@@ -31,7 +31,7 @@ def pack_header_data(shape, fortran_order, dtype):
     for s in shape:
         if type(s) != type(1):
             raise TypeError(msg)
-    if type(fortran_order) != type(bool):
+    if type(fortran_order) != type(True):
         msg = "`fortran_order` must be boolian."
         raise TypeError(msg)
 
