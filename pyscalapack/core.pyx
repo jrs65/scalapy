@@ -476,14 +476,14 @@ cdef class DistributedMatrix(object):
         """
 
         shape, fortran_order, dtype, offset = npyutils.read_header_data(fname)
-		
-		# Global shape.
+
+        # Global shape.
         if shape_override:
             shape = shape_override
         if len(shape) != 2:
             msg = "Distributed matrices must be 2D arrays"
             raise ValueError(msg)
-		# Axis ordering.
+        # Axis ordering.
         if order_override == 'C':
             fortran_order = False
         elif order_override == 'F':
@@ -492,9 +492,9 @@ cdef class DistributedMatrix(object):
             order = 'F'
         else:
             order = 'C'
-		# Block size.
-		if not blocksize:
-			blocksize = _blocksize
+        # Block size.
+        if not blocksize:
+            blocksize = _blocksize
         
         # Check the file size.
         file_size = os.path.getsize(fname)  # bytes.
@@ -608,7 +608,7 @@ cdef class DistributedMatrix(object):
         """
 
         # Global shape.
-		if shape_override:
+        if shape_override:
             size = 1
             for s in shape_override:
                 size *= s
@@ -620,20 +620,20 @@ cdef class DistributedMatrix(object):
         else:
             size = self.Nr * self.Nc
             shape = (self.Nr, self.Nc)
-		# Axis ordering.
-        if fortran_order:
+        # Axis ordering.
+       if fortran_order:
             order = 'F'
         else:
             order = 'C'
 
         header_data = npyutils.pack_header_data(shape, fortran_order, 
-				                                self._dtype)
+                                               self._dtype)
         header_len = npyutils.get_header_length(header_data)
         
         blockcyclic.mpi_writematrix(fname, self.local_array, MPI.COMM_WORLD, 
                         (self.Nr, self.Nc), self._dtype.type,
-						(self.Br, self.Bc), 
-						(self.context.num_rows, self.context.num_cols),
+                        (self.Br, self.Bc), 
+                        (self.context.num_rows, self.context.num_cols),
                         order=order, displacement=header_len)
  
         # Write the header data.
