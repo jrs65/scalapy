@@ -8,6 +8,7 @@ cimport numpy as np
 from mpi4py import MPI
 import npyutils
 
+import blockcyclic
 
 from libc.stddef cimport size_t
 from libc.stdlib cimport malloc, free
@@ -485,15 +486,24 @@ cdef class DistributedMatrix(object):
             fortran_order = False
         elif order_overide == 'F':
             fortran_order = True
+        if fortran_order:
+            order = 'F'
+        else:
+            order = 'C'
+        
+        # Check the file size.
+        file_size = os.path.getsize(fname)  # bytes.
+        array_size = 1
+        for s in shape:
+            array_size *= s
+        if file_size < np.dtype(dtype).itemsize * array_size + offset:
+            raise RuntimeError("File isn't big enough")
 
         m = cls.(shape, blocksize=blocksize, dtype=np.dtype(dtype))
-        
-        # XXX This is wrong.  Need to wait for new load routines.
-        # XXX Should check that the shape and offset is compatible with the file
-        # size.
-        #if os.path.exists(file):
-        #    m._loadfile(file, order, fortran_order)
-
+        m.local_array[...] = blockcyclic.mpi_readmatrix(fname, MPI.COMM_WORLD,
+                                shape, dtype, blocksize, 
+                                (self.context.num_rows, self.context.num_cols),
+                                order=order, displacement=offset)
         return m
 
 
@@ -604,21 +614,25 @@ cdef class DistributedMatrix(object):
         else:
             size = self.Nr * self.Nc
             shape = (self.Nr, self.Nc)
+        if fortran_order:
+            ordrer = 'F'
+        else:
+            order = 'C'
 
         header_data = npyutils.pack_header(shape, fortran_order, self._dtype)
         header_len = npyutils.get_header_length(header_data)
-
-        file_size = header_len + size * self._dtype.itemsize
-        # XXX Make an empty file that big using mpi-io.
+        
+        def mpi_writematrix(fname, self.local_array, MPI.COMM_WORLD, 
+                            (self.Nr, self.Nc), self._dtype,
+                            self.blocksize, 
+                            (self.context.num_rows, self.context.num_cols),
+                            order=order, displacement=header_len)
 
         # Write the header data.
         if self.context.mpi_rank == 0:
             npyutils.write_header_data(fname, header_data)
 
         MPI.COMM_WORLD.barrier()
-
-        # XXX Do the parralelle write.
-        # save(self, offset, fortran_order)
 
 
     def indices(self, full=False):
