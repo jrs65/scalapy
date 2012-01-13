@@ -507,6 +507,8 @@ cdef class DistributedMatrix(object):
             raise RuntimeError("File isn't big enough")
 
         m = cls(shape, blocksize=blocksize, dtype=np.dtype(dtype))
+        # The returned matrix is C ordered if order = 'C' but the assignment
+        # always makes the local array fortran ordered.
         m.local_array[...] = blockcyclic.mpi_readmatrix(fname, MPI.COMM_WORLD,
                                 shape, np.dtype(dtype).type, blocksize, 
                                 (m.context.num_rows, m.context.num_cols),
@@ -625,14 +627,16 @@ cdef class DistributedMatrix(object):
         # Axis ordering.
         if fortran_order:
             order = 'F'
+            arr = self.local_array
         else:
             order = 'C'
+            arr = np.ascontiguousarray(self.local_array)
 
         header_data = npyutils.pack_header_data(shape, fortran_order, 
                                                self._dtype)
         header_len = npyutils.get_header_length(header_data)
         
-        blockcyclic.mpi_writematrix(fname, self.local_array, MPI.COMM_WORLD, 
+        blockcyclic.mpi_writematrix(fname, arr, MPI.COMM_WORLD, 
                         (self.Nr, self.Nc), self._dtype.type,
                         (self.Br, self.Bc), 
                         (self.context.num_rows, self.context.num_cols),

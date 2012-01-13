@@ -101,6 +101,7 @@ class TestIO(unittest.TestCase):
         Dmat.to_npy("tmp_test_origional.npy")
         if rank == 0:
             Bmat = np.load("tmp_test_origional.npy")
+            self.assertTrue(np.isfortran(Bmat))
             self.assertTrue(np.allclose(Bmat, self.mat))
 
     def test_read_C(self):
@@ -120,9 +121,10 @@ class TestIO(unittest.TestCase):
         
         Dmat = pscore.DistributedMatrix.fromarray(self.mat,
                                                   blocksize=(16, 16))
-        Dmat.to_npy("tmp_test_origional.npy")
+        Dmat.to_npy("tmp_test_origional.npy", fortran_order=False)
         if rank == 0:
             Bmat = np.load("tmp_test_origional.npy")
+            self.assertFalse(np.isfortran(Bmat))
             self.assertTrue(np.allclose(Bmat, self.mat))
 
     def tearDown(self):
