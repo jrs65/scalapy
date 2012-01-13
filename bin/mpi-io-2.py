@@ -15,16 +15,24 @@ blocksize = [2, 2]
 gshape = [9, 9]
 pshape = [int(size**0.5), int(size**0.5)]
 
+if rank == 0:
+
+    arrc = np.arange(gshape[0]*gshape[1]).astype(np.float64).reshape(gshape)
+    arrc.tofile("testarr_c.dat")
+
+    arrf = np.asfortranarray(arrc)
+    arrf.T.tofile("testarr_f.dat")
+    
+    print arrc
+    
+    print arrf
 
 
-arr = np.arange(gshape[0]*gshape[1]).astype(np.float64).reshape(gshape)
-arr.tofile("testarr_c.dat")
-np.asfortranarray(arr).tofile("testarr_f.dat")
 
-
-
-local_array_c = blockcyclic.mpi_readmatrix("testarr_c.dat", comm, gshape, np.float64, blocksize, pshape, order='C')
-local_array_f = blockcyclic.mpi_readmatrix("testarr_f.dat", comm, gshape, np.float64, blocksize, pshape, order='F')
+local_array_c = blockcyclic.mpi_readmatrix("testarr_c.dat", comm, gshape,
+                                           np.float64, blocksize, pshape, order='C')
+local_array_f = blockcyclic.mpi_readmatrix("testarr_f.dat", comm, gshape,
+                                           np.float64, blocksize, pshape, order='F')
 
 for i in range(size):
     comm.Barrier() 
@@ -41,8 +49,10 @@ for i in range(size):
         print local_array_c
         print
 
-blockcyclic.mpi_writematrix("testarr2_c.dat", local_array_c, comm, gshape, np.float64, blocksize, pshape, order='C')
-blockcyclic.mpi_writematrix("testarr2_f.dat", local_array_f, comm, gshape, np.float64, blocksize, pshape, order='F')
+blockcyclic.mpi_writematrix("testarr2_c.dat", local_array_c, comm, gshape,
+                            np.float64, blocksize, pshape, order='C')
+blockcyclic.mpi_writematrix("testarr2_f.dat", local_array_f, comm, gshape,
+                            np.float64, blocksize, pshape, order='F')
 
 
 if rank == 0:
