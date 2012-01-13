@@ -454,14 +454,16 @@ cdef class DistributedMatrix(object):
     
     
     @classmethod
-    def from_npy(cls, fname, blocksize=None, shape_override=None,
-                order_override=None):
+    def from_npy(cls, fname, comm=MPI.COMM_WORLD, blocksize=None, 
+                 shape_override=None, order_override=None):
         r"""Create a distributed matrix by reading a .npy file.
 
         Parameters
         ----------
         fname : str
             File name to read.
+        comm : mpi communicator
+            Does nothing for now, but will eventually specify the communicator.
         blocksize : list of integers, optional
             The blocking size in [Br, Bc]. If `None` uses the default
             blocking (set via `initmpi`).
@@ -474,7 +476,7 @@ cdef class DistributedMatrix(object):
             good idea if your matrix is symetric and C ordered and you'dd
             rather read it as Fortran ordered which should be faster.
         """
-
+        
         shape, fortran_order, dtype, offset = npyutils.read_header_data(fname)
 
         # Global shape.

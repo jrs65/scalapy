@@ -61,7 +61,6 @@ class TestIO(unittest.TestCase):
                                                     float)
             header_len =  npyutils.get_header_length(header_data)
             self.assertEqual(header_len % 4096, 0)
-           
             # Make an empty file, big enough to hold the header only.
             fp = open(fname, 'w')
             fp.seek(40000 - 1)
@@ -96,6 +95,28 @@ class TestIO(unittest.TestCase):
 
     def test_write_fortran(self):
         self.mat = np.asfortranarray(self.mat)
+        
+        Dmat = pscore.DistributedMatrix.fromarray(self.mat,
+                                                  blocksize=(16, 16))
+        Dmat.to_npy("tmp_test_origional.npy")
+        if rank == 0:
+            Bmat = np.load("tmp_test_origional.npy")
+            self.assertTrue(np.allclose(Bmat, self.mat))
+
+    def test_read_C(self):
+        self.mat = np.ascontiguousarray(self.mat)
+        if rank == 0:
+            np.save("tmp_test_origional.npy", self.mat)
+        comm.barrier()
+
+        Amat = pscore.DistributedMatrix.from_npy("tmp_test_origional.npy",
+                                                 blocksize=(16, 16))
+        Bmat = pscore.DistributedMatrix.fromarray(self.mat,
+                                                  blocksize=(16, 16))
+        self.assertTrue(pscore.matrix_equal(Amat, Bmat))
+
+    def test_write_C(self):
+        self.mat = np.ascontiguousarray(self.mat)
         
         Dmat = pscore.DistributedMatrix.fromarray(self.mat,
                                                   blocksize=(16, 16))
