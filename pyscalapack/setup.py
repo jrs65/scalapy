@@ -68,15 +68,15 @@ setup(
                                       include_dirs=['.', np.get_include()],
                                       library_dirs=scl_libdir,
                                       libraries=scl_lib,
-                                      extra_compile_args = (['-openmp'] + mpicompileargs),
-                                      extra_link_args = (['-openmp'] + mpilinkargs)
+                                      extra_compile_args = (['-fopenmp'] + mpicompileargs),
+                                      extra_link_args = (['-fopenmp'] + mpilinkargs)
                                       ),
                   extension.Extension('routines', ['routines.pyx'],
                                       include_dirs=['.', np.get_include()],
                                       library_dirs=scl_libdir,
                                       libraries=scl_lib,
-                                      extra_compile_args = (['-openmp'] + mpicompileargs),
-                                      extra_link_args = (['-openmp'] + mpilinkargs)
+                                      extra_compile_args = (['-fopenmp'] + mpicompileargs),
+                                      extra_link_args = (['-fopenmp'] + mpilinkargs)
                                       )
                 ],  
     cmdclass = {'build_ext': build_ext} )
