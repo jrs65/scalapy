@@ -6,6 +6,7 @@ from Cython.Distutils import build_ext
 import subprocess
 import os
 import numpy as np
+import mpi4py
 
 def runcommand(cmd):
     process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE)    
@@ -65,14 +66,14 @@ else:
 setup(  
     name = 'PyScalapack',
     ext_modules=[ extension.Extension('core', ['core.pyx', 'bcutil.c'],
-                                      include_dirs=['.', np.get_include()],
+                                      include_dirs=['.', np.get_include(), mpi4py.get_include()],
                                       library_dirs=scl_libdir,
                                       libraries=scl_lib,
                                       extra_compile_args = (['-fopenmp'] + mpicompileargs),
                                       extra_link_args = (['-fopenmp'] + mpilinkargs)
                                       ),
                   extension.Extension('routines', ['routines.pyx'],
-                                      include_dirs=['.', np.get_include()],
+                                      include_dirs=['.', np.get_include(), mpi4py.get_include()],
                                       library_dirs=scl_libdir,
                                       libraries=scl_lib,
                                       extra_compile_args = (['-fopenmp'] + mpicompileargs),

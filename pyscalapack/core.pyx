@@ -32,6 +32,8 @@ cdef extern from "sys/stat.h":
 from blacs cimport *
 from bcutil cimport *
 
+from mpi4py cimport MPI
+
 
 # For some reason umask related stuff is not working. grr..
 #cdef mode_t read_umask():
@@ -64,47 +66,8 @@ def initmpi(gridsize = None, blocksize = None):
     """
 
     
-    cdef int pnum, nprocs, ictxt, row, col, nrows, ncols
-    cdef int rank, size
-
-    global _context
-    global _blocksize
-
-    # MPI setup
-    comm = MPI.COMM_WORLD
-    ct = ProcessContext()
-    ct.mpi_rank = comm.Get_rank()
-    ct.mpi_size = comm.Get_size()
-    
-    Cblacs_pinfo(&pnum, &nprocs)
-
-    ## Figure out what to do when we have spare MPI procs
-    if not gridsize:
-        side = int((nprocs*1.0)**0.5)
-        gridsize = [side, side]
-
-    gs = gridsize[0]*gridsize[1]
-    if gs > ct.mpi_size:
-        raise Exception("Requested gridsize is larger than number of MPI processes.")
-    if gs < ct.mpi_size:
-        import warnings
-        warnings.warn("More MPI processes than process grid points. This may go crazy (especially for commparisons).")
-
-    # Initialise BLACS process grid
-    Cblacs_get(-1, 0, &ictxt)
-    ct.blacs_context = ictxt
-    
-    Cblacs_gridinit(&ictxt, "Row", gridsize[0], gridsize[1])
-    Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
-
-    # Fill out default ProcessContext
-    ct.num_rows = nrows
-    ct.num_cols = ncols
-
-    ct.row = row
-    ct.col = col
-
-    _context = ct
+    # Setup the default context
+    _context = ProcessContext(gridsize=gridsize)
 
     # Set default blocksize
     _blocksize = blocksize
@@ -134,10 +97,63 @@ class ProcessContext(object):
     row = 0
     col = 0
 
-    mpi_rank = 0
-    mpi_size = 1
+    mpi_comm = None
 
     blacs_context = 0
+
+    def __init__(self, comm=None, gridsize=None):
+        """Construct a BLACS context for the current process.
+        
+        Creates a BLACS context for the given MPI Communicator.
+        
+        Parameters
+        ----------
+        comm : mpi4py.MPI.Comm, optional
+            The MPI communicator to create a BLACS context for. If comm=None,
+            then use MPI.COMM_WORLD instead.
+        
+        gridsize : array_like, optional
+            A two element list (or other tuple etc), containing the
+            requested shape for the process grid e.g. [nprow, npcol]. If
+            None (default) set a square grid using the maximum number of
+            processes.
+        """
+        cdef int ictxt, row, col, nrows, ncols
+        
+        # MPI setup
+        if comm is None:
+            comm = MPI.COMM_WORLD
+        
+        ## Attempt to set a gridsize
+        if gridsize is None:
+            side = int((comm.size*1.0)**0.5)
+            gridsize = [side, side]
+            print "No grid size supplied. Creating grid of size: %i x %i" % gridsize
+
+        gs = gridsize[0]*gridsize[1]
+        if gs != comm.size:
+            raise Exception("Requested gridsize must be equal to the number of MPI processes.")
+        #if gs < comm.size:
+            # Replace communicator with one containing only the processes that
+            # will be in the grid.
+            #comm = comm.Create(comm.Get_group().Incl(range(gs)))
+
+        self.mpi_comm = comm
+        
+        ictxt = Csys2blacs_handle(<MPI_Comm>(<MPI.Comm>comm).ob_mpi)
+
+        Cblacs_gridinit(&ictxt, "Row", gridsize[0], gridsize[1])
+        Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
+
+        # Fill out ProcessContext properties
+        self.blacs_context = ictxt
+
+        self.num_rows = nrows
+        self.num_cols = ncols
+
+        self.row = row
+        self.col = col
+
 
 
 
@@ -332,7 +348,7 @@ cdef class DistributedMatrix(object):
             return self._dtype
 
 
-    def __init__(self, globalsize, dtype = np.float64, blocksize = None, context = None):
+    def __init__(self, globalsize, dtype=np.float64, blocksize=None, context=None):
         r"""Initialise an empty DistributedMatrix.
 
         Parameters
@@ -374,7 +390,7 @@ cdef class DistributedMatrix(object):
 
         
     @classmethod
-    def fromfile(cls, file, globalsize, dtype, blocksize = None):
+    def fromfile(cls, file, globalsize, dtype, blocksize=None, context=None):
         r"""Create a DistributedMatrix from a file representing the
         global matrix.
 
@@ -400,7 +416,7 @@ cdef class DistributedMatrix(object):
         -------
         dm : DistributedMatrix
         """
-        m = cls(globalsize, blocksize=blocksize, dtype=dtype)
+        m = cls(globalsize, blocksize=blocksize, dtype=dtype, context=context)
         
         if os.path.exists(file):
             m._loadfile(file)
@@ -409,7 +425,7 @@ cdef class DistributedMatrix(object):
 
 
     @classmethod
-    def fromarray(cls, array, blocksize = None):
+    def fromarray(cls, array, blocksize=None, context=None):
 
         r"""Create a DistributedMatrix directly from the global `array`.
 
@@ -420,7 +436,9 @@ cdef class DistributedMatrix(object):
         blocksize: list of integers, optional
             The blocking size in [Br, Bc]. If `None` uses the default
             blocking (set via `initmpi`).
-
+        context : ProcessContext, optional
+            The process context. If not set uses the default (recommended).
+            
         Returns
         -------
         dm : DistributedMatrix
@@ -428,7 +446,7 @@ cdef class DistributedMatrix(object):
         if array.ndim != 2:
             raise Exception("Array must be 2d.")
 
-        m = cls(array.shape, blocksize=blocksize, dtype=array.dtype)
+        m = cls(array.shape, blocksize=blocksize, dtype=array.dtype, context=context)
         
         ac = np.asfortranarray(array)
         m._loadarray(ac)
@@ -455,7 +473,7 @@ cdef class DistributedMatrix(object):
     
     @classmethod
     def from_npy(cls, fname, comm=MPI.COMM_WORLD, blocksize=None, 
-                 shape_override=None, order_override=None):
+                 shape_override=None, order_override=None, context=None):
         r"""Create a distributed matrix by reading a .npy file.
 
         Parameters
@@ -475,6 +493,8 @@ cdef class DistributedMatrix(object):
             and use the ordering specified by this parameter. This might be a
             good idea if your matrix is symetric and C ordered and you'dd
             rather read it as Fortran ordered which should be faster.
+        context : ProcessContext, optional
+            The process context. If not set uses the default (recommended).
         """
         
         shape, fortran_order, dtype, offset = npyutils.read_header_data(fname)
@@ -509,7 +529,7 @@ cdef class DistributedMatrix(object):
         m = cls(shape, blocksize=blocksize, dtype=np.dtype(dtype))
         # The returned matrix is C ordered if order = 'C' but the assignment
         # always makes the local array fortran ordered.
-        m.local_array[...] = blockcyclic.mpi_readmatrix(fname, MPI.COMM_WORLD,
+        m.local_array[...] = blockcyclic.mpi_readmatrix(fname, m.context.mpi_comm,
                                 shape, np.dtype(dtype).type, blocksize, 
                                 (m.context.num_rows, m.context.num_cols),
                                 order=order, displacement=offset)
@@ -589,7 +609,7 @@ cdef class DistributedMatrix(object):
             length = num_rpage(self.Nr, self.Br, self.dtype.itemsize) * self.Nc * self.dtype.itemsize
             ensure_filelength(fname, length)
 
-        MPI.COMM_WORLD.barrier()
+        self.context.mpi_comm.Barrier()
 
         bc2d_mmap_save(fname, <char *>self._data(), self.dtype.itemsize,
                        self.Nr, self.Nc, self.Br, self.Bc, 
@@ -636,7 +656,7 @@ cdef class DistributedMatrix(object):
                                                self._dtype)
         header_len = npyutils.get_header_length(header_data)
         
-        blockcyclic.mpi_writematrix(fname, arr, MPI.COMM_WORLD, 
+        blockcyclic.mpi_writematrix(fname, arr, self.context.mpi_comm, 
                         (self.Nr, self.Nc), self._dtype.type,
                         (self.Br, self.Bc), 
                         (self.context.num_rows, self.context.num_cols),
@@ -646,7 +666,7 @@ cdef class DistributedMatrix(object):
         if self.context.mpi_rank == 0:
             npyutils.write_header_data(fname, header_data)
 
-        MPI.COMM_WORLD.barrier()
+        self.context.mpi_comm.Barrier()
 
 
     def indices(self, full=False):
@@ -731,7 +751,7 @@ def matrix_equal(A, B):
 
     tv = np.zeros(A.context.mpi_size, dtype=np.uint8)
 
-    MPI.COMM_WORLD.Allgather([t, MPI.BYTE], [tv, MPI.BYTE])
+    A.context.mpi_comm.Allgather([t, MPI.BYTE], [tv, MPI.BYTE])
 
     return tv.astype(np.bool).all()
 
