@@ -472,8 +472,8 @@ cdef class DistributedMatrix(object):
     
     
     @classmethod
-    def from_npy(cls, fname, comm=MPI.COMM_WORLD, blocksize=None, 
-                 shape_override=None, order_override=None, context=None):
+    def from_npy(cls, fname, blocksize=None, shape_override=None,
+                 order_override=None, context=None):
         r"""Create a distributed matrix by reading a .npy file.
 
         Parameters
@@ -526,7 +526,7 @@ cdef class DistributedMatrix(object):
         if file_size < np.dtype(dtype).itemsize * array_size + offset:
             raise RuntimeError("File isn't big enough")
 
-        m = cls(shape, blocksize=blocksize, dtype=np.dtype(dtype))
+        m = cls(shape, blocksize=blocksize, dtype=np.dtype(dtype), context=context)
         # The returned matrix is C ordered if order = 'C' but the assignment
         # always makes the local array fortran ordered.
         m.local_array[...] = blockcyclic.mpi_readmatrix(fname, m.context.mpi_comm,
