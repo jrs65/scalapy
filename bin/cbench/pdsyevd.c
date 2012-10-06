@@ -25,8 +25,8 @@ int main(int argc, char **argv) {
 
   struct timeval st, et;
 
-  double dtnn, dtnt, dttn, dttt;
-  double gfpc_nn, gfpc_nt, gfpc_tn, gfpc_tt;
+  double dtev;
+  double gfpc_ev;
 
   /* Initialising MPI stuff */
   MPI_Init(&argc, &argv);
@@ -67,10 +67,10 @@ int main(int argc, char **argv) {
   Cblacs_gridinit(&ictxt, "Row", ngrid, ngrid);
   Cblacs_gridinfo(ictxt, &nr, &nc, &ir, &ic);
 
-  int descA[9], descB[9], descC[9];
+  int descA[9], descev[9];
 
   /* Fetch local array sizes */
-  int Ar, Ac, Br, Bc, Cr, Cc;
+  int Ar, Ac;
 
   Ar = numroc_( &nside, &nblock, &ir, &ZERO, &nr);
   Ac = numroc_( &nside, &nblock, &ic, &ZERO, &nc);
@@ -94,8 +94,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  int liwork = 7*A.Nr + 8*A.context.num_cols + 2;
-  int * iwork = <int *>malloc(sizeof(int) * liwork);
+  int liwork = 7 * Ar + 8 * ngrid + 2;
+  int * iwork = (int *)malloc(sizeof(int) * liwork);
 
 
   char * uplo = "U";
@@ -111,8 +111,14 @@ int main(int argc, char **argv) {
              &info);
     
   // Initialise workspace to correct length
-  lwork =(int)tlw;
+  lwork = (int)tlw;
   work = (double *)malloc(sizeof(double) * lwork);
+
+
+  if(rank == 0) printf("Starting eigenvalue.\n");
+
+  Cblacs_barrier(ictxt,"A");
+  gettimeofday(&st, NULL);
 
   // Compute eigen problem
   pdsyevd_("V", uplo, &Ar,
@@ -122,116 +128,26 @@ int main(int argc, char **argv) {
            work, &lwork, iwork, &liwork,
            &info);
 
-  free(iwork);
-  free(work);
-
-  double alpha = 1.0, beta = 0.0;
-
-  //========================
-  
-  if(rank == 0) printf("Starting multiplication (NN).\n");
-
-  Cblacs_barrier(ictxt,"A");
-  gettimeofday(&st, NULL);
-
-  pdgemm_("N", "N", &nside, &nside, &nside,
-	  &alpha,
-	  A, &ONE, &ONE, descA,
-	  B, &ONE, &ONE, descB,
-	  &beta,
-	  C, &ONE, &ONE, descC );
 
   Cblacs_barrier(ictxt,"A");
   gettimeofday(&et, NULL);
-  dtnn = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
-  gfpc_nn = 2.0*pow(nside, 3) / (dtnn * 1e9 * ngrid * ngrid * nthread);
+  dtev = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
+  gfpc_ev = 2.0*pow(nside, 3) / (dtnn * 1e9 * ngrid * ngrid * nthread);
+
 
   if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dtnn, gfpc_nn);
 
-  //========================
 
-
-
-  //========================
-
-  if(rank == 0) printf("Starting multiplication (NT).\n");
-
-  Cblacs_barrier(ictxt,"A");
-  gettimeofday(&st, NULL);
-
-  pdgemm_("N", "T", &nside, &nside, &nside,
-	  &alpha,
-	  A, &ONE, &ONE, descA,
-	  B, &ONE, &ONE, descB,
-	  &beta,
-	  C, &ONE, &ONE, descC );
-
-  Cblacs_barrier(ictxt,"A");
-  gettimeofday(&et, NULL);
-  dtnt = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
-  gfpc_nt = 2.0*pow(nside, 3) / (dtnt * 1e9 * ngrid * ngrid * nthread);
-
-  if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dtnt, gfpc_nt);
-
-  //========================
-
-
-
-  //========================
-
-  if(rank == 0) printf("Starting multiplication (TN).\n");
-
-  Cblacs_barrier(ictxt,"A");
-  gettimeofday(&st, NULL);
-
-  pdgemm_("T", "N", &nside, &nside, &nside,
-	  &alpha,
-	  A, &ONE, &ONE, descA,
-	  B, &ONE, &ONE, descB,
-	  &beta,
-	  C, &ONE, &ONE, descC );
-
-  Cblacs_barrier(ictxt,"A");
-  gettimeofday(&et, NULL);
-  dttn = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
-  gfpc_tn = 2.0*pow(nside, 3) / (dttn * 1e9 * ngrid * ngrid * nthread);
-
-  if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dttn, gfpc_tn);
-
-  //========================
-
-
-
-  //========================
-
-  if(rank == 0) printf("Starting multiplication (TT).\n");
-
-  Cblacs_barrier(ictxt,"A");
-  gettimeofday(&st, NULL);
-
-  pdgemm_("T", "T", &nside, &nside, &nside,
-	  &alpha,
-	  A, &ONE, &ONE, descA,
-	  B, &ONE, &ONE, descB,
-	  &beta,
-	  C, &ONE, &ONE, descC );
-
-  Cblacs_barrier(ictxt,"A");
-  gettimeofday(&et, NULL);
-  dttt = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
-  gfpc_tt = 2.0*pow(nside, 3) / (dttt * 1e9 * ngrid * ngrid * nthread);
-
-  if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dttt, gfpc_tt);
-
-  //========================
-
-
+  free(iwork);
+  free(work);
+  free(A);
+  free(evecs);
 
 
   if(rank == 0) {
     FILE * fd;
     fd = fopen(fname, "w");
-    fprintf(fd, "%g %g %g %g %i %i %i %i %g %g %g %g\n", gfpc_nn, gfpc_nt, gfpc_tn, gfpc_tt, nside, ngrid, nblock, nthread, dtnn, dtnt, dttn, dttt);
+    fprintf(fd, "%g %g %g %g %i %i %i %i %g %g %g %g\n", gfpc_ev, nside, ngrid, nblock, nthread, dtev);
     fclose(fd);
   }
 
