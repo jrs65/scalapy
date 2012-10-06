@@ -8,7 +8,7 @@ SCLIBS_INTEL_INTELMPI=-lmkl_scalapack_lp64 -lmkl_rt -lmkl_blacs_intelmpi_lp64 -o
 #SCLIBS=$(SCLIBS_INTEL_INTELMPI)
 SCLIBS=$(SCLIBS_INTEL_OPENMPI)
 
-benchmarks: pdgemm_bench dgemm_bench
+benchmarks: pdgemm_bench dgemm_bench pdsyevd_bench
 
 
 pdgemm_bench: pdgemm_bench.c
@@ -18,5 +18,8 @@ dgemm_bench: dgemm_bench.c
 	$(CC) -g -o dgemm_bench dgemm_bench.c $(SCLIBS)
 
 
+pdsyevd_bench: pdsyevd_bench.c
+	$(CC) -g -o pdsyevd_bench pdsyevd_bench.c $(SCLIBS)
+
 clean:
-	rm pdgemm_bench dgemm_bench
+	rm pdgemm_bench dgemm_bench pdsyevd_bench

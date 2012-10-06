@@ -38,7 +38,7 @@ module load gcc/4.4.0 python/2.7.1 intel/intel-v12.0.0.084 intelmpi
 cd $HOME/code/PyScalapack/bin/cbench/
 
 export OMP_NUM_THREADS=%(nomp)i
-mpirun --mca btl self,sm,openib -np %(numproc)i -npernode %(pernode)i ./pdgemm_bench %(gsize)i %(pside)i %(bsize)i %(nomp)i $SCRATCH/cbench/jt_%(name)s.dat &> $SCRATCH/cbench/jo_%(name)s.log
+mpirun --mca btl self,sm,openib -np %(numproc)i -npernode %(pernode)i ./pdsyevd_bench %(gsize)i %(pside)i %(bsize)i %(nomp)i $SCRATCH/cbench/jt_%(name)s.dat &> $SCRATCH/cbench/jo_%(name)s.log
 #mpirun -ppn %(pernode)i -genv I_MPI_FABRICS shm:dapl -np %(numproc)i ./pdgemm_bench %(gsize)i %(pside)i %(bsize)i %(nomp)i $SCRATCH/cbench/jt_%(name)s.dat &> $SCRATCH/cbench/jo_%(name)s.log
 """
 
