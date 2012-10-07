@@ -12,7 +12,7 @@ import os
 import time
 import sys
 
-os.environ['OMP_NUM_THREADS'] = '1'
+#os.environ['OMP_NUM_THREADS'] = '1'
 
 comm = MPI.COMM_WORLD
 

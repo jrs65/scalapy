@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
   double *A = (double *)malloc(Ar*Ac*sizeof(double));
   double *evecs = (double *)malloc(Ar*Ac*sizeof(double));
 
-  double *evals = (double *)malloc(Ar * sizeof(double));
+  double *evals = (double *)malloc(nside * sizeof(double));
 
   for(i = 0; i < Ar; i++) {
     for(j = 0; j < Ac; j++) {
@@ -94,25 +94,25 @@ int main(int argc, char **argv) {
     }
   }
 
-  int liwork = 7 * Ar + 8 * ngrid + 2;
+  int liwork = 7 * nside + 8 * ngrid + 2;
   int * iwork = (int *)malloc(sizeof(int) * liwork);
 
 
   char * uplo = "U";
-  double tlw;
+  double tlw = 0.0;
 
   // Workspace size inquiry
-  int lwork = -1
-  pdsyevd_("V", uplo, &Ar,
-             A, &_ONE, &_ONE, descA,
+  int lwork = -1;
+  pdsyevd_("V", "U", &nside,
+             A, &ONE, &ONE, descA,
              evals,
-             evecs, &_ONE, &_ONE, descev,
+             evecs, &ONE, &ONE, descev,
              &tlw, &lwork, iwork, &liwork,
              &info);
     
   // Initialise workspace to correct length
   lwork = (int)tlw;
-  work = (double *)malloc(sizeof(double) * lwork);
+  double * work = (double *)malloc(sizeof(double) * lwork);
 
 
   if(rank == 0) printf("Starting eigenvalue.\n");
@@ -121,10 +121,10 @@ int main(int argc, char **argv) {
   gettimeofday(&st, NULL);
 
   // Compute eigen problem
-  pdsyevd_("V", uplo, &Ar,
-           A, &_ONE, &_ONE, descA,
+  pdsyevd_("V", "U", &nside,
+           A, &ONE, &ONE, descA,
            evals,
-           evecs, &_ONE, &_ONE, descev,
+           evecs, &ONE, &ONE, descev,
            work, &lwork, iwork, &liwork,
            &info);
 
@@ -132,10 +132,10 @@ int main(int argc, char **argv) {
   Cblacs_barrier(ictxt,"A");
   gettimeofday(&et, NULL);
   dtev = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
-  gfpc_ev = 2.0*pow(nside, 3) / (dtnn * 1e9 * ngrid * ngrid * nthread);
+  gfpc_ev = 2.0*pow(nside, 3) / (dtev * 1e9 * ngrid * ngrid * nthread);
 
 
-  if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dtnn, gfpc_nn);
+  if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dtev, gfpc_ev);
 
 
   free(iwork);
