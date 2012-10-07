@@ -23,6 +23,11 @@ dgemm_bench: dgemm_bench.c
 
 pdsyevd_bench: pdsyevd_bench.c
 	$(CC) -g -o pdsyevd_bench pdsyevd_bench.c $(SCLIBS)
+
+pzheevd_bench: pzheevd_bench.c
+	$(CC) -g -o pzheevd_bench pzheevd_bench.c $(SCLIBS)
+
+
 pdgetrf_bench: pdgetrf_bench.c
 	$(CC) -g -o pdgetrf_bench pdgetrf_bench.c $(SCLIBS)
 
