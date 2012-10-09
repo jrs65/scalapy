@@ -6,7 +6,7 @@
 
 #include <sys/time.h>
 
-#include <complex.h?
+#include <complex.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  int liwork = 0;
+  int liwork = -1;
   int tli = 0;
 
 
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
   int lwork = -1;
   complex16 tlw = 0.0;
 
-  int lrwork = 0;
+  int lrwork = -1;
   double tlr = 0.0;
 
   pzheevd_("V", "U", &nside,
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
   Cblacs_barrier(ictxt,"A");
   gettimeofday(&et, NULL);
   dtev = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
-  gfpc_ev = 2.0*pow(nside, 3) / (dtev * 1e9 * ngrid * ngrid * nthread);
+  gfpc_ev = 16.0*pow(nside, 3) / (dtev * 1e9 * ngrid * ngrid * nthread);
 
 
   if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dtev, gfpc_ev);
