@@ -99,9 +99,31 @@ int main(int argc, char **argv) {
   for(i = 0; i < Ar; i++) {
     for(j = 0; j < Ac; j++) {
       A[j*Ar + i] = drand48();
-      evecs[j*Ar + i] = 0.0;
+      B[j*Ar + i] = 0.0;
+      Z[j*Ar + i] = drand48();
     }
   }
+
+  if(rank == 0) printf("Starting multiplication for matrix B.\n");
+
+  double alpha = 1.0, beta = 0.0;
+
+  Cblacs_barrier(ictxt,"A");
+  gettimeofday(&st, NULL);
+
+  pdgemm_("T", "N", &nside, &nside, &nside,
+    &alpha,
+    Z, &ONE, &ONE, descZ,
+    Z, &ONE, &ONE, descZ,
+    &beta,
+    B, &ONE, &ONE, descB );
+
+  Cblacs_barrier(ictxt,"A");
+  gettimeofday(&et, NULL);
+  dtev = (double)((et.tv_sec-st.tv_sec) + (et.tv_usec-st.tv_usec)*1e-6);
+  gfpc_ev = 2.0*pow(nside, 3) / (dttn * 1e9 * ngrid * ngrid * nthread);
+
+  if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dttn, gfpc_tn);
 
   int liwork = -1;
   int tli = 0;
