@@ -11,25 +11,12 @@ SCLIBS_NETLIB=-lscalapack -lblacs -mkl=parallel -lifcore
 SCLIBS=$(SCLIBS_NETLIB)
 #SCLIBS=$(SCLIBS_INTEL_OPENMPI)
 
-benchmarks: pdgemm_bench dgemm_bench pdsyevd_bench pdgetrf_bench pzheevd_bench
+benchmark_programs=pdgemm_bench dgemm_bench pdsyevd_bench pdgetrf_bench pzheevd_bench
 
+benchmarks: $(benchmark_programs)
 
-pdgemm_bench: pdgemm_bench.c
-	$(CC) -g -o pdgemm_bench pdgemm_bench.c $(SCLIBS)
-
-dgemm_bench: dgemm_bench.c
-	$(CC) -g -o dgemm_bench dgemm_bench.c $(SCLIBS)
-
-
-pdsyevd_bench: pdsyevd_bench.c
-	$(CC) -g -o pdsyevd_bench pdsyevd_bench.c $(SCLIBS)
-
-pzheevd_bench: pzheevd_bench.c
-	$(CC) -g -o pzheevd_bench pzheevd_bench.c $(SCLIBS)
-
-
-pdgetrf_bench: pdgetrf_bench.c
-	$(CC) -g -o pdgetrf_bench pdgetrf_bench.c $(SCLIBS)
+%_bench: %_bench.c
+	$(CC) -g -o $@ $< $(SCLIBS)
 
 clean:
-	rm pdgemm_bench dgemm_bench pdsyevd_bench pdgetrf_bench pzheevd_bench
+	rm $(benchmark_programs)
