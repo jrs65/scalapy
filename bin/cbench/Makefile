@@ -11,7 +11,7 @@ SCLIBS_NETLIB=-lscalapack -lblacs -mkl=parallel -lifcore
 SCLIBS=$(SCLIBS_NETLIB)
 #SCLIBS=$(SCLIBS_INTEL_OPENMPI)
 
-benchmark_programs=pdgemm_bench dgemm_bench pdsyevd_bench pdgetrf_bench pzheevd_bench
+benchmark_programs=pdgemm_bench dgemm_bench pdsyevd_bench pdgetrf_bench pzheevd_bench pzhegvx_bench
 
 benchmarks: $(benchmark_programs)
 
