@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
   char *fname;
   
-  int info, ifail;
+  int info;
   int ZERO=0, ONE=1;
   double ZEROD=0.0;
 
@@ -137,9 +137,9 @@ int main(int argc, char **argv) {
   int lrwork = -1;
   double tlr = 0.0;
 
-  int ifail = (int *)malloc(nside * sizeof(int));
-  int iclustr = (int *)malloc(ngrid * ngrid * sizeof(int));
-  double gap = (double *)malloc(ngrid * ngrid * sizeof(double));
+  int * ifail = (int *)malloc(nside * sizeof(int));
+  int * iclustr = (int *)malloc(ngrid * ngrid * sizeof(int));
+  double * gap = (double *)malloc(ngrid * ngrid * sizeof(double));
 
   // Compute eigen problem
   pzhegvx_(&ONE, "V", "A", "U", &nside,
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
            B, &ONE, &ONE, descB,
            &ZEROD, &ZEROD, &ZERO, &ZERO, // Limits for eigenvalues found
            &ZEROD, &nevals, &nevecs, evals, // Eigenvalue related stuff
-           &ZEROD, evecs, &ONE, &ONE, descev,
+           &ZEROD, Z, &ONE, &ONE, descZ,
            &tlw, &lwork,
            &tlr, &lrwork,
            &tli, &liwork,
@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
            B, &ONE, &ONE, descB,
            &ZEROD, &ZEROD, &ZERO, &ZERO, // Limits for eigenvalues found
            &ZEROD, &nevals, &nevecs, evals, // Eigenvalue related stuff
-           &ZEROD, evecs, &ONE, &ONE, descev,
+           &ZEROD, Z, &ONE, &ONE, descZ,
            work, &lwork,
            rwork, &lrwork,
            iwork, &liwork,
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
   free(iwork);
   free(work);
   free(A);
-  free(evecs);
+  free(Z);
 
 
   if(rank == 0) {
