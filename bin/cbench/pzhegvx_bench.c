@@ -61,6 +61,7 @@ int main(int argc, char **argv) {
     printf("Using %i OpenMP threads\n", nthread);
   }
 
+  fflush(stdout);
 
 
   #ifdef _OPENMP
@@ -106,6 +107,7 @@ int main(int argc, char **argv) {
 
   if(rank == 0) printf("Starting multiplication for matrix B.\n");
 
+  fflush(stdout);
   double alpha = 1.0, beta = 0.0;
 
   Cblacs_barrier(ictxt,"A");
@@ -125,6 +127,7 @@ int main(int argc, char **argv) {
 
   if(rank == 0) printf("Done.\n=========\nTime taken: %g s\nGFlops per core: %g\n=========\n", dttn, gfpc_tn);
 
+  fflush(stdout);
   int liwork = -1;
   int tli = 0;
 
