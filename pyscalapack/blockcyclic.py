@@ -13,16 +13,20 @@ def ceildiv(x, y):
     """Round to ceiling division."""
     return ((int(x) - 1) / int(y) + 1)
 
+
 def pid_remap(p, p0, P):
     return ((p + P - p0) % P)
+
 
 def num_c_blocks(N, B):
     """Number of complete blocks globally."""
     return int(N / B)
 
+
 def num_blocks(N, B):
     """Total number of blocks globally."""
     return ceildiv(N, B)
+
 
 def num_c_lblocks(N, B, p, P):
     """Number of complete blocks locally."""
@@ -34,6 +38,7 @@ def num_lblocks(N, B, p, P):
     """Total number of local blocks."""
     nb = num_blocks(N, B)
     return int(nb / P) + int(1 if ((nb % P) > p) else 0)
+
 
 def partial_last_block(N, B, p, P):
     """Is the last local block partial?"""
@@ -62,13 +67,13 @@ def num_rstride(N, B, stride):
 def numrc(N, B, p, P):
     """The number of rows/columns of the global array local to the process.
     """
-    
+
     # Number of complete blocks owned by the process.
     nbp = num_c_lblocks(N, B, p, P)
-    
+
     # Number of entries of complete blocks owned by process.
     n = nbp * B
-    
+
     # If this process owns an incomplete block, then add the number of entries.
     if partial_last_block(N, B, p, P):
         n += N % B

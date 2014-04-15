@@ -6,6 +6,7 @@ import numpy as np
 from libc.stddef cimport size_t
 from libc.stdlib cimport malloc, free
 
+from blacs cimport *
 from scalapack cimport *
 
 from pyscalapack.core cimport *
@@ -53,7 +54,7 @@ def assert_type(A, dtype):
     
 
 
-def pdsyevd(mat, destroy = True, upper = True):
+def pdsyevd(mat, destroy=True, upper=True):
     r"""Compute the eigen-decomposition of a symmetric matrix.
 
     Use Scalapack to compute the eigenvalues and eigenvectors of a
@@ -84,13 +85,15 @@ def pdsyevd(mat, destroy = True, upper = True):
     cdef int * iwork
     cdef DistributedMatrix A, evecs
 
+    cdef int nprow, npcol, row, col
+
     cdef int info
     cdef np.ndarray evals
 
     ## Check input
     assert_type(mat, np.float64)
     assert_square(mat)
-    
+
     A = mat if destroy else mat.copy()
 
     evecs = DistributedMatrix.empty_like(A)
@@ -101,6 +104,15 @@ def pdsyevd(mat, destroy = True, upper = True):
 
     uplo = "U" if upper else "L"
 
+    print A.desc, evecs.desc
+
+    Cblacs_gridinfo(<int>A.desc[1], &nprow, &npcol, &row, &col)
+    print "RA", A.desc[1], nprow, npcol
+
+    Cblacs_gridinfo(<int>evecs.desc[1], &nprow, &npcol, &row, &col)
+    print "RZ", evecs.desc[1], nprow, npcol
+
+
     ## Workspace size inquiry
     lwork = -1
     pdsyevd_("V", uplo, &(A.Nr),
@@ -108,8 +120,8 @@ def pdsyevd(mat, destroy = True, upper = True):
              <double *>np_data(evals),
              <double *>evecs._data(), &_ONE, &_ONE, evecs._getdesc(),
              &wl, &lwork, iwork, &liwork,
-             &info);
-    
+             &info)
+
     ## Initialise workspace to correct length
     lwork = <int>wl
     work = <double *>malloc(sizeof(double) * lwork)
@@ -120,13 +132,13 @@ def pdsyevd(mat, destroy = True, upper = True):
              <double *>np_data(evals),
              <double *>evecs._data(), &_ONE, &_ONE, evecs._getdesc(),
              work, &lwork, iwork, &liwork,
-             &info);
+             &info)
 
     free(iwork)
     free(work)
 
     return (evals, evecs)
-    
+
 
 
 

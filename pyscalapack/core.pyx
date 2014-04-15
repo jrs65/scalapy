@@ -13,20 +13,6 @@ import blockcyclic
 from libc.stddef cimport size_t
 from libc.stdlib cimport malloc, free
 
-## Import Unix low level open/close
-from posix.fcntl cimport *
-from posix.unistd cimport *
-
-
-## Import routine for pre-allocating files
-cdef extern from "fcntl.h":
-    int posix_fallocate(int fd, off_t offset, off_t len)
-
-## Import flags for setting permissions
-cdef extern from "sys/stat.h":
-    enum: S_IRUSR
-    enum: S_IWUSR
-    #mode_t umask(mode_t mask)
 
 
 from blacs cimport *
@@ -47,7 +33,7 @@ _context = None
 _blocksize = None
 
 
-def initmpi(gridsize = None, blocksize = None):
+def initmpi(gridsize=None, blocksize=None):
     r"""Initialise Scalapack on the current process.
 
     This routine sets up the BLACS grid, and sets the default context
@@ -64,6 +50,8 @@ def initmpi(gridsize = None, blocksize = None):
         The default blocksize for new arrays. A two element, [brow,
         bcol] list.
     """
+
+    global _context, _blocksize
 
     
     # Setup the default context
@@ -119,11 +107,11 @@ class ProcessContext(object):
             processes.
         """
         cdef int ictxt, row, col, nrows, ncols
-        
+
         # MPI setup
         if comm is None:
             comm = MPI.COMM_WORLD
-        
+
         ## Attempt to set a gridsize
         if gridsize is None:
             side = int((comm.size*1.0)**0.5)
@@ -133,16 +121,15 @@ class ProcessContext(object):
         gs = gridsize[0]*gridsize[1]
         if gs != comm.size:
             raise Exception("Requested gridsize must be equal to the number of MPI processes.")
-        #if gs < comm.size:
-            # Replace communicator with one containing only the processes that
-            # will be in the grid.
-            #comm = comm.Create(comm.Get_group().Incl(range(gs)))
 
         self.mpi_comm = comm
-        
+
         ictxt = Csys2blacs_handle(<MPI_Comm>(<MPI.Comm>comm).ob_mpi)
 
-        Cblacs_gridinit(&ictxt, "Row", gridsize[0], gridsize[1])
+        nrows = gridsize[0]
+        ncols = gridsize[1]
+        Cblacs_gridinit(&ictxt, "Row", nrows, ncols)
+        print "BLACS context:", ictxt
         Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
 
         # Fill out ProcessContext properties
@@ -156,76 +143,6 @@ class ProcessContext(object):
 
 
 
-
-def matrix_pagealign(mat, blocksize):
-    r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
-
-    Parameters
-    ==========
-    mat : ndarray
-        The matrix to page align (can either by C or Fortran ordered).
-    blocksize : array_like
-        The blocksize, the first and second elements correspond to the
-        row and column blocks respectively.
-
-    Returns
-    =======
-    m2 : ndarray
-        The page aligned matrix.
-    """
-    #cdef np.ndarray[np.float64_t, ndim=2] m1
-    #cdef np.ndarray[np.float64_t, ndim=2] m2
-
-    m1 = np.asfortranarray(mat)
-
-    Nr, Nc = mat.shape
-    Br, Bc = blocksize
-
-    nr = num_rpage(Nr, Br, mat.dtype.itemsize)
-
-    m2 = np.empty((nr, Nc), order='F')
-
-    bc2d_copy_pagealign(np_data(m1), np_data(m2), mat.dtype.itemsize, Nr, Nc, Br, Bc)
-
-    return m2
-
-
-
-def matrix_from_pagealign(matp, size, blocksize):
-    r"""Page aligns the blocks in a matrix, and makes Fortran ordered.
-
-    Parameters
-    ==========
-    matp : ndarray
-        The matrix to page align (can either by C or Fortran ordered).
-    blocksize : array_like
-        The blocksize, the first and second elements correspond to the
-        row and column blocks respectively.
-
-    Returns
-    =======
-    m2 : ndarray
-        The page aligned matrix.
-    """
-    #cdef np.ndarray[np.float64_t, ndim=1] m1
-    #cdef np.ndarray[np.float64_t, ndim=2] m2
-
-    #m1 = matp.flatten()
-    m1 = matp.reshape(-1, order='A')
-
-    Nr, Nc = size
-    Br, Bc = blocksize
-
-    nr = num_rpage(Nr, Br, matp.dtype.itemsize)
-
-    if np.size(m1) < nr*Nc:
-        raise Exception("Source matrix not long enough. Is %i x %i, should be %i x %i." % (matp.shape[0], matp.shape[1], nr, Nc))
-
-    m2 = np.empty((Nr, Nc), order='F')
-
-    bc2d_from_pagealign(np_data(m1), np_data(m2), matp.dtype.itemsize, Nr, Nc, Br, Bc)
-
-    return m2
 
 
 
@@ -263,39 +180,6 @@ cdef char * np_data(np.ndarray a):
     return <char *>a.data
 
 
-
-def ensure_filelength(fname, length):
-    r"""Make sure a file is larger than a given size.
-
-    This will ensure that a file exists, and has a size of at least
-    `length`. If this can't be done, an exception will be raised.
-
-    Parameters
-    ----------
-    fname : string
-        The name of the file.
-    length : integer
-        The requested size of the file in bytes.
-    """
-    cdef int fd, res
-
-    # I've no idea why umask is not being set correctly.
-    fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)
-    if fd == -1:
-        raise IOError("Error opening file: %s" % fname)
-
-    res = posix_fallocate(fd, 0, <size_t>length)
-    close(fd)
-    
-    if res != 0:
-        raise IOError("Allocating file %s length %i bytes failed." % (fname, length))
-
-    st = os.stat(fname)
-    if st.st_size < length:
-        raise IOError("Allocating file %s length %i bytes failed in some odd way.")
-    
-
-    
 
 
 
@@ -380,13 +264,38 @@ cdef class DistributedMatrix(object):
 
         self.Br, self.Bc = blocksize if blocksize else _blocksize
             
-        if not context and  not _context:
+        if not context and not _context:
             raise Exception("No supplied or default context.")
         self._context = context if context else _context
 
         self._local_array = np.zeros(self.local_shape(), order='F', dtype=dtype)
 
         self._mkdesc()
+
+
+    # def _mk_mpi_dtype(self):
+    #     # Construct the MPI datatype
+
+    #     # Get MPI base type
+    #     mpitype = _typemap[self._dtype]
+
+    #     # Sort out F, C ordering
+    #     if order not in ['F', 'C']:
+    #         raise Exception("Order must be 'F' (Fortran) or 'C'")
+
+    #     # Set file ordering
+    #     mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C 
+
+    #     # Get MPI process info
+    #     rank = self._context.mpi_comm.rank
+    #     size = self._context.mpi_comm.size
+
+    #     # Create distributed array view.
+    #     darr = mpitype.Create_darray(size, rank, gshape,
+    #                                  [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
+    #                                  blocksize, process_grid, mpiorder)
+    #     darr.Commit()
+
 
         
     @classmethod
@@ -553,7 +462,7 @@ cdef class DistributedMatrix(object):
     def _mkdesc(self):
         self._desc = np.zeros(9, dtype=np.int32)
 
-        self._desc[0] = 1 # Dense matrix
+        self._desc[0] = 1  # Dense matrix
         self._desc[1] = self.context.blacs_context
         self._desc[2] = self.Nr
         self._desc[3] = self.Nc
@@ -607,7 +516,6 @@ cdef class DistributedMatrix(object):
          
         if self.context.mpi_rank == 0:
             length = num_rpage(self.Nr, self.Br, self.dtype.itemsize) * self.Nc * self.dtype.itemsize
-            ensure_filelength(fname, length)
 
         self.context.mpi_comm.Barrier()
 
