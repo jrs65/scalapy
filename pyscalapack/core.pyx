@@ -129,7 +129,6 @@ class ProcessContext(object):
         nrows = gridsize[0]
         ncols = gridsize[1]
         Cblacs_gridinit(&ictxt, "Row", nrows, ncols)
-        print "BLACS context:", ictxt
         Cblacs_gridinfo(ictxt, &nrows, &ncols, &row, &col)
 
         # Fill out ProcessContext properties
@@ -140,8 +139,6 @@ class ProcessContext(object):
 
         self.row = row
         self.col = col
-
-
 
 
 
@@ -189,14 +186,6 @@ cdef char * np_data(np.ndarray a):
 
 cdef class DistributedMatrix(object):
     r"""A matrix distributed over multiple MPI processes.
-
-    Attributes
-    ----------
-    Nr, Nc : integer, readonly
-        The number of rows and cokumns of the global matrix.
-    Br, Bc : integer, readonly
-        The block shape.
-    
     """
 
     property local_array:
@@ -209,7 +198,7 @@ cdef class DistributedMatrix(object):
         def __get__(self):
             return self._local_array
 
-    
+
     property desc:
         r"""The Scalapack array descriptor. See [1]_. Returned as an integer
         ndarray and is readonly.
@@ -230,6 +219,24 @@ cdef class DistributedMatrix(object):
         r"""The datatype of this matrix."""
         def __get__(self):
             return self._dtype
+
+
+    property global_shape:
+        """The shape of the global matrix."""
+        def __get__(self):
+            return self._gshape
+
+
+    property local_shape:
+        """The shape of the local matrix."""
+        def __get__(self):
+            return self._lshape
+
+
+    property blocksize:
+        """The blocksize for the matrix."""
+        def __get__(self):
+            return self._blocksize
 
 
     def __init__(self, globalsize, dtype=np.float64, blocksize=None, context=None):
@@ -257,19 +264,38 @@ cdef class DistributedMatrix(object):
 
         self._dtype = np.dtype(dtype)
 
-        ## Check and set globalsize, and blocksize
-        self.Nr, self.Nc = globalsize
+        ## Check and set globalsize
+        if len(globalsize) != 2:
+            raise Exception("Global size must be length two.")
+
+        if globalsize[0] < 0 or globalsize[1] < 0:
+            raise Exception("Global size must be positive.")
+
+        self._gshape = globalsize
+
+        ## Check and set blocksize
         if not _blocksize and not blocksize:
             raise Exception("No supplied or default blocksize.")
 
-        self.Br, self.Bc = blocksize if blocksize else _blocksize
-            
+        blocksize = blocksize if blocksize else _blocksize
+
+        if len(blocksize) != 2:
+            raise Exception("Block size must be length two.")
+
+        if blocksize[0] < 0 or blocksize[1] < 0:
+            raise Exception("Block size must be positive.")
+
+        self._blocksize = blocksize
+
+        ## Check and set context.
         if not context and not _context:
             raise Exception("No supplied or default context.")
         self._context = context if context else _context
 
+        # Allocate the local array.
         self._local_array = np.zeros(self.local_shape(), order='F', dtype=dtype)
 
+        # Create the descriptor
         self._mkdesc()
 
 
@@ -377,7 +403,7 @@ cdef class DistributedMatrix(object):
         -------
         cmat : DistributedMatrix
         """
-        return cls([mat.Nr, mat.Nc], blocksize=[mat.Br, mat.Bc], dtype=mat.dtype, context=mat.context)
+        return cls(mat.global_shape, blocksize=mat.blocksize, dtype=mat.dtype, context=mat.context)
     
     
     @classmethod

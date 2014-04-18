@@ -42,17 +42,8 @@ if len(sys.argv) > 5:
 
 
 pysc.initmpi(gridsize = [npx, npy], blocksize = [B, B])
+A = pysc.DistributedMatrix([n, n], dtype=np.float64)
 
-print pysc._context
-print pysc._context.blacs_context
-print pysc._context.num_rows, pysc._context.num_cols
-print pysc._blocksize
-
-ctxt = pysc.ProcessContext(comm=comm, gridsize=[npx, npy])
-
-A = pysc.DistributedMatrix([n, n], dtype=np.float64, blocksize=[B, B], context=ctxt)
-
-print A.desc
 
 
 if rank == 0:
@@ -65,8 +56,7 @@ if rank == 0:
     print
     print "Number of threads: %i" % (int(os.environ['OMP_NUM_THREADS']) if 'OMP_NUM_THREADS' in os.environ else 0)
     print "==============================================="
-    print 
-    
+    print
 
 
 if comm.Get_rank() == 0:
@@ -107,4 +97,3 @@ evals2 = np.sort(np.fft.fft(f(px)).real)
 
 if comm.Get_rank() == 0:
     print "Max diff:", np.abs((evals1 - evals2) / evals1).max()
-

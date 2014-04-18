@@ -10,7 +10,6 @@ from blacs cimport *
 from scalapack cimport *
 
 from pyscalapack.core cimport *
-#from scarray import *
 
 
 cdef int _ONE = 1
@@ -45,6 +44,7 @@ def assert_square(A):
     for A in Alist:
         if A.Nr != A.Nc:
             raise Exception("Matrix must be square (has dimensions %i x %i)." % (A.Nr, A.Nc))
+
 
 def assert_type(A, dtype):
     Alist = flatten([A])
@@ -85,8 +85,6 @@ def pdsyevd(mat, destroy=True, upper=True):
     cdef int * iwork
     cdef DistributedMatrix A, evecs
 
-    cdef int nprow, npcol, row, col
-
     cdef int info
     cdef np.ndarray evals
 
@@ -103,15 +101,6 @@ def pdsyevd(mat, destroy=True, upper=True):
     iwork = <int *>malloc(sizeof(int) * liwork)
 
     uplo = "U" if upper else "L"
-
-    print A.desc, evecs.desc
-
-    Cblacs_gridinfo(<int>A.desc[1], &nprow, &npcol, &row, &col)
-    print "RA", A.desc[1], nprow, npcol
-
-    Cblacs_gridinfo(<int>evecs.desc[1], &nprow, &npcol, &row, &col)
-    print "RZ", evecs.desc[1], nprow, npcol
-
 
     ## Workspace size inquiry
     lwork = -1
