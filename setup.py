@@ -1,4 +1,8 @@
-from setuptools import setup, Extension, find_packages
+
+
+import setuptools
+from setuptools import find_packages
+from numpy.distutils.core import setup, Extension
 from distutils import sysconfig
 
 import subprocess
@@ -27,12 +31,12 @@ use_omp = is_gcc
 ## Try and decide whether to use Cython to compile the source or not.
 try:
     from Cython.Distutils import build_ext
-
+    import blagsjj
     HAVE_CYTHON = True
 
 except ImportError as e:
     warnings.warn("Cython not installed.")
-    from distutils.command import build_ext
+    #from numpy.distutils.command import build_ext
 
     HAVE_CYTHON = False
 
@@ -87,27 +91,43 @@ else:
 use_omp = False
 omp_args = ['-fopenmp'] if use_omp else []
 
-mod_core = Extension('pyscalapack.core', [ cython_file('pyscalapack/core'), 'pyscalapack/bcutil.c'],
-                     include_dirs=['.', np.get_include(), mpi4py.get_include()],
-                     library_dirs=scl_libdir, libraries=scl_lib,
-                     extra_compile_args=(omp_args + mpicompileargs),
-                     extra_link_args=(omp_args + mpilinkargs))
+# mod_core = Extension('pyscalapack.core', [ cython_file('pyscalapack/core'), 'pyscalapack/bcutil.c'],
+#                      include_dirs=['.', np.get_include(), mpi4py.get_include()],
+#                      library_dirs=scl_libdir, libraries=scl_lib,
+#                      extra_compile_args=(omp_args + mpicompileargs),
+#                      extra_link_args=(omp_args + mpilinkargs))
 
-mod_routines = Extension('pyscalapack.routines', [ cython_file('pyscalapack/routines') ],
-                         include_dirs=['.', np.get_include(), mpi4py.get_include()],
-                         library_dirs=scl_libdir, libraries=scl_lib,
-                         extra_compile_args=(omp_args + mpicompileargs),
-                         extra_link_args=(omp_args + mpilinkargs))
+# mod_routines = Extension('pyscalapack.routines', [ cython_file('pyscalapack/routines') ],
+#                          include_dirs=['.', np.get_include(), mpi4py.get_include()],
+#                          library_dirs=scl_libdir, libraries=scl_lib,
+#                          extra_compile_args=(omp_args + mpicompileargs),
+#                          extra_link_args=(omp_args + mpilinkargs))
 
-mod_mpi3 = Extension('pyscalapack.mpi3util', [cython_file('pyscalapack/mpi3util')],
-                     include_dirs=['.', np.get_include(), mpi4py.get_include()],
-                     extra_compile_args=mpicompileargs,
-                     extra_link_args=mpilinkargs)
+mpi3_ext = Extension('pyscalapack.mpi3util', [cython_file('pyscalapack/mpi3util')],
+                    include_dirs=['.', np.get_include(), mpi4py.get_include()],
+                    extra_compile_args=mpicompileargs,
+                    extra_link_args=mpilinkargs)
+
+blacs_ext = Extension('pyscalapack.blacs', [cython_file('pyscalapack/blacs')],
+                    include_dirs=['.', np.get_include(), mpi4py.get_include()],
+                    library_dirs=scl_libdir, libraries=scl_lib,
+                    extra_compile_args=mpicompileargs,
+                    extra_link_args=mpilinkargs)
+
+llpblas_ext = Extension('pyscalapack.lowlevel.pblas', ['pyscalapack/lowlevel/pblas.pyf'],
+                    library_dirs=scl_libdir, libraries=scl_lib,
+                    extra_compile_args=(mpicompileargs + omp_args),
+                    extra_link_args=(mpilinkargs + omp_args))
+
+llscalapack_ext = Extension('pyscalapack.lowlevel.scalapack', ['pyscalapack/lowlevel/scalapack.pyf'],
+                    library_dirs=scl_libdir, libraries=scl_lib,
+                    extra_compile_args=(mpicompileargs + omp_args),
+                    extra_link_args=(mpilinkargs + omp_args))
 
 setup(
     name='PyScalapack',
     packages=find_packages(),
-    ext_modules=[mod_core, mod_routines, mod_mpi3],
-    cmdclass={'build_ext': build_ext}
+    ext_modules=[mpi3_ext, blacs_ext, llpblas_ext, llscalapack_ext]
+    #cmdclass={'build_ext': build_ext}
 )
 
