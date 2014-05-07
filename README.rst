@@ -24,7 +24,7 @@ Installation
 To build just go edit ``setup.py`` to choose the correct options, and then
 run::
 
-    > python setup.py install
+    $ python setup.py install
 
 Building this is a little bit of an art, as Cython forces the use of the
 compiler that built python itself (when linking). This mean ``mpicc`` cannot
@@ -47,5 +47,11 @@ Additionally, you may need to force it to use OMPIO rather than ROMIO. This
 can be done by calling with::
 
     $ mpirun -mca io ompio ...
+
+or by setting the environment variable::
+
+    $ export OMPI_MCA_io=ompio
+
+
 
  
