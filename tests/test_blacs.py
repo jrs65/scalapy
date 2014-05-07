@@ -1,20 +1,28 @@
 
 from mpi4py import MPI
 
-from pyscalapack import blacs
-
 comm = MPI.COMM_WORLD
-
 rank = comm.rank
+size = comm.size
 
-if comm.size != 4:
+if size != 4:
     raise Exception("Test needs 4 processes.")
 
 
-ctxt = blacs.sys2blacs_handle(comm)
+def test_blacs_import():
+    from scalapy import blacs
 
-print "BLACS handle (rank %i) = %i" % (rank, ctxt)
 
-blacs.gridinit(ctxt, 2, 2)
+def test_blacs():
+    from scalapy import blacs
 
-print "BLACS grid info (rank %i):" % rank, blacs.gridinfo(ctxt)
+    ctxt = blacs.sys2blacs_handle(comm)
+    blacs.gridinit(ctxt, 2, 2)
+    ranklist = [(0, 0), (0, 1), (1, 0), (1, 1)]
+
+    gi = blacs.gridinfo(ctxt)
+    gshape = gi[:2]
+    gpos = gi[2:]
+
+    assert gshape == (2, 2)
+    assert gpos == ranklist[rank]

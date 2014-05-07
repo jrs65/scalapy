@@ -1,12 +1,48 @@
+"""
+===========================================
+scalapy Core (:mod:`~scalapy.core`)
+===========================================
+
+.. currentmodule:: scalapy.core
+
+This module contains the core of PyScalapack: a set of routines and classes to
+describe the distribution of MPI processes involved in the computation, and
+interface with ``BLACS``; and a class which holds a block cyclic distributed
+matrix for computation.
+
+
+Routines
+========
+
+.. autosummary::
+    :toctree: generated/
+
+    initmpi
+
+
+Classes
+=======
+
+.. autosummary::
+    :toctree: generated/
+
+    ProcessContext
+    DistributedMatrix
+    PyScalapackException
+
+"""
+
+
 import numpy as np
 
 from mpi4py import MPI
 
 import blockcyclic
 import blacs
-
+import mpi3util
 
 class PyScalapackException(Exception):
+    """Error in Scalapack."""
     pass
 
 _context = None
@@ -56,16 +92,33 @@ def initmpi(gridshape, block_shape=None):
     _context = ProcessContext(gridshape)
 
     # Set default blocksize
-    _block_shape = block_shape
+    _block_shape = tuple(block_shape)
 
 
 
 
 class ProcessContext(object):
     r"""Stores information about an MPI/BLACS process.
+
+    Parameters
+    ----------
+    gridshape : array_like
+        A two element list (or other tuple etc), containing the
+        requested shape for the process grid e.g. [nprow, npcol].
+
+    comm : mpi4py.MPI.Comm, optional
+        The MPI communicator to create a BLACS context for. If comm=None,
+        then use MPI.COMM_WORLD instead.
+
+    Attributes
+    ----------
+    grid_shape
+    grid_position
+    mpi_comm
+    blacs_context
     """
 
-    _grid_shape = [1, 1]
+    _grid_shape = (1, 1)
 
     @property
     def grid_shape(self):
@@ -73,7 +126,7 @@ class ProcessContext(object):
         return self._grid_shape
 
 
-    _grid_position = [0, 0]
+    _grid_position = (0, 0)
 
     @property
     def grid_position(self):
@@ -99,18 +152,6 @@ class ProcessContext(object):
 
     def __init__(self, grid_shape, comm=None):
         """Construct a BLACS context for the current process.
-
-        Creates a BLACS context for the given MPI Communicator.
-
-        Parameters
-        ----------
-        gridshape : array_like
-            A two element list (or other tuple etc), containing the
-            requested shape for the process grid e.g. [nprow, npcol].
-
-        comm : mpi4py.MPI.Comm, optional
-            The MPI communicator to create a BLACS context for. If comm=None,
-            then use MPI.COMM_WORLD instead.
         """
 
         # MPI setup
@@ -127,7 +168,7 @@ class ProcessContext(object):
         if gs != self.mpi_comm.size:
             raise PyScalapackException("Gridshape must be equal to the MPI size.")
 
-        self._grid_shape = grid_shape
+        self._grid_shape = tuple(grid_shape)
 
         # Initialise BLACS context
         self._blacs_context = blacs.sys2blacs_handle(self.mpi_comm)
@@ -148,6 +189,56 @@ class ProcessContext(object):
 
 class DistributedMatrix(object):
     r"""A matrix distributed over multiple MPI processes.
+
+    Parameters
+    ----------
+    global_shape : list of integers
+        The size of the global matrix eg. [Nr, Nc].
+    dtype : np.dtype, optional
+        The datatype of the array. Only `float32`, `float64` (default) and
+        `complex128` are supported by Scalapack.
+    block_shape: list of integers, optional
+        The blocking size, packed as [Br, Bc]. If `None` uses the default blocking
+        (set via `initmpi`).
+    context : ProcessContext, optional
+        The process context. If not set uses the default (recommended). 
+
+    Attributes
+    ----------
+    local_array
+    desc
+    context
+    dtype
+    mpi_dtype
+    sc_dtype
+    global_shape
+    local_shape
+    block_shape
+
+    Methods
+    ------------
+    empty_like
+    indices
+    from_global_array
+    to_global_array
+    from_file
+    to_file
+
+    Notes
+    -----
+    The type of the array must be specified with the standard numpy types. A
+    :class:`DistributedMatrix` has properties for fetching the equivalent
+    ``MPI`` (with :prop:`mpi_dtype`) and ``Scalapack`` types (which is a
+    character given by :prop:`sc_dtype`).
+
+    =================  =================  ==============  ===============================
+    Numpy type         MPI type           Scalapack type  Description                    
+    =================  =================  ==============  ===============================
+    ``np.float32``     ``MPI.FLOAT``      ``S``           Single precision float            
+    ``np.float64``     ``MPI.DOUBLE``     ``D``           Double precision float         
+    ``np.complex64``   ``MPI.COMPLEX``    ``C``           Single precision complex number
+    ``np.complex128``  ``MPI.COMPLEX16``  ``Z``           Double precision complex number
+    =================  =================  ==============  ===============================
     """
 
     @property
@@ -190,6 +281,17 @@ class DistributedMatrix(object):
 
 
     @property
+    def sc_dtype(self):
+        """The Scalapack type as a character."""
+        _sc_type = {np.float32: 'S',
+                    np.float64: 'D',
+                    np.complex64: 'C',
+                    np.complex128: 'Z'}
+
+        return _sc_type[self.dtype]
+
+
+    @property
     def global_shape(self):
         """The shape of the global matrix."""
         return self._global_shape
@@ -215,18 +317,6 @@ class DistributedMatrix(object):
     def __init__(self, global_shape, dtype=np.float64, block_shape=None, context=None):
         r"""Initialise an empty DistributedMatrix.
 
-        Parameters
-        ----------
-        global_shape : list of integers
-            The size of the global matrix eg. [Nr, Nc].
-        dtype : np.dtype, optional
-            The datatype of the array. Only `float32`, `float64` (default) and
-            `complex128` are supported by Scalapack.
-        block_shape: list of integers, optional
-            The blocking size, packed as [Br, Bc]. If `None` uses the default blocking
-            (set via `initmpi`).
-        context : ProcessContext, optional
-            The process context. If not set uses the default (recommended). 
         """
 
         ## Check and set data type
@@ -239,7 +329,7 @@ class DistributedMatrix(object):
         if not _chk_2d_size(global_shape):
             raise PyScalapackException("Array global shape invalid.")
 
-        self._global_shape = global_shape
+        self._global_shape = tuple(global_shape)
 
         ## Check and set default block_shape
         if not _block_shape and not block_shape:
@@ -292,21 +382,22 @@ class DistributedMatrix(object):
         size = self.context.mpi_comm.size
 
         # Create distributed array view (F-ordered)
-        self._darr_f = self.mpi_dtype.Create_darray(size, rank, 
+        self._darr_f = self.mpi_dtype.Create_darray(size, rank,
                             self.global_shape,
                             [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
                             self.block_shape, self.context.grid_shape,
-                            MPI.ORDER_F).Commit()
+                            MPI.ORDER_F)
+        self._darr_f.Commit()
 
         # Create distributed array view (F-ordered)
-        self._darr_c = self.mpi_dtype.Create_darray(size, rank, 
+        self._darr_c = self.mpi_dtype.Create_darray(size, rank,
                             self.global_shape,
                             [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
                             self.block_shape, self.context.grid_shape,
                             MPI.ORDER_C).Commit()
 
         # Create list of types for all ranks (useful for passing to global array)
-        self._darr_list = [ self.mpi_dtype.Create_darray(size, ri, 
+        self._darr_list = [ self.mpi_dtype.Create_darray(size, ri,
                                 self.global_shape,
                                 [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
                                 self.block_shape, self.context.grid_shape,
@@ -380,7 +471,7 @@ class DistributedMatrix(object):
 
 
     @classmethod
-    def from_global_array(cls, mat, block_shape=None, context=None):
+    def from_global_array(cls, mat, rank=None, block_shape=None, context=None):
 
         r"""Create a DistributedMatrix directly from the global `array`.
 
@@ -388,7 +479,10 @@ class DistributedMatrix(object):
         ----------
         mat : ndarray
             The global array to extract the local segments of.
-        blocksize: list of integers, optional
+        rank : integer        
+            Broadcast global matrix from given rank, to all ranks if set.
+            Otherwise, if rank=None, assume all processes have a copy.
+        block_shape: list of integers, optional
             The blocking size in [Br, Bc]. If `None` uses the default
             blocking (set via `initmpi`).
         context : ProcessContext, optional
@@ -400,6 +494,11 @@ class DistributedMatrix(object):
         """
         if mat.ndim != 2:
             raise PyScalapackException("Array must be 2d.")
+
+        # Broadcast if rank is not set.
+        if rank is not None:
+            comm = context.mpi_comm if context else _context.mpi_comm
+            mat = comm.bcast(mat, root=rank)
 
         m = cls(mat.shape, block_shape=block_shape, dtype=mat.dtype.type, context=context)
 
@@ -447,7 +546,7 @@ class DistributedMatrix(object):
             global_array = np.zeros(self.global_shape, dtype=self.dtype, order='F')
 
         # Each process should send its local sections.
-        comm.Isend([self.local_array, self.mpi_dtype], dest=rank, tag=0)
+        sreq = comm.Isend([self.local_array, self.mpi_dtype], dest=rank, tag=0)
 
         if comm.rank == rank:
             # Post each receive
@@ -457,8 +556,75 @@ class DistributedMatrix(object):
             # Wait for requests to complete
             MPI.Prequest.Waitall(reqs)
 
+        # Wait on send request. Important, as can get weird synchronisation
+        # bugs otherwise as processes exit before completing their send.
+        sreq.Wait()
+
         # Distribute to all processes if requested
         if bcast:
             comm.Bcast([global_array, self.mpi_dtype], root=rank)
 
+        # Barrier to synchronise all processes
+        comm.Barrier()
+
         return global_array
+
+
+    @classmethod
+    def from_file(cls, filename, global_shape, dtype, block_shape=None, context=None, order='F', displacement=0):
+        """Read in a global array from a file.
+
+        Parameters
+        ----------
+        filename : string
+            Name of file to read in.
+        global_shape : [nrows, ncols]
+            Shape of global array.
+        dtype : numpy datatype
+            Datatype of array.
+        block_shape : [brows, bcols]
+            Shape of block, if None, try to use default size.
+        context : ProcessContext
+            Description of process distribution.
+        order : 'F' or 'C'
+            Storage order on disk.
+        displacement : integer
+            Displacement from the start of file (in bytes)
+
+        Returns
+        -------
+        dm : DistributedMatrix
+        """
+        # Initialise DistributedMatrix
+        dm = cls(global_shape, dtype=dtype, block_shape=block_shape, context=context)
+
+        # Open the file, and read out the segments
+        f = MPI.File.Open(dm.context.mpi_comm, filename, MPI.MODE_RDONLY)
+        f.Set_view(displacement, dm.mpi_dtype, dm._darr_f, "native")
+        f.Read_all(dm.local_array)
+        f.Close()
+
+        return dm
+
+
+    def to_file(self, filename, order='F', displacement=0):
+        """Write a DistributedMatrix out to a file.
+
+        Parameters
+        ----------
+        filename : string
+            Name of file to write to.
+        """
+
+        # Open the file, and read out the segments
+        f = MPI.File.Open(self.context.mpi_comm, filename, MPI.MODE_RDWR | MPI.MODE_CREATE)
+
+        filelength = displacement + mpi3util.type_get_extent(self._darr_f)[1]  # Extent is index 1
+
+        # Preallocate to ensure file is long enough for writing.
+        f.Preallocate(filelength)
+
+        # Set view and write out.
+        f.Set_view(displacement, self.mpi_dtype, self._darr_f, "native")
+        f.Write_all(self.local_array)
+        f.Close()

@@ -1,12 +1,30 @@
+"""
+=======================================================
+Blockcyclic Utilities (:mod:`~pyscalapack.blockcyclic`)
+=======================================================
+
+A set of utilities for calculating the packing in block cyclic matrix
+distributions.
+
+Routines
+========
+
+.. autosummary::
+    :toctree: generated/
+
+    numrc
+    indices_rc
+
+    num_blocks
+    num_c_blocks
+    num_lblocks
+    num_c_lblocks 
+    partial_last_block
+"""
+
 import numpy as np
 
 from mpi4py import MPI
-
-
-# Map numpy type into MPI type
-_typemap = { np.float32 : MPI.FLOAT,
-            np.float64 : MPI.DOUBLE,
-            np.complex128 : MPI.COMPLEX16 }
 
 
 def ceildiv(x, y):
@@ -19,53 +37,130 @@ def pid_remap(p, p0, P):
 
 
 def num_c_blocks(N, B):
-    """Number of complete blocks globally."""
+    """Number of complete blocks globally.
+
+    Parameters
+    ----------
+    N : integer
+        Number of elements on the side.
+    B : integer
+        Block length.
+
+    Returns
+    -------
+    num : integer
+    """
     return int(N / B)
 
 
 def num_blocks(N, B):
-    """Total number of blocks globally."""
+    """Total number of blocks globally (complete or not).
+
+    Parameters
+    ----------
+    N : integer
+        Number of elements on the side.
+    B : integer
+        Block length.
+
+    Returns
+    -------
+    num : integer
+    """
     return ceildiv(N, B)
 
 
 def num_c_lblocks(N, B, p, P):
-    """Number of complete blocks locally."""
+    """Number of complete blocks locally.
+
+    Parameters
+    ----------
+    N : integer
+        Number of elements on the side.
+    B : integer
+        Block length.
+    p : integer
+        Process index.
+    P : integer
+        Number of processes on the side.
+
+    Returns
+    -------
+    num : integer
+    """
     nbc = num_c_blocks(N, B)
     return int(nbc / P) + int(1 if ((nbc % P) > p) else 0)
 
 
 def num_lblocks(N, B, p, P):
-    """Total number of local blocks."""
+    """Total number of local blocks.
+
+    Parameters
+    ----------
+    N : integer
+        Number of elements on the side.
+    B : integer
+        Block length.
+    p : integer
+        Process index.
+    P : integer
+        Number of processes on the side.
+
+    Returns
+    -------
+    num : integer
+    """
     nb = num_blocks(N, B)
     return int(nb / P) + int(1 if ((nb % P) > p) else 0)
 
 
 def partial_last_block(N, B, p, P):
-    """Is the last local block partial?"""
+    """Is the last local block partial?
+
+    Parameters
+    ----------
+    N : integer
+        Number of elements on the side.
+    B : integer
+        Block length.
+    p : integer
+        Process index.
+    P : integer
+        Number of processes on the side.
+
+    Returns
+    -------
+    partial : boolean
+    """
     return ((N % B > 0) and ((num_c_blocks(N, B) % P) == p))
-
-
-def num_rstride(N, B, stride):
-    """Length of block strided row."""
-    return num_blocks(N, B) * stride
-
-
-#size_t stride_page(size_t B, size_t itemsize) {
-#
-#  size_t pl;
-#
-#  pl = (size_t) sysconf (_SC_PAGESIZE) / itemsize;
-#  return ceildiv(B, pl) * pl;
-#}
-
-
-#size_t num_rpage(size_t N, size_t B, size_t itemsize) {
-#  return num_rstride(N, B, stride_page(B, itemsize));
-#}
 
 
 def numrc(N, B, p, P):
     """The number of rows/columns of the global array local to the process.
+
+    Parameters
+    ----------
+    N : integer
+        Number of elements on the side.
+    B : integer
+        Block length.
+    p : integer
+        Process index.
+    P : integer
+        Number of processes on the side.
+
+    Returns
+    -------
+    num : integer
+
+    Examples
+    --------
+
+    >>> numrc(5, 2, 0, 2)
+    3
+
+    >>> numrc(5, 2, 1, 2)
+    2
     """
 
     # Number of complete blocks owned by the process.
@@ -83,8 +178,34 @@ def numrc(N, B, p, P):
 
 def indices_rc(N, B, p, P):
     """The indices of the global array local to the process.
+
+    Parameters
+    ----------
+    N : integer
+        Number of elements on the side.
+    B : integer
+        Block length.
+    p : integer
+        Process index.
+    P : integer
+        Number of processes on the side.
+
+    Returns
+    -------
+    indices : np.ndarray[int32]    
+        Indices of the side that are local to this process.
+
+    Examples
+    --------
+    Short example:
+
+    >>> indices_rc(5, 2, 0, 2)
+    np.array([0, 1, 4])
+
+    >>> indices_rc(5, 2, 1, 2)
+    np.array([2, 3])
     """
-    
+
     nt = numrc(N, B, p, P)
     nb = num_c_lblocks(N, B, p, P)
 
@@ -272,30 +393,3 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
     f.Set_view(displacement, mpitype, darr, "native")
     f.Write_all(local_array)
     f.Close()
-
-    
-
-
-
-def bc_matrix_forward(src, blocksize, process, process_grid, order='F', dest=None):
-
-    gshape = src.shape
-
-    lshape = map(numrc, gshape, blocksize, process, process_grid)
-
-    if dest is None:
-        dest = np.empty(lshape, dtype=src.dtype, order='F')
-
-    cblocks = map(num_c_blocks, gshape, blocksize)
-    lcblocks = map(num_c_blocks, gshape, blocksize, process, process_grid)
-    partial = map(partial_last_block, gshape, blocksize, process, process_grid)    
-
-    clen = cblocks[0]*blocksize[0], cblocks[1]*blocksize[1]
-
-    q1 = src[:clen[0], :clen[1]].reshape((blocksize[0], cblocks[0], blocksize[1], cblocks[1]))
-    q2 = src[:clen[0], clen[1]:].reshape((blocksize[0], cblocks[0], -1))
-    q3 = src[clen[0]:, :clen[1]].reshape((-1, blocksize[1], cblocks[1]))
-    q4 = src[clen[0]:, clen[1]:].reshape((gshape[0] - clen[0], gshape[1] - clen[1]))
-    
-    #q1[:, process[0]::process_grid[0], :, process[1]::process_grid[1]].reshape()
-        

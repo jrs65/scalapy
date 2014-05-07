@@ -1,6 +1,4 @@
 
-
-import setuptools
 from setuptools import find_packages
 from numpy.distutils.core import setup, Extension
 from distutils import sysconfig
@@ -91,41 +89,30 @@ else:
 use_omp = False
 omp_args = ['-fopenmp'] if use_omp else []
 
-# mod_core = Extension('pyscalapack.core', [ cython_file('pyscalapack/core'), 'pyscalapack/bcutil.c'],
-#                      include_dirs=['.', np.get_include(), mpi4py.get_include()],
-#                      library_dirs=scl_libdir, libraries=scl_lib,
-#                      extra_compile_args=(omp_args + mpicompileargs),
-#                      extra_link_args=(omp_args + mpilinkargs))
 
-# mod_routines = Extension('pyscalapack.routines', [ cython_file('pyscalapack/routines') ],
-#                          include_dirs=['.', np.get_include(), mpi4py.get_include()],
-#                          library_dirs=scl_libdir, libraries=scl_lib,
-#                          extra_compile_args=(omp_args + mpicompileargs),
-#                          extra_link_args=(omp_args + mpilinkargs))
+mpi3_ext = Extension('scalapy.mpi3util', [cython_file('scalapy/mpi3util')],
+                      include_dirs=['.', np.get_include(), mpi4py.get_include()],
+                      extra_compile_args=mpicompileargs,
+                      extra_link_args=mpilinkargs)
 
-mpi3_ext = Extension('pyscalapack.mpi3util', [cython_file('pyscalapack/mpi3util')],
-                    include_dirs=['.', np.get_include(), mpi4py.get_include()],
-                    extra_compile_args=mpicompileargs,
-                    extra_link_args=mpilinkargs)
+blacs_ext = Extension('scalapy.blacs', [cython_file('scalapy/blacs')],
+                      include_dirs=['.', np.get_include(), mpi4py.get_include()],
+                      library_dirs=scl_libdir, libraries=scl_lib,
+                      extra_compile_args=mpicompileargs,
+                      extra_link_args=mpilinkargs)
 
-blacs_ext = Extension('pyscalapack.blacs', [cython_file('pyscalapack/blacs')],
-                    include_dirs=['.', np.get_include(), mpi4py.get_include()],
-                    library_dirs=scl_libdir, libraries=scl_lib,
-                    extra_compile_args=mpicompileargs,
-                    extra_link_args=mpilinkargs)
+llpblas_ext = Extension('scalapy.lowlevel.pblas', ['scalapy/lowlevel/pblas.pyf'],
+                        library_dirs=scl_libdir, libraries=scl_lib,
+                        extra_compile_args=(mpicompileargs + omp_args),
+                        extra_link_args=(mpilinkargs + omp_args))
 
-llpblas_ext = Extension('pyscalapack.lowlevel.pblas', ['pyscalapack/lowlevel/pblas.pyf'],
-                    library_dirs=scl_libdir, libraries=scl_lib,
-                    extra_compile_args=(mpicompileargs + omp_args),
-                    extra_link_args=(mpilinkargs + omp_args))
-
-llscalapack_ext = Extension('pyscalapack.lowlevel.scalapack', ['pyscalapack/lowlevel/scalapack.pyf'],
-                    library_dirs=scl_libdir, libraries=scl_lib,
-                    extra_compile_args=(mpicompileargs + omp_args),
-                    extra_link_args=(mpilinkargs + omp_args))
+llscalapack_ext = Extension('scalapy.lowlevel.scalapack', ['scalapy/lowlevel/scalapack.pyf'],
+                            library_dirs=scl_libdir, libraries=scl_lib,
+                            extra_compile_args=(mpicompileargs + omp_args),
+                            extra_link_args=(mpilinkargs + omp_args))
 
 setup(
-    name='PyScalapack',
+    name='scalapy',
     packages=find_packages(),
     ext_modules=[mpi3_ext, blacs_ext, llpblas_ext, llscalapack_ext]
     #cmdclass={'build_ext': build_ext}
