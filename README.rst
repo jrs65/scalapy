@@ -31,6 +31,21 @@ compiler that built python itself (when linking). This mean ``mpicc`` cannot
 simply be used, and we need to manually fetch the flags required for building
 with MPI. This is likely to be the source of any difficulties building.
 
+MPI Version (OpenMPI 1.8.2 or higher)
+=====================================
 
+Some of the features, especially distribution of matrice from global arrays
+and files, make heavy use of advanced features of MPI, such as derived
+datatypes and MPI-IO. Unfortunately many MPI distributions contain critical
+bugs in these components (mostly due to ``ROMIO``), which means these will
+fail in some common circumstances.
+
+However, recent versions of OpenMPI contain a new implementation of MPI-IO
+(called OMPIO) which seems to be issue free. This means that for full, and
+successful usage you should try and use OpenMPI 1.8.2 or greater.
+Additionally, you may need to force it to use OMPIO rather than ROMIO. This
+can be done by calling with::
+
+    $ mpirun -mca io ompio ...
 
  

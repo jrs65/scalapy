@@ -259,6 +259,7 @@ class WorkArray(object):
 
 
 ## Add wrapped routines to this modules dictionary.
+## Also try and insert the PBLAS and ScaLAPACK routines into the docstring.
 _mod_dict = globals()
 
 _doc_pblas = ''

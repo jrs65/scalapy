@@ -1,6 +1,6 @@
 """
 ================================================
-PyScalapack Utilities (:mod:`~pyscalapack.util`)
+scalapy Utilities (:mod:`~pyscalapack.util`)
 ================================================
 
 
