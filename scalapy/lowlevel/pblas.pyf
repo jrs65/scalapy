@@ -1,0 +1,1979 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module pblas ! in 
+    interface  ! in :pblas
+        subroutine pcagemv(trans,m,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pcagemv_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pcagemv
+        subroutine pcahemv(uplo,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pcahemv_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pcahemv
+        subroutine pcamax(n,amax,indx,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pcamax_.pyf
+            integer intent(in) :: n
+            complex dimension(*),intent(inout) :: amax
+            integer intent(out) :: indx
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pcamax
+        subroutine pcatrmv(uplo,trans,diag,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pcatrmv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pcatrmv
+        subroutine pcaxpy(n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pcaxpy_.pyf
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pcaxpy
+        subroutine pccopy(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pccopy_.pyf
+            integer intent(in) :: n
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pccopy
+        subroutine pcdotc(n,dot,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pcdotc_.pyf
+            integer intent(in) :: n
+            complex dimension(*),intent(inout) :: dot
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pcdotc
+        subroutine pcdotu(n,dot,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pcdotu_.pyf
+            integer intent(in) :: n
+            complex dimension(*),intent(inout) :: dot
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pcdotu
+        subroutine pcgeadd(trans,m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pcgeadd_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pcgeadd
+        subroutine pcgemm(transa,transb,m,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pcgemm_.pyf
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: transb
+            integer intent(in) :: m
+            integer intent(in) :: n
+            integer intent(in) :: k
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pcgemm
+        subroutine pcgemv(trans,m,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pcgemv_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pcgemv
+        subroutine pcgerc(m,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pcgerc_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pcgerc
+        subroutine pcgeru(m,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pcgeru_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pcgeru
+        subroutine pchemm(side,uplo,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pchemm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pchemm
+        subroutine pchemv(uplo,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pchemv_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pchemv
+        subroutine pcher2(uplo,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pcher2_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pcher2
+        subroutine pcher2k(uplo,trans,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pcher2k_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            real intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pcher2k
+        subroutine pcher(uplo,n,alpha,x,ix,jx,descx,incx,a,ia,ja,desca) ! in :pblas:tmp.pblas/pcher_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pcher
+        subroutine pcherk(uplo,trans,n,k,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pcherk_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            real intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pcherk
+        subroutine pcscal(n,alpha,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pcscal_.pyf
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pcscal
+        subroutine pcsscal(n,alpha,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pcsscal_.pyf
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pcsscal
+        subroutine pcswap(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pcswap_.pyf
+            integer intent(in) :: n
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pcswap
+        subroutine pcsymm(side,uplo,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pcsymm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pcsymm
+        subroutine pcsyr2k(uplo,trans,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pcsyr2k_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pcsyr2k
+        subroutine pcsyrk(uplo,trans,n,k,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pcsyrk_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pcsyrk
+        subroutine pctradd(uplo,trans,m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pctradd_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pctradd
+        subroutine pctranc(m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pctranc_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pctranc
+        subroutine pctranu(m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pctranu_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex intent(in) :: beta
+            complex dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pctranu
+        subroutine pctrmm(side,uplo,transa,diag,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb) ! in :pblas:tmp.pblas/pctrmm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: diag
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+        end subroutine pctrmm
+        subroutine pctrmv(uplo,trans,diag,n,a,ia,ja,desca,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pctrmv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pctrmv
+        subroutine pctrsm(side,uplo,transa,diag,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb) ! in :pblas:tmp.pblas/pctrsm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: diag
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex intent(in) :: alpha
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+        end subroutine pctrsm
+        subroutine pctrsv(uplo,trans,diag,n,a,ia,ja,desca,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pctrsv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            complex dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pctrsv
+        subroutine pdagemv(trans,m,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pdagemv_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pdagemv
+        subroutine pdamax(n,amax,indx,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pdamax_.pyf
+            integer intent(in) :: n
+            double precision dimension(*),intent(inout) :: amax
+            integer intent(out) :: indx
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pdamax
+        subroutine pdasum(n,asum,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pdasum_.pyf
+            integer intent(in) :: n
+            double precision intent(out) :: asum
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pdasum
+        subroutine pdasymv(uplo,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pdasymv_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pdasymv
+        subroutine pdatrmv(uplo,trans,diag,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pdatrmv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pdatrmv
+        subroutine pdaxpy(n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pdaxpy_.pyf
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pdaxpy
+        subroutine pdcopy(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pdcopy_.pyf
+            integer intent(in) :: n
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pdcopy
+        subroutine pddot(n,dot,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pddot_.pyf
+            integer intent(in) :: n
+            double precision dimension(*),intent(inout) :: dot
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pddot
+        subroutine pdgeadd(trans,m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pdgeadd_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pdgeadd
+        subroutine pdgemm(transa,transb,m,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pdgemm_.pyf
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: transb
+            integer intent(in) :: m
+            integer intent(in) :: n
+            integer intent(in) :: k
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pdgemm
+        subroutine pdgemv(trans,m,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pdgemv_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pdgemv
+        subroutine pdger(m,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pdger_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pdger
+        subroutine pdnrm2(n,norm2,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pdnrm2_.pyf
+            integer intent(in) :: n
+            double precision intent(out) :: norm2
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pdnrm2
+        subroutine pdscal(n,alpha,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pdscal_.pyf
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pdscal
+        subroutine pdswap(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pdswap_.pyf
+            integer intent(in) :: n
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pdswap
+        subroutine pdsymm(side,uplo,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pdsymm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pdsymm
+        subroutine pdsymv(uplo,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pdsymv_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pdsymv
+        subroutine pdsyr2(uplo,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pdsyr2_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pdsyr2
+        subroutine pdsyr2k(uplo,trans,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pdsyr2k_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pdsyr2k
+        subroutine pdsyr(uplo,n,alpha,x,ix,jx,descx,incx,a,ia,ja,desca) ! in :pblas:tmp.pblas/pdsyr_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pdsyr
+        subroutine pdsyrk(uplo,trans,n,k,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pdsyrk_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pdsyrk
+        subroutine pdtradd(uplo,trans,m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pdtradd_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pdtradd
+        subroutine pdtran(m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pdtran_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pdtran
+        subroutine pdtrmm(side,uplo,transa,diag,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb) ! in :pblas:tmp.pblas/pdtrmm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: diag
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+        end subroutine pdtrmm
+        subroutine pdtrmv(uplo,trans,diag,n,a,ia,ja,desca,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pdtrmv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pdtrmv
+        subroutine pdtrsm(side,uplo,transa,diag,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb) ! in :pblas:tmp.pblas/pdtrsm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: diag
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+        end subroutine pdtrsm
+        subroutine pdtrsv(uplo,trans,diag,n,a,ia,ja,desca,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pdtrsv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            double precision dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pdtrsv
+        subroutine pdzasum(n,asum,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pdzasum_.pyf
+            integer intent(in) :: n
+            double precision intent(out) :: asum
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pdzasum
+        subroutine pdznrm2(n,norm2,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pdznrm2_.pyf
+            integer intent(in) :: n
+            double precision intent(out) :: norm2
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pdznrm2
+        subroutine picopy(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/picopy_.pyf
+            integer intent(in) :: n
+            integer dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            integer dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine picopy
+        subroutine psagemv(trans,m,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/psagemv_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine psagemv
+        subroutine psamax(n,amax,indx,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/psamax_.pyf
+            integer intent(in) :: n
+            real dimension(*),intent(inout) :: amax
+            integer intent(out) :: indx
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine psamax
+        subroutine psasum(n,asum,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/psasum_.pyf
+            integer intent(in) :: n
+            real intent(out) :: asum
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine psasum
+        subroutine psasymv(uplo,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/psasymv_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine psasymv
+        subroutine psatrmv(uplo,trans,diag,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/psatrmv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine psatrmv
+        subroutine psaxpy(n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/psaxpy_.pyf
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine psaxpy
+        subroutine pscasum(n,asum,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pscasum_.pyf
+            integer intent(in) :: n
+            real intent(out) :: asum
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pscasum
+        subroutine pscnrm2(n,norm2,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pscnrm2_.pyf
+            integer intent(in) :: n
+            real intent(out) :: norm2
+            complex dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pscnrm2
+        subroutine pscopy(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pscopy_.pyf
+            integer intent(in) :: n
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pscopy
+        subroutine psdot(n,dot,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/psdot_.pyf
+            integer intent(in) :: n
+            real dimension(*),intent(inout) :: dot
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine psdot
+        subroutine psgeadd(trans,m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/psgeadd_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine psgeadd
+        subroutine psgemm(transa,transb,m,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/psgemm_.pyf
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: transb
+            integer intent(in) :: m
+            integer intent(in) :: n
+            integer intent(in) :: k
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine psgemm
+        subroutine psgemv(trans,m,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/psgemv_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine psgemv
+        subroutine psger(m,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/psger_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine psger
+        subroutine psnrm2(n,norm2,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/psnrm2_.pyf
+            integer intent(in) :: n
+            real intent(out) :: norm2
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine psnrm2
+        subroutine psscal(n,alpha,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/psscal_.pyf
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine psscal
+        subroutine psswap(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/psswap_.pyf
+            integer intent(in) :: n
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine psswap
+        subroutine pssymm(side,uplo,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pssymm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pssymm
+        subroutine pssymv(uplo,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pssymv_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pssymv
+        subroutine pssyr2(uplo,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pssyr2_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pssyr2
+        subroutine pssyr2k(uplo,trans,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pssyr2k_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pssyr2k
+        subroutine pssyr(uplo,n,alpha,x,ix,jx,descx,incx,a,ia,ja,desca) ! in :pblas:tmp.pblas/pssyr_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pssyr
+        subroutine pssyrk(uplo,trans,n,k,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pssyrk_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pssyrk
+        subroutine pstradd(uplo,trans,m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pstradd_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pstradd
+        subroutine pstran(m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pstran_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real intent(in) :: beta
+            real dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pstran
+        subroutine pstrmm(side,uplo,transa,diag,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb) ! in :pblas:tmp.pblas/pstrmm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: diag
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+        end subroutine pstrmm
+        subroutine pstrmv(uplo,trans,diag,n,a,ia,ja,desca,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pstrmv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pstrmv
+        subroutine pstrsm(side,uplo,transa,diag,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb) ! in :pblas:tmp.pblas/pstrsm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: diag
+            integer intent(in) :: m
+            integer intent(in) :: n
+            real intent(in) :: alpha
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+        end subroutine pstrsm
+        subroutine pstrsv(uplo,trans,diag,n,a,ia,ja,desca,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pstrsv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            real dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            real dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pstrsv
+        subroutine pzagemv(trans,m,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzagemv_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzagemv
+        subroutine pzahemv(uplo,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzahemv_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzahemv
+        subroutine pzamax(n,amax,indx,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pzamax_.pyf
+            integer intent(in) :: n
+            complex*16 dimension(*),intent(inout) :: amax
+            integer intent(out) :: indx
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pzamax
+        subroutine pzatrmv(uplo,trans,diag,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzatrmv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            double precision intent(in) :: beta
+            double precision dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzatrmv
+        subroutine pzaxpy(n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzaxpy_.pyf
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzaxpy
+        subroutine pzcopy(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzcopy_.pyf
+            integer intent(in) :: n
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzcopy
+        subroutine pzdotc(n,dot,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzdotc_.pyf
+            integer intent(in) :: n
+            complex*16 dimension(*),intent(inout) :: dot
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzdotc
+        subroutine pzdotu(n,dot,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzdotu_.pyf
+            integer intent(in) :: n
+            complex*16 dimension(*),intent(inout) :: dot
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzdotu
+        subroutine pzdscal(n,alpha,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pzdscal_.pyf
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pzdscal
+        subroutine pzgeadd(trans,m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pzgeadd_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pzgeadd
+        subroutine pzgemm(transa,transb,m,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pzgemm_.pyf
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: transb
+            integer intent(in) :: m
+            integer intent(in) :: n
+            integer intent(in) :: k
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pzgemm
+        subroutine pzgemv(trans,m,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzgemv_.pyf
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzgemv
+        subroutine pzgerc(m,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pzgerc_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pzgerc
+        subroutine pzgeru(m,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pzgeru_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pzgeru
+        subroutine pzhemm(side,uplo,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pzhemm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pzhemm
+        subroutine pzhemv(uplo,n,alpha,a,ia,ja,desca,x,ix,jx,descx,incx,beta,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzhemv_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzhemv
+        subroutine pzher2(uplo,n,alpha,x,ix,jx,descx,incx,y,iy,jy,descy,incy,a,ia,ja,desca) ! in :pblas:tmp.pblas/pzher2_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pzher2
+        subroutine pzher2k(uplo,trans,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pzher2k_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            double precision intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pzher2k
+        subroutine pzher(uplo,n,alpha,x,ix,jx,descx,incx,a,ia,ja,desca) ! in :pblas:tmp.pblas/pzher_.pyf
+            character*1 intent(in) :: uplo
+            integer intent(in) :: n
+            double precision intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+        end subroutine pzher
+        subroutine pzherk(uplo,trans,n,k,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pzherk_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            double precision intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            double precision intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pzherk
+        subroutine pzscal(n,alpha,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pzscal_.pyf
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pzscal
+        subroutine pzswap(n,x,ix,jx,descx,incx,y,iy,jy,descy,incy) ! in :pblas:tmp.pblas/pzswap_.pyf
+            integer intent(in) :: n
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+            complex*16 dimension(*),intent(inout) :: y
+            integer intent(in) :: iy
+            integer intent(in) :: jy
+            integer dimension(*),intent(inout) :: descy
+            integer intent(in) :: incy
+        end subroutine pzswap
+        subroutine pzsymm(side,uplo,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pzsymm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pzsymm
+        subroutine pzsyr2k(uplo,trans,n,k,alpha,a,ia,ja,desca,b,ib,jb,descb,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pzsyr2k_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pzsyr2k
+        subroutine pzsyrk(uplo,trans,n,k,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pzsyrk_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: n
+            integer intent(in) :: k
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pzsyrk
+        subroutine pztradd(uplo,trans,m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pztradd_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pztradd
+        subroutine pztranc(m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pztranc_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pztranc
+        subroutine pztranu(m,n,alpha,a,ia,ja,desca,beta,c,ic,jc,descc) ! in :pblas:tmp.pblas/pztranu_.pyf
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 intent(in) :: beta
+            complex*16 dimension(*),intent(inout) :: c
+            integer intent(in) :: ic
+            integer intent(in) :: jc
+            integer dimension(*),intent(inout) :: descc
+        end subroutine pztranu
+        subroutine pztrmm(side,uplo,transa,diag,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb) ! in :pblas:tmp.pblas/pztrmm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: diag
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+        end subroutine pztrmm
+        subroutine pztrmv(uplo,trans,diag,n,a,ia,ja,desca,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pztrmv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pztrmv
+        subroutine pztrsm(side,uplo,transa,diag,m,n,alpha,a,ia,ja,desca,b,ib,jb,descb) ! in :pblas:tmp.pblas/pztrsm_.pyf
+            character*1 intent(in) :: side
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: transa
+            character*1 intent(in) :: diag
+            integer intent(in) :: m
+            integer intent(in) :: n
+            complex*16 intent(in) :: alpha
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: b
+            integer intent(in) :: ib
+            integer intent(in) :: jb
+            integer dimension(*),intent(inout) :: descb
+        end subroutine pztrsm
+        subroutine pztrsv(uplo,trans,diag,n,a,ia,ja,desca,x,ix,jx,descx,incx) ! in :pblas:tmp.pblas/pztrsv_.pyf
+            character*1 intent(in) :: uplo
+            character*1 intent(in) :: trans
+            character*1 intent(in) :: diag
+            integer intent(in) :: n
+            complex*16 dimension(*),intent(inout) :: a
+            integer intent(in) :: ia
+            integer intent(in) :: ja
+            integer dimension(*),intent(inout) :: desca
+            complex*16 dimension(*),intent(inout) :: x
+            integer intent(in) :: ix
+            integer intent(in) :: jx
+            integer dimension(*),intent(inout) :: descx
+            integer intent(in) :: incx
+        end subroutine pztrsv
+    end interface 
+end python module pblas
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/
