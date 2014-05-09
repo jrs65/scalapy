@@ -28,7 +28,8 @@ Classes
 
     ProcessContext
     DistributedMatrix
-    PyScalapackException
+    ScalapyException
+    ScalapackException
 
 """
 
@@ -41,9 +42,16 @@ import blockcyclic
 import blacs
 import mpi3util
 
-class PyScalapackException(Exception):
-    """Error in Scalapack."""
+
+class ScalapyException(Exception):
+    """Error in scalapy."""
     pass
+
+
+class ScalapackException(Exception):
+    """Error in calling Scalapack."""
+    pass
+
 
 _context = None
 _block_shape = None
@@ -162,11 +170,11 @@ class ProcessContext(object):
 
         # Grid shape setup
         if not _chk_2d_size(grid_shape):
-            raise PyScalapackException("Grid shape invalid.")
+            raise ScalapyException("Grid shape invalid.")
 
         gs = grid_shape[0]*grid_shape[1]
         if gs != self.mpi_comm.size:
-            raise PyScalapackException("Gridshape must be equal to the MPI size.")
+            raise ScalapyException("Gridshape must be equal to the MPI size.")
 
         self._grid_shape = tuple(grid_shape)
 
@@ -180,7 +188,7 @@ class ProcessContext(object):
 
         # Check we got the gridsize we wanted
         if blacs_size[0] != self.grid_shape[0] or blacs_size[1] != self.grid_shape[1]:
-            raise PyScalapackException("BLACS did not give requested gridsize.")
+            raise ScalapyException("BLACS did not give requested gridsize.")
 
         # Set the grid position.
         self._grid_position = blacs_pos
@@ -327,25 +335,25 @@ class DistributedMatrix(object):
 
         ## Check and set global_shape
         if not _chk_2d_size(global_shape):
-            raise PyScalapackException("Array global shape invalid.")
+            raise ScalapyException("Array global shape invalid.")
 
         self._global_shape = tuple(global_shape)
 
         ## Check and set default block_shape
         if not _block_shape and not block_shape:
-            raise PyScalapackException("No supplied or default blocksize.")
+            raise ScalapyException("No supplied or default blocksize.")
 
         block_shape = block_shape if block_shape else _block_shape
 
         # Validate block_shape.
         if not _chk_2d_size(block_shape):
-            raise PyScalapackException("Block shape invalid.")
+            raise ScalapyException("Block shape invalid.")
 
         self._block_shape = block_shape
 
         ## Check and set context.
         if not context and not _context:
-            raise PyScalapackException("No supplied or default context.")
+            raise ScalapyException("No supplied or default context.")
         self._context = context if context else _context
 
         # Allocate the local array.
@@ -423,6 +431,22 @@ class DistributedMatrix(object):
                    dtype=mat.dtype, context=mat.context)
 
 
+    def copy(self):
+        """Create a copy of this DistributedMatrix.
+
+        This includes a full copy of the local data. However, the
+        :attr:`context` is a reference to the original :class:`ProcessContext`.
+
+        Returns
+        -------
+        copy : DistributedMatrix
+        """
+        cp = DistributedMatrix.empty_like(self)
+        cp.local_array[:] = self.local_array
+
+        return cp
+
+
     def indices(self, full=True):
         r"""The indices of the elements stored in the local matrix.
 
@@ -493,7 +517,7 @@ class DistributedMatrix(object):
         dm : DistributedMatrix
         """
         if mat.ndim != 2:
-            raise PyScalapackException("Array must be 2d.")
+            raise ScalapyException("Array must be 2d.")
 
         # Broadcast if rank is not set.
         if rank is not None:
@@ -539,7 +563,7 @@ class DistributedMatrix(object):
 
         # Double check that rank is valid.
         if rank < 0 or rank >= comm.size:
-            raise PyScalapackException("Invalid rank.")
+            raise ScalapyException("Invalid rank.")
 
         global_array = None
         if comm.rank == rank or bcast:

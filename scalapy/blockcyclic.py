@@ -1,6 +1,6 @@
 """
 =======================================================
-Blockcyclic Utilities (:mod:`~pyscalapack.blockcyclic`)
+Blockcyclic Utilities (:mod:`~scalapy.blockcyclic`)
 =======================================================
 
 A set of utilities for calculating the packing in block cyclic matrix
@@ -215,7 +215,7 @@ def indices_rc(N, B, p, P):
                     np.arange(B)[np.newaxis, :]).flatten()
 
     if (nb * B < nt):
-        ind[(nb*B):] = (nb*P+p)*B + np.arange(nt - nb*P)
+        ind[(nb*B):] = (nb*P+p)*B + np.arange(nt - nb*B)
 
     return ind
 

@@ -15,6 +15,8 @@ Routines
 
 import numpy as np
 
+from . import core
+
 
 def flatten(x):
     """Flatten a set of nested list and tuples.
@@ -58,7 +60,7 @@ def assert_square(A):
 
         gs = A.global_shape
         if gs[0] != gs[1]:
-            raise Exception("Matrix must be square (has dimensions %i x %i)." % (gs[0], gs[1]))
+            raise core.ScalapyException("Matrix must be square (has dimensions %i x %i)." % (gs[0], gs[1]))
 
 
 def real_equiv(dtype):
@@ -69,4 +71,4 @@ def real_equiv(dtype):
     if dtype == np.float64 or dtype == np.complex128:
         return np.float64
 
-    raise Exception("Unsupported data type.")
+    raise core.ScalapyException("Unsupported data type.")

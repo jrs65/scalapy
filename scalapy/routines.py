@@ -5,7 +5,7 @@ from . import lowlevel as ll
 
 
 
-def eigh(A, lower=True, overwrite=True, eigvals=None):
+def eigh(A, lower=True, overwrite_a=True, eigvals=None):
     """Compute the eigen-decomposition of a symmetric/hermitian matrix.
 
     Use Scalapack to compute the eigenvalues and eigenvectors of a
@@ -13,12 +13,12 @@ def eigh(A, lower=True, overwrite=True, eigvals=None):
 
     Parameters
     ----------
-    mat : DistributedMatrix
+    A : DistributedMatrix
         The matrix to decompose.
     lower : boolean, optional
         Scalapack uses only half of the matrix, by default the lower
         triangle will be used. Set to False to use the upper triangle.
-    overwrite : boolean, optional
+    overwrite_a : boolean, optional
         By default the input matrix is destroyed, if set to False a
         copy is taken and operated on.
     eigvals : tuple (lo, hi), optional    
@@ -37,7 +37,7 @@ def eigh(A, lower=True, overwrite=True, eigvals=None):
     # Check if matrix is square
     util.assert_square(A)
 
-    A = A if overwrite else A.copy()
+    A = A if overwrite_a else A.copy()
 
     task = 'V'
     erange = 'A'
@@ -64,18 +64,64 @@ def eigh(A, lower=True, overwrite=True, eigvals=None):
     func, args = call_table[A.sc_dtype]
     info, m, nz = func(*args)
 
-
-    args = [task, uplo, N, A, evals, evecs]
-
-    # call_table = {'S': (ll.pssyevd, args + [ll.WorkArray('S', 'I')]),
-    #               'D': (ll.pdsyevd, args + [ll.WorkArray('D', 'I')]),
-    #               'C': (ll.pcheevd, args + [ll.WorkArray('C', 'S', 'I')]),
-    #               'Z': (ll.pzheevd, args + [ll.WorkArray('Z', 'D', 'I')])}
-
-    # func, args = call_table[A.sc_dtype]
-    # info = func(*args)
-
     if info < 0:
         raise Exception("Failure.")
 
     return evals, evecs
+
+
+def cholesky(A, lower=False, overwrite_a=False, zero_triangle=True):
+    """Compute the Cholesky decomposition of a symmetric/hermitian matrix.
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        The matrix to decompose.
+    lower : boolean, optional
+        Compute the upper or lower Cholesky factor. Additionally Scalapack
+        will only touch the upper or lower triangle of A.    
+    overwrite_a : boolean, optional
+        By default the input matrix is destroyed, if set to False a
+        copy is taken and operated on.
+    zero_triangle : boolean, optional    
+        By default Scalapack ignores the other triangle, if set, we explicitly
+        zero it.
+
+    Returns
+    -------
+    cholesky : DistributedMatrix
+        The Cholesky factor as a DistributedMatrix.
+    """
+
+    # Check if matrix is square
+    util.assert_square(A)
+
+    A = A if overwrite_a else A.copy()
+
+    uplo = "L" if lower else "U"
+    N = A.global_shape[0]
+
+    args = [uplo, N, A]
+
+    call_table = {'S': (ll.pspotrf, args),
+                  'D': (ll.pdpotrf, args),
+                  'C': (ll.pcpotrf, args),
+                  'Z': (ll.pzpotrf, args)}
+
+    func, args = call_table[A.sc_dtype]
+    info = func(*args)
+
+    if info < 0:
+        raise core.ScalapackException("Failure.")
+
+    ## Zero other triangle
+    # by default scalapack doesn't touch the other triangle
+    # (determined by upper arg). We explicitly zero it here.
+    if zero_triangle:
+        ri, ci = A.indices()
+
+        # Create a mask of the other triangle
+        mask = (ci <= ri) if lower else (ci >= ri)
+        A.local_array[:] = A.local_array * mask
+
+    return A
