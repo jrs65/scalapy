@@ -1,1 +1,1 @@
-.. automodule:: pyscalapack.lowlevel
+.. automodule:: scalapy.lowlevel

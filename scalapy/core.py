@@ -1,6 +1,6 @@
 """
 ===========================================
-scalapy Core (:mod:`~scalapy.core`)
+Core (:mod:`scalapy.core`)
 ===========================================
 
 .. currentmodule:: scalapy.core

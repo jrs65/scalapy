@@ -1,1 +1,1 @@
-.. automodule:: pyscalapack.blockcyclic
+.. automodule:: scalapy.blockcyclic

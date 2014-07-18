@@ -1,1 +1,1 @@
-.. automodule:: pyscalapack.core
+.. automodule:: scalapy.core

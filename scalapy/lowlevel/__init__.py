@@ -1,12 +1,21 @@
 """
-=============================================================
-PyScalapack Lowlevel Interface (:mod:`~pyscalapack.lowlevel`)
-=============================================================
+=============================================
+Lowlevel Interface (:mod:`~scalapy.lowlevel`)
+=============================================
 
 This module imports almost all the routines from ``Scalapack`` in a very
 rudimentary form. They present a very basic ``f2py`` derived wrapper, with the
 argument specification derived from the documentation embedded in the NETLIB_
-source code.
+source code. This approach seems to be very successful but your mileage may
+vary. It is essential to look at the Scalapack documentation and know what you
+are calling.
+
+.. warning::
+
+    Scalapack performs no bounds checking. The arrays passed into each
+    Scalapack routine must be the size expected from the size and distribution
+    that are specified. Failure to do this will result in at best memory
+    corruption and worst segfaults.
 
 .. _NETLIB: http://www.netlib.org/scalapack/
 
@@ -23,8 +32,8 @@ routines in Scalapack have a common structure:
   required length is often a little hard to determine, however, most routines
   allow for a query where they will return the optimal length.
 
-Taking the function :func:`pzheevd` as an example, a minimal call without
-expansion would be something like::
+Taking the function :func:`pzheevd` as an example, a minimal call in the
+standard manner would be something like::
 
     dA = core.DistributedMatrix([N, N], dtype=np.complex128)
     # ... initialise matrix
@@ -59,11 +68,13 @@ expansion would be something like::
                             zwork, lzwork, dwork, ldwork, iwork, liwork)
 
 In here we have had to make manual queries for the size of the work arrays,
-and allocate them, which requires two calls. In each, of those calls we need
-to insert all the parameters for the distributed matrices.
+and allocate them, which requires two calls to the ``Scalapack`` routine, and
+a large amount of initialisation. In each, of those calls we need to insert
+all the parameters for the distributed matrices. The bulk of the code is just
+setting up everything for the final call.
 
 Argument expansion means we can remove most of the complexity. This is the
-same call, using it::
+same call using it::
 
     dA = core.DistributedMatrix([N, N], dtype=np.complex128)
     # ... initialise matrix
@@ -75,14 +86,19 @@ same call, using it::
     info = lowlevel.pzheevd('V', 'L', N, dA, evals, evecs,
                             lowlevel.WorkArray('Z', 'D', 'I'))
 
-Using this, any :class:`~pyscalapack.core.DistributedMatrix` passed as an
-argument, automatically gets expanded from ``(..., dA, ...)`` to the pattern
-``(..., dA.local_array, 1, 1, dA.desc, ...)``, the standard Scalapack argument
-pattern. More usefully replacing the work array arguments by inserting a
-:class:`WorkArray` causes it to automatically call the underlying Scalapack
-routine twice, the first time performing a work query, and then initialising
-temporary work arrays which are passed into a second call to perform the
-computation.
+Using this, any :class:`~scalapy.core.DistributedMatrix` passed as an
+argument, automatically gets expanded from ``(..., dA, ...)`` to the standard
+Scalapack argument pattern ``(..., dA.local_array, 1, 1, dA.desc, ...)``,.
+This is a useful shortcut when constructing argument lists, however there is
+no requirement to use this, the full form can still be passed in manually.
+
+However, much more useful is expansion of the :class:`WorkArray` in place of
+the full work array arguments. This causes it to automatically call the
+underlying Scalapack routine twice, the first time performing a work query for
+which it inserts the correct arguments, and then on the subsequent call it
+uses the query result to initialising temporary work arrays which are passed
+into the routine for computation. This behaviour can save a substantial amount
+of time manually querying and initialising temporary arrays.
 
 
 Classes
