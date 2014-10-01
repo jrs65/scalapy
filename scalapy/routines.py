@@ -4,7 +4,6 @@ from . import core, util
 from . import lowlevel as ll
 
 
-
 def eigh(A, lower=True, overwrite_a=True, eigvals=None):
     """Compute the eigen-decomposition of a symmetric/hermitian matrix.
 
@@ -21,7 +20,7 @@ def eigh(A, lower=True, overwrite_a=True, eigvals=None):
     overwrite_a : boolean, optional
         By default the input matrix is destroyed, if set to False a
         copy is taken and operated on.
-    eigvals : tuple (lo, hi), optional    
+    eigvals : tuple (lo, hi), optional
         Indices of the lowest and highest eigenvalues you would like to
         calculate. Indexed from zero.
 
@@ -79,11 +78,11 @@ def cholesky(A, lower=False, overwrite_a=False, zero_triangle=True):
         The matrix to decompose.
     lower : boolean, optional
         Compute the upper or lower Cholesky factor. Additionally Scalapack
-        will only touch the upper or lower triangle of A.    
+        will only touch the upper or lower triangle of A.
     overwrite_a : boolean, optional
         By default the input matrix is destroyed, if set to False a
         copy is taken and operated on.
-    zero_triangle : boolean, optional    
+    zero_triangle : boolean, optional
         By default Scalapack ignores the other triangle, if set, we explicitly
         zero it.
 
@@ -125,3 +124,52 @@ def cholesky(A, lower=False, overwrite_a=False, zero_triangle=True):
         A.local_array[:] = A.local_array * mask
 
     return A
+
+
+def dot(A, B, transA='N', transB='N'):
+    """Parallel matrix multiplication.
+
+    Parameters
+    ----------
+    A, B : DistributedMatrix
+        Matrices to multiply.
+    transA, transB : ['N', 'T', 'H', 'C']
+        Whether we should use a transpose, rather than A or B themselves.
+        Either, do nothing ('N'), normal transpose ('T'), Hermitian transpose
+        ('H'), or complex conjugation only ('C').
+
+    Returns
+    -------
+    C : DistributedMatrix
+    """
+
+    if transA not in ['N', 'T', 'H', 'C']:
+        raise core.ScalapyException("Trans argument for matrix A invalid")
+    if transB not in ['N', 'T', 'H', 'C']:
+        raise core.ScalapyException("Trans argument for matrix B invalid")
+    if A.dtype != B.dtype:
+        raise core.ScalapyException("Matrices must have same type")
+    # Probably should validate context too
+
+    m = A.global_shape[0] if transA in ['N', 'C'] else A.global_shape[1]
+    n = B.global_shape[1] if transB in ['N', 'C'] else B.global_shape[0]
+    k = A.global_shape[1] if transA in ['N', 'C'] else A.global_shape[0]
+    l = B.global_shape[0] if transB in ['N', 'C'] else B.global_shape[1]
+
+    if l != k:
+        raise core.ScalapyException("Matrix shapes are incompatible.")
+
+    C = core.DistributedMatrix([m, n], dtype=A.dtype, block_shape=A.block_shape, context=A.context)
+
+    args = [transA, transB, m, n, k, 1.0, A, B, 0.0, C]
+
+    call_table = { 'S' : (ll.psgemm, args),
+                   'C' : (ll.pcgemm, args),
+                   'D' : (ll.pdgemm, args),
+                   'Z' : (ll.pzgemm, args) }
+
+
+    func, args = call_table[A.sc_dtype]
+    func(*args)
+
+    return C

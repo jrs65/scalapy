@@ -28,14 +28,10 @@ use_omp = is_gcc
 
 ## Try and decide whether to use Cython to compile the source or not.
 try:
-    from Cython.Distutils import build_ext
-    import blagsjj
+    from Cython.Build import cythonize
     HAVE_CYTHON = True
-
 except ImportError as e:
     warnings.warn("Cython not installed.")
-    #from numpy.distutils.command import build_ext
-
     HAVE_CYTHON = False
 
 
@@ -81,7 +77,7 @@ if scalapackversion == 'intel':
     scl_libdir = [os.environ['MKLROOT']+'/lib/intel64' if 'MKLROOT' in os.environ else '']
 elif scalapackversion == 'netlib':
     scl_lib = ['scalapack', 'gfortran']
-    scl_libdir = ['/usr/local/Cellar/gfortran/4.8.2/gfortran/lib']
+    scl_libdir = [ os.path.dirname(runcommand('gfortran -print-file-name=libgfortran.a')) ]
 else:
     raise Exception("Scalapack distribution unsupported. Please modify setup.py manually.")
 
@@ -89,11 +85,11 @@ else:
 use_omp = False
 omp_args = ['-fopenmp'] if use_omp else []
 
-
+## Setup the extensions we are going to build
 mpi3_ext = Extension('scalapy.mpi3util', [cython_file('scalapy/mpi3util')],
-                      include_dirs=['.', np.get_include(), mpi4py.get_include()],
-                      extra_compile_args=mpicompileargs,
-                      extra_link_args=mpilinkargs)
+                     include_dirs=['.', np.get_include(), mpi4py.get_include()],
+                     extra_compile_args=mpicompileargs,
+                     extra_link_args=mpilinkargs)
 
 blacs_ext = Extension('scalapy.blacs', [cython_file('scalapy/blacs')],
                       include_dirs=['.', np.get_include(), mpi4py.get_include()],
@@ -111,10 +107,13 @@ llscalapack_ext = Extension('scalapy.lowlevel.scalapack', ['scalapy/lowlevel/sca
                             extra_compile_args=(mpicompileargs + omp_args),
                             extra_link_args=(mpilinkargs + omp_args))
 
+## Apply Cython to the extensions if it's installed
+exts = [mpi3_ext, blacs_ext, llpblas_ext, llscalapack_ext]
+if HAVE_CYTHON:
+    exts = cythonize(exts, include_path=['.', np.get_include(), mpi4py.get_include()])
+
 setup(
     name='scalapy',
     packages=find_packages(),
-    ext_modules=[mpi3_ext, blacs_ext, llpblas_ext, llscalapack_ext]
-    #cmdclass={'build_ext': build_ext}
+    ext_modules=exts
 )
-
