@@ -5,7 +5,7 @@ Core (:mod:`scalapy.core`)
 
 .. currentmodule:: scalapy.core
 
-This module contains the core of PyScalapack: a set of routines and classes to
+This module contains the core of `scalapy`: a set of routines and classes to
 describe the distribution of MPI processes involved in the computation, and
 interface with ``BLACS``; and a class which holds a block cyclic distributed
 matrix for computation.
@@ -201,13 +201,12 @@ class DistributedMatrix(object):
     Parameters
     ----------
     global_shape : list of integers
-        The size of the global matrix eg. [Nr, Nc].
+        The size of the global matrix eg. ``[Nr, Nc]``.
     dtype : np.dtype, optional
-        The datatype of the array. Only `float32`, `float64` (default) and
-        `complex128` are supported by Scalapack.
+        The datatype of the array. See `Notes`_ for the supported types.
     block_shape: list of integers, optional
-        The blocking size, packed as [Br, Bc]. If `None` uses the default blocking
-        (set via `initmpi`).
+        The blocking size, packed as ``[Br, Bc]``. If ``None`` uses the default blocking
+        (set via :func:`initmpi`).
     context : ProcessContext, optional
         The process context. If not set uses the default (recommended). 
 
@@ -224,7 +223,7 @@ class DistributedMatrix(object):
     block_shape
 
     Methods
-    ------------
+    -------
     empty_like
     indices
     from_global_array
@@ -232,12 +231,15 @@ class DistributedMatrix(object):
     from_file
     to_file
 
+
+    .. _notes:
+
     Notes
     -----
     The type of the array must be specified with the standard numpy types. A
     :class:`DistributedMatrix` has properties for fetching the equivalent
-    ``MPI`` (with :prop:`mpi_dtype`) and ``Scalapack`` types (which is a
-    character given by :prop:`sc_dtype`).
+    ``MPI`` (with :attr:`mpi_dtype`) and ``Scalapack`` types (which is a
+    character given by :attr:`sc_dtype`).
 
     =================  =================  ==============  ===============================
     Numpy type         MPI type           Scalapack type  Description                    

@@ -22,9 +22,81 @@ def runcommand(cmd):
     return c[0]
 
 
+def whichmpi():
+    # Figure out which MPI environment this is
+    import re
+    mpiv = runcommand('mpirun -V')
+
+    if re.search('Intel', mpiv):
+        return 'intelmpi'
+    elif re.search('Open MPI', mpiv):
+        return 'openmpi'
+
+    warnings.warn('Unknown MPI environment.')
+    return None
+
+
+def whichscalapack():
+    # Figure out which Scalapack to use
+    if 'MKLROOT' in os.environ:
+        return 'intelmkl'
+    else:
+        return 'netlib'
+
 ## Decide whether to use OpenMP or not
 is_gcc = re.search('gcc', sysconfig.get_config_var('CC')) is not None
 use_omp = is_gcc
+
+# Set the MPI version
+mpiversion = whichmpi()
+
+# Set the Scalapack version
+scalapackversion = whichscalapack()
+
+# Set to use OMP
+use_omp = True
+
+
+################# Configuration options to tweak. #########################
+# Uncomment to override automatic detection and set manually
+
+# Which mpi version? Should be either 'intelmpi' or 'openmpi'.
+# mpiversion = 'openmpi'
+
+# Which ScaLapack version to use? Only 'intel' is supported at the moment.
+#scalapackversion = 'netlib'
+
+# Use OMP routines or not?
+# use_omp = True
+
+############################################################################
+
+
+## Find the MPI arguments required for building the modules.
+if mpiversion == 'intelmpi':
+    # Fetch command line, convert to a list, and remove the first item (the command).
+    intelargs = runcommand('mpicc -show').split()[1:]
+    mpilinkargs = intelargs
+    mpicompileargs = intelargs
+elif mpiversion == 'openmpi':
+    # Fetch the arguments for linking and compiling.
+    mpilinkargs = runcommand('mpicc -showme:link').split()
+    mpicompileargs = runcommand('mpicc -showme:compile').split()
+else:
+    raise Exception("MPI library unsupported. Please modify setup.py manually.")
+
+
+## Find the Scalapack library arguments required for building the modules.
+if scalapackversion == 'intelmkl':
+    # Set library includes (taking into account which MPI library we are using)."
+    scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_'+mpiversion+'_lp64', 'iomp5', 'pthread']
+    scl_libdir = [os.environ['MKLROOT']+'/lib/intel64' if 'MKLROOT' in os.environ else '']
+elif scalapackversion == 'netlib':
+    scl_lib = ['scalapack', 'gfortran']
+    scl_libdir = [ os.path.dirname(runcommand('gfortran -print-file-name=libgfortran.a')) ]
+else:
+    raise Exception("Scalapack distribution unsupported. Please modify setup.py manually.")
+
 
 ## Try and decide whether to use Cython to compile the source or not.
 try:
@@ -40,50 +112,20 @@ def cython_file(filename):
     return filename
 
 
-################# Configuration options to tweak. #########################
-
-# Which mpi version? Should be either 'intelmpi' or 'openmpi'.
-mpiversion = 'openmpi'
-
-# Which ScaLapack version to use? Only 'intel' is supported at the moment.
-scalapackversion = 'netlib'
-
-############################################################################
-
-
-
-
-
-
-## Make sure to remove CC variable which Intel compiler modulefiles keep setting
-## as we must use the compiler that compiled python.
-
-if mpiversion == 'intelmpi':
-    # Fetch command line, convert to a list, and remove the first item (the command).
-    intelargs = runcommand('mpicc -show').split()[1:]
-    mpilinkargs = intelargs
-    mpicompileargs = intelargs
-elif mpiversion == 'openmpi':
-    # Fetch the arguments for linking and compiling.
-    mpilinkargs = runcommand('mpicc -showme:link').split()
-    mpicompileargs = runcommand('mpicc -showme:compile').split()
-else:
-    raise Exception("MPI library unsupported. Please modify setup.py manually.")
-
-
-if scalapackversion == 'intel':
-    # Set library includes (taking into account which MPI library we are using)."
-    scl_lib = ['mkl_scalapack_lp64', 'mkl_rt', 'mkl_blacs_'+mpiversion+'_lp64', 'iomp5', 'pthread']
-    scl_libdir = [os.environ['MKLROOT']+'/lib/intel64' if 'MKLROOT' in os.environ else '']
-elif scalapackversion == 'netlib':
-    scl_lib = ['scalapack', 'gfortran']
-    scl_libdir = [ os.path.dirname(runcommand('gfortran -print-file-name=libgfortran.a')) ]
-else:
-    raise Exception("Scalapack distribution unsupported. Please modify setup.py manually.")
-
-
-use_omp = False
 omp_args = ['-fopenmp'] if use_omp else []
+
+print "============================================================================="
+print "Building Scalapy...."
+print
+print "  ScaLAPACK: %s" % scalapackversion
+print "  MPI: %s" % mpiversion
+print "  OpenMP: %s" % repr(use_omp)
+print
+print "  Compile args: %s" % repr(mpicompileargs)
+print "  Libraries: %s" % repr(scl_lib + mpilinkargs)
+print "  Library path: %s" % repr(scl_libdir)
+print
+print "============================================================================="
 
 ## Setup the extensions we are going to build
 mpi3_ext = Extension('scalapy.mpi3util', [cython_file('scalapy/mpi3util')],
@@ -114,6 +156,10 @@ if HAVE_CYTHON:
 
 setup(
     name='scalapy',
+    author='J. Richard Shaw',
+    description='Python bindings for ScaLAPACK.',
+    url='http://github.com/jrs65/scalapy/',
+    license='BSD',
     packages=find_packages(),
     ext_modules=exts
 )
