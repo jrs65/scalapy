@@ -1,10 +1,6 @@
 
-from pyscalapack import core as pscore
-from pyscalapack import routines as psroutine
-
+import scalapy
 import numpy as np
-
-import scipy.linalg as la
 
 from mpi4py import MPI
 
@@ -16,9 +12,10 @@ import sys
 
 comm = MPI.COMM_WORLD
 
+
 def f(x):
     #return np.where(x < 10, np.ones_like(x), np.zeros_like(x))
-    return np.exp(-(x**2) / (2.0*(10.0**2))) + 1e-10* np.where(x == 0, np.ones_like(x), np.zeros_like(x))
+    return np.exp(-(x**2) / (2.0*(10.0**2))) + 1e-10 * np.where(x == 0, np.ones_like(x), np.zeros_like(x))
 
 nproc = comm.Get_size()
 rank = comm.Get_rank()
@@ -42,24 +39,22 @@ bfile = sys.argv[6]
 
 os.environ['OMP_NUM_THREADS'] = repr(nthread)
 
-pscore.initmpi(gridsize = [npx, npy], blocksize = [B, B])
+scalapy.initmpi([npx, npy], block_shape=[B, B])
 
-A = pscore.DistributedMatrix([n, n])
-
+A = scalapy.DistributedMatrix([n, n])
 
 
 if rank == 0:
     print "==============================================="
     print "Decomposing  %i x %i global matrix" % (n, n)
     print
-    print "Local shape: %i x %i" % A.local_shape()
+    print "Local shape: %i x %i" % A.local_shape
     print "Blocksize:   %i x %i" % (B, B)
     print "Pgrid size:  %i x %i" % (npx, npy)
     print
     print "Number of threads: %i" % (int(os.environ['OMP_NUM_THREADS']) if 'OMP_NUM_THREADS' in os.environ else 0)
     print "==============================================="
-    print 
-    
+    print
 
 
 if comm.Get_rank() == 0:
@@ -74,7 +69,7 @@ da = np.abs(ri-ci)
 na = n - da
 da = np.where(da < na, da, na)
 
-A.local_array[:,:] = f(da)
+A.local_array[:, :] = f(da)
 #A.local_array[:,:] = np.random.standard_normal(A.local_shape())
 
 comm.Barrier()
@@ -85,7 +80,7 @@ if comm.Get_rank() == 0:
     st = time.time()
     print "Starting eigenvalue solve..."
 
-evals1, evecs1 = psroutine.pdsyevd(A, destroy = False)
+evals1, evecs1 = scalapy.eigh(A, overwrite_a=False)
 
 comm.Barrier()
 
@@ -101,7 +96,7 @@ if comm.Get_rank() == 0:
     st = time.time()
     print "Starting Cholesky..."
 
-U = psroutine.pdpotrf(A, destroy = False)
+U = scalapy.cholesky(A, overwrite_a=False)
 
 comm.Barrier()
 
@@ -110,12 +105,12 @@ if comm.Get_rank() == 0:
     print "Done. Time: ", et-st
 
     chtime = et - st
-    
+
     st = time.time()
     print "Starting matrix multiply..."
 
 
-A2 = psroutine.pdgemm(U, U, transa = True)
+A2 = scalapy.dot(U, U, transA='T')
 
 
 comm.Barrier()
@@ -125,29 +120,26 @@ if comm.Get_rank() == 0:
     print "Done. Time: ", et-st
 
     mltime = et - st
-    
+
     st = time.time()
     print "Starting verification..."
 
-    
+
 # Calculate eigenvalues by fourier transform.
 x = np.arange(n, dtype=np.float64)
 px = np.where(x < n-x, x, n-x)
 evals2 = np.sort(np.fft.fft(f(px)).real)
 
-me = pscore.matrix_equal(A, A2)
 
 if comm.Get_rank() == 0:
     print "Max diff:", np.abs((evals1 - evals2) / evals1).max()
 
-    print "A == A2:", me
     print "Max diff A, rnk 0:", np.abs(A.local_array - A2.local_array).max() / np.abs(A.local_array).max()
 
     #bfile = bfile + "_%i_%i_%i_%i_%i.dat" % (n, B, npx, npy, nthread)
 
-    f = open(bfile, "w+")
-    
-    line = "%i %i %i %i %i %g %g %g\n" % (n, B, npx, npy, nthread, evtime, chtime, mltime)
-    f.write(line)
-    f.close()
+    with open(bfile, "w+") as f:
+        line = "%i %i %i %i %i %g %g %g\n" % (n, B, npx, npy, nthread, evtime, chtime, mltime)
+        f.write(line)
+
 
