@@ -13,7 +13,7 @@ import mpi4py
 
 
 def runcommand(cmd):
-    process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     c = process.communicate()
 
     if process.returncode != 0:

@@ -32,7 +32,7 @@ source /home/k/krs/jrs65/setupscalapy.sh
 
 cd /home/k/krs/jrs65/code/scalapy/bin
 export OMP_NUM_THREADS=%(nomp)i
-mpirun --mca btl self,sm,openib --mca io ompio -np %(numproc)i -npernode %(pernode)i python benchmark.py %(gsize)i %(bsize)i %(pside)i %(pside)i %(nomp)i /scratch/k/krs/jrs65/scbench/jobtime_%(name)s.dat &> /scratch/k/krs/jrs65/scbench/jobout_%(name)s.log
+mpirun --mca io ompio -np %(numproc)i -npernode %(pernode)i python benchmark.py %(gsize)i %(bsize)i %(pside)i %(pside)i %(nomp)i /scratch/k/krs/jrs65/scbench/jobtime_%(name)s.dat &> /scratch/k/krs/jrs65/scbench/jobout_%(name)s.log
 """
 
 script = script % { 'nodes': nodes, 'ppn': ppn, 'name': name, 'nomp': nomp,
