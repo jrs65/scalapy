@@ -91,5 +91,8 @@ def gridinit(ctxt, nrows, ncols, order="Row"):
     except BLACSException:
         raise BLACSException("Grid initialisation failed.")
 
+    # Get new context
+    ctxt = ictxt
 
+    return ctxt
 
