@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Blockcyclic Utilities (blockcyclic) &mdash; scalapy 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootswatch-3.2.0/flatly/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.2.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="top" title="scalapy 0.1 documentation" href="index.html" />
+    <link rel="next" title="scalapy.blockcyclic.numrc" href="generated/scalapy.blockcyclic.numrc.html" />
+    <link rel="prev" title="scalapy.core.ScalapackException" href="generated/scalapy.core.ScalapackException.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          scalapy</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            <li class="divider-vertical"></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="core.html">Core (<tt class="docutils literal"><span class="pre">scalapy.core</span></tt>)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Blockcyclic Utilities (<tt class="docutils literal"><span class="pre">blockcyclic</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lowlevel.html">Lowlevel Interface (<tt class="docutils literal"><span class="pre">lowlevel</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="highlevel.html">Highlevel Interface (<tt class="docutils literal"><span class="pre">routines</span></tt>)</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Blockcyclic Utilities (<tt class="docutils literal"><span class="pre">blockcyclic</span></tt>)</a><ul>
+<li><a class="reference internal" href="#routines">Routines</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="generated/scalapy.core.ScalapackException.html" title="Previous Chapter: scalapy.core.ScalapackException"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; scalapy.core.Sca...</span>
+    </a>
+  </li>
+  <li>
+    <a href="generated/scalapy.blockcyclic.numrc.html" title="Next Chapter: scalapy.blockcyclic.numrc"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">scalapy.blockcyc... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/blockcyclic.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
+  <span class="target" id="module-scalapy.blockcyclic"></span><div class="section" id="blockcyclic-utilities-blockcyclic">
+<h1>Blockcyclic Utilities (<a class="reference internal" href="#module-scalapy.blockcyclic" title="scalapy.blockcyclic"><tt class="xref py py-mod docutils literal"><span class="pre">blockcyclic</span></tt></a>)<a class="headerlink" href="#blockcyclic-utilities-blockcyclic" title="Permalink to this headline">¶</a></h1>
+<p>A set of utilities for calculating the packing in block cyclic matrix
+distributions.</p>
+<div class="section" id="routines">
+<h2>Routines<a class="headerlink" href="#routines" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="generated/scalapy.blockcyclic.numrc.html#scalapy.blockcyclic.numrc" title="scalapy.blockcyclic.numrc"><tt class="xref py py-obj docutils literal"><span class="pre">numrc</span></tt></a>(N,&nbsp;B,&nbsp;p,&nbsp;P)</td>
+<td>The number of rows/columns of the global array local to the process.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="generated/scalapy.blockcyclic.indices_rc.html#scalapy.blockcyclic.indices_rc" title="scalapy.blockcyclic.indices_rc"><tt class="xref py py-obj docutils literal"><span class="pre">indices_rc</span></tt></a>(N,&nbsp;B,&nbsp;p,&nbsp;P)</td>
+<td>The indices of the global array local to the process.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="generated/scalapy.blockcyclic.num_blocks.html#scalapy.blockcyclic.num_blocks" title="scalapy.blockcyclic.num_blocks"><tt class="xref py py-obj docutils literal"><span class="pre">num_blocks</span></tt></a>(N,&nbsp;B)</td>
+<td>Total number of blocks globally (complete or not).</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="generated/scalapy.blockcyclic.num_c_blocks.html#scalapy.blockcyclic.num_c_blocks" title="scalapy.blockcyclic.num_c_blocks"><tt class="xref py py-obj docutils literal"><span class="pre">num_c_blocks</span></tt></a>(N,&nbsp;B)</td>
+<td>Number of complete blocks globally.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="generated/scalapy.blockcyclic.num_lblocks.html#scalapy.blockcyclic.num_lblocks" title="scalapy.blockcyclic.num_lblocks"><tt class="xref py py-obj docutils literal"><span class="pre">num_lblocks</span></tt></a>(N,&nbsp;B,&nbsp;p,&nbsp;P)</td>
+<td>Total number of local blocks.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="generated/scalapy.blockcyclic.num_c_lblocks.html#scalapy.blockcyclic.num_c_lblocks" title="scalapy.blockcyclic.num_c_lblocks"><tt class="xref py py-obj docutils literal"><span class="pre">num_c_lblocks</span></tt></a>(N,&nbsp;B,&nbsp;p,&nbsp;P)</td>
+<td>Number of complete blocks locally.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="generated/scalapy.blockcyclic.partial_last_block.html#scalapy.blockcyclic.partial_last_block" title="scalapy.blockcyclic.partial_last_block"><tt class="xref py py-obj docutils literal"><span class="pre">partial_last_block</span></tt></a>(N,&nbsp;B,&nbsp;p,&nbsp;P)</td>
+<td>Is the last local block partial?</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014, J. Richard Shaw.<br/>
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

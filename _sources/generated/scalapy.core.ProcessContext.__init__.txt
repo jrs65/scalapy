@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__init__
+====================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: ProcessContext.__init__

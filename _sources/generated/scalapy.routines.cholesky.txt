@@ -1,0 +1,6 @@
+scalapy.routines.cholesky
+=========================
+
+.. currentmodule:: scalapy.routines
+
+.. autofunction:: cholesky

@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__dict__
+=======================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.__dict__

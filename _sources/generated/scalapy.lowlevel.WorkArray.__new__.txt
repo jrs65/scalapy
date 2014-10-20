@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__new__
+==================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. automethod:: WorkArray.__new__

@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.mpi_dtype
+========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.mpi_dtype

@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__subclasshook__
+============================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: ProcessContext.__subclasshook__

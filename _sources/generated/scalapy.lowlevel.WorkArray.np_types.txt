@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.np_types
+===================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. autoattribute:: WorkArray.np_types

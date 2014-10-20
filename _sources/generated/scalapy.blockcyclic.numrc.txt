@@ -1,0 +1,6 @@
+scalapy.blockcyclic.numrc
+=========================
+
+.. currentmodule:: scalapy.blockcyclic
+
+.. autofunction:: numrc

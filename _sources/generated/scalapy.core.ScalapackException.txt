@@ -1,0 +1,6 @@
+scalapy.core.ScalapackException
+===============================
+
+.. currentmodule:: scalapy.core
+
+.. autoexception:: ScalapackException

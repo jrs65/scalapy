@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__delattr__
+======================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. autoattribute:: WorkArray.__delattr__

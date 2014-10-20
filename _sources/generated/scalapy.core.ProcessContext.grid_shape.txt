@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.grid_shape
+======================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext.grid_shape

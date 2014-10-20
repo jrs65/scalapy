@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.to_query
+===================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. automethod:: WorkArray.to_query

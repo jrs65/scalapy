@@ -1,0 +1,6 @@
+scalapy.routines.dot
+====================
+
+.. currentmodule:: scalapy.routines
+
+.. autofunction:: dot

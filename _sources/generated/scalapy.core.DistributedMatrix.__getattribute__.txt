@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__getattribute__
+===============================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.__getattribute__

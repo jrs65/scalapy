@@ -1,0 +1,6 @@
+scalapy.blockcyclic.partial_last_block
+======================================
+
+.. currentmodule:: scalapy.blockcyclic
+
+.. autofunction:: partial_last_block

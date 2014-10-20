@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.sc_dtype
+=======================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.sc_dtype

@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__dict__
+====================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext.__dict__

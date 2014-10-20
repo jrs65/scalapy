@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext._mpi_comm
+=====================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext._mpi_comm

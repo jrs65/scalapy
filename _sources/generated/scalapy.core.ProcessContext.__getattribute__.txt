@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__getattribute__
+============================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext.__getattribute__

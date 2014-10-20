@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__new__
+======================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.__new__

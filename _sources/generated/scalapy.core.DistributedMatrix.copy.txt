@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.copy
+===================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.copy

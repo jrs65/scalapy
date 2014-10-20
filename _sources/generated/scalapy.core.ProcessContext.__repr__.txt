@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__repr__
+====================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext.__repr__

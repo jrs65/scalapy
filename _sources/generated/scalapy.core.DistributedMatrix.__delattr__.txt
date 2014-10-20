@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__delattr__
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.__delattr__

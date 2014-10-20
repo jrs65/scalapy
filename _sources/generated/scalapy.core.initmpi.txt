@@ -1,0 +1,6 @@
+scalapy.core.initmpi
+====================
+
+.. currentmodule:: scalapy.core
+
+.. autofunction:: initmpi

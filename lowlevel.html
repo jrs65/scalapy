@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Lowlevel Interface (lowlevel) &mdash; scalapy 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootswatch-3.2.0/flatly/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.2.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="top" title="scalapy 0.1 documentation" href="index.html" />
+    <link rel="next" title="scalapy.lowlevel.WorkArray" href="generated/scalapy.lowlevel.WorkArray.html" />
+    <link rel="prev" title="scalapy.blockcyclic.partial_last_block" href="generated/scalapy.blockcyclic.partial_last_block.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          scalapy</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            <li class="divider-vertical"></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="core.html">Core (<tt class="docutils literal"><span class="pre">scalapy.core</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="blockcyclic.html">Blockcyclic Utilities (<tt class="docutils literal"><span class="pre">blockcyclic</span></tt>)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Lowlevel Interface (<tt class="docutils literal"><span class="pre">lowlevel</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="highlevel.html">Highlevel Interface (<tt class="docutils literal"><span class="pre">routines</span></tt>)</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Lowlevel Interface (<tt class="docutils literal"><span class="pre">lowlevel</span></tt>)</a><ul>
+<li><a class="reference internal" href="#argument-expansion">Argument Expansion</a></li>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#pblas-routines">PBLAS Routines</a></li>
+<li><a class="reference internal" href="#scalapack-routines">Scalapack Routines</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="generated/scalapy.blockcyclic.partial_last_block.html" title="Previous Chapter: scalapy.blockcyclic.partial_last_block"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; scalapy.blockcyc...</span>
+    </a>
+  </li>
+  <li>
+    <a href="generated/scalapy.lowlevel.WorkArray.html" title="Next Chapter: scalapy.lowlevel.WorkArray"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">scalapy.lowlevel... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/lowlevel.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
+  <span class="target" id="module-scalapy.lowlevel"></span><div class="section" id="lowlevel-interface-lowlevel">
+<h1>Lowlevel Interface (<a class="reference internal" href="#module-scalapy.lowlevel" title="scalapy.lowlevel"><tt class="xref py py-mod docutils literal"><span class="pre">lowlevel</span></tt></a>)<a class="headerlink" href="#lowlevel-interface-lowlevel" title="Permalink to this headline">¶</a></h1>
+<p>This module imports almost all the routines from <tt class="docutils literal"><span class="pre">Scalapack</span></tt> in a very
+rudimentary form. They present a very basic <tt class="docutils literal"><span class="pre">f2py</span></tt> derived wrapper, with the
+argument specification derived from the documentation embedded in the <a class="reference external" href="http://www.netlib.org/scalapack/">NETLIB</a>
+source code. This approach seems to be very successful but your mileage may
+vary. It is essential to look at the Scalapack documentation and know what you
+are calling.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Scalapack performs no bounds checking. The arrays passed into each
+Scalapack routine must be the size expected from the size and distribution
+that are specified. Failure to do this will result in at best memory
+corruption and worst segfaults.</p>
+</div>
+<div class="section" id="argument-expansion">
+<h2>Argument Expansion<a class="headerlink" href="#argument-expansion" title="Permalink to this headline">¶</a></h2>
+<p>Despite the routines being low-level there is a trick to make the process
+easier - automatic expansion of arguments - which exploits the fact that many
+routines in Scalapack have a common structure:</p>
+<ul class="simple">
+<li>Distributed matrices are passed in followed by their start indices and their
+descriptor.</li>
+<li>Work arrays for each type are passed in followed by their length. The
+required length is often a little hard to determine, however, most routines
+allow for a query where they will return the optimal length.</li>
+</ul>
+<p>Taking the function <tt class="xref py py-func docutils literal"><span class="pre">pzheevd()</span></tt> as an example, a minimal call in the
+standard manner would be something like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">dA</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">DistributedMatrix</span><span class="p">([</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+<span class="c"># ... initialise matrix</span>
+
+<span class="n">evals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">evecs</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">DistributedMatrix</span><span class="p">([</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+
+<span class="n">iwork</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">dwork</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">zwork</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+
+<span class="c"># Perform work query</span>
+<span class="n">info</span> <span class="o">=</span> <span class="n">lowlevel</span><span class="o">.</span><span class="n">pzheevd</span><span class="p">(</span><span class="s">&#39;V&#39;</span><span class="p">,</span> <span class="s">&#39;L&#39;</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span>
+                        <span class="n">dA</span><span class="o">.</span><span class="n">local_array</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dA</span><span class="o">.</span><span class="n">desc</span><span class="p">,</span>
+                        <span class="n">evals</span><span class="p">,</span>
+                        <span class="n">evecs</span><span class="o">.</span><span class="n">local_array</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">evecs</span><span class="o">.</span><span class="n">desc</span><span class="p">,</span>
+                        <span class="n">zwork</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dwork</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iwork</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c"># Setup work arrays</span>
+<span class="n">liwork</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">iwork</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">iwork</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">liwork</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">ldwork</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dwork</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">dwork</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ldwork</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">lzwork</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">zwork</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">zwork</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">lzwork</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+
+<span class="c"># Perform computation</span>
+<span class="n">info</span> <span class="o">=</span> <span class="n">lowlevel</span><span class="o">.</span><span class="n">pzheevd</span><span class="p">(</span><span class="s">&#39;V&#39;</span><span class="p">,</span> <span class="s">&#39;L&#39;</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span>
+                        <span class="n">dA</span><span class="o">.</span><span class="n">local_array</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dA</span><span class="o">.</span><span class="n">desc</span><span class="p">,</span>
+                        <span class="n">evals</span><span class="p">,</span>
+                        <span class="n">evecs</span><span class="o">.</span><span class="n">local_array</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">evecs</span><span class="o">.</span><span class="n">desc</span><span class="p">,</span>
+                        <span class="n">zwork</span><span class="p">,</span> <span class="n">lzwork</span><span class="p">,</span> <span class="n">dwork</span><span class="p">,</span> <span class="n">ldwork</span><span class="p">,</span> <span class="n">iwork</span><span class="p">,</span> <span class="n">liwork</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In here we have had to make manual queries for the size of the work arrays,
+and allocate them, which requires two calls to the <tt class="docutils literal"><span class="pre">Scalapack</span></tt> routine, and
+a large amount of initialisation. In each, of those calls we need to insert
+all the parameters for the distributed matrices. The bulk of the code is just
+setting up everything for the final call.</p>
+<p>Argument expansion means we can remove most of the complexity. This is the
+same call using it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">dA</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">DistributedMatrix</span><span class="p">([</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+<span class="c"># ... initialise matrix</span>
+
+<span class="n">evals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">evecs</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">DistributedMatrix</span><span class="p">([</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+
+<span class="c"># Call routine</span>
+<span class="n">info</span> <span class="o">=</span> <span class="n">lowlevel</span><span class="o">.</span><span class="n">pzheevd</span><span class="p">(</span><span class="s">&#39;V&#39;</span><span class="p">,</span> <span class="s">&#39;L&#39;</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">dA</span><span class="p">,</span> <span class="n">evals</span><span class="p">,</span> <span class="n">evecs</span><span class="p">,</span>
+                        <span class="n">lowlevel</span><span class="o">.</span><span class="n">WorkArray</span><span class="p">(</span><span class="s">&#39;Z&#39;</span><span class="p">,</span> <span class="s">&#39;D&#39;</span><span class="p">,</span> <span class="s">&#39;I&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Using this, any <a class="reference internal" href="generated/scalapy.core.DistributedMatrix.html#scalapy.core.DistributedMatrix" title="scalapy.core.DistributedMatrix"><tt class="xref py py-class docutils literal"><span class="pre">DistributedMatrix</span></tt></a> passed as an
+argument, automatically gets expanded from <tt class="docutils literal"><span class="pre">(...,</span> <span class="pre">dA,</span> <span class="pre">...)</span></tt> to the standard
+Scalapack argument pattern <tt class="docutils literal"><span class="pre">(...,</span> <span class="pre">dA.local_array,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">dA.desc,</span> <span class="pre">...)</span></tt>,.
+This is a useful shortcut when constructing argument lists, however there is
+no requirement to use this, the full form can still be passed in manually.</p>
+<p>However, much more useful is expansion of the <a class="reference internal" href="generated/scalapy.lowlevel.WorkArray.html#scalapy.lowlevel.WorkArray" title="scalapy.lowlevel.WorkArray"><tt class="xref py py-class docutils literal"><span class="pre">WorkArray</span></tt></a> in place of
+the full work array arguments. This causes it to automatically call the
+underlying Scalapack routine twice, the first time performing a work query for
+which it inserts the correct arguments, and then on the subsequent call it
+uses the query result to initialising temporary work arrays which are passed
+into the routine for computation. This behaviour can save a substantial amount
+of time manually querying and initialising temporary arrays.</p>
+</div>
+<div class="section" id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="generated/scalapy.lowlevel.WorkArray.html#scalapy.lowlevel.WorkArray" title="scalapy.lowlevel.WorkArray"><tt class="xref py py-obj docutils literal"><span class="pre">WorkArray</span></tt></a>(*args)</td>
+<td>Helper to deal with Scalapack work array entries.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="pblas-routines">
+<h2>PBLAS Routines<a class="headerlink" href="#pblas-routines" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+</tbody>
+</table>
+<p>&lt;_insert_pblas&gt;</p>
+</div>
+<div class="section" id="scalapack-routines">
+<h2>Scalapack Routines<a class="headerlink" href="#scalapack-routines" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+</tbody>
+</table>
+<p>&lt;_insert_scalapack&gt;</p>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014, J. Richard Shaw.<br/>
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__str__
+===================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext.__str__

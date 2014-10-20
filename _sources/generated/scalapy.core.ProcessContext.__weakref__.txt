@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__weakref__
+=======================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext.__weakref__

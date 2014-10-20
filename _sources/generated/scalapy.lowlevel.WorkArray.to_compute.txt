@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.to_compute
+=====================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. automethod:: WorkArray.to_compute

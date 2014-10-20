@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext._grid_position
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext._grid_position

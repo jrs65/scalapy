@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.block_shape
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.block_shape

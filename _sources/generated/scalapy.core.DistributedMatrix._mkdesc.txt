@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix._mkdesc
+======================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix._mkdesc

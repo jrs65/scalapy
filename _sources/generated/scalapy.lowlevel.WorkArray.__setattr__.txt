@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__setattr__
+======================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. autoattribute:: WorkArray.__setattr__

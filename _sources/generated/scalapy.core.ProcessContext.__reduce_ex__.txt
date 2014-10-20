@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__reduce_ex__
+=========================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: ProcessContext.__reduce_ex__

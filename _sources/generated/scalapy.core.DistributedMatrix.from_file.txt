@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.from_file
+========================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.from_file

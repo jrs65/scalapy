@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__hash__
+===================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. autoattribute:: WorkArray.__hash__

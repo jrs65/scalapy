@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__format__
+=====================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. automethod:: WorkArray.__format__

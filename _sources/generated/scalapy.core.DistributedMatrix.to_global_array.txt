@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.to_global_array
+==============================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.to_global_array

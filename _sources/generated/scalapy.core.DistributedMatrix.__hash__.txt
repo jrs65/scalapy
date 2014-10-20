@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__hash__
+=======================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.__hash__

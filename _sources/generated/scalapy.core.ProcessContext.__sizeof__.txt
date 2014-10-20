@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__sizeof__
+======================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: ProcessContext.__sizeof__

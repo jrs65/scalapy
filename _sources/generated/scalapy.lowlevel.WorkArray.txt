@@ -1,0 +1,45 @@
+scalapy.lowlevel.WorkArray
+==========================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. autoclass:: WorkArray
+
+   
+
+    .. HACK -- the point here is that we don't want this to appear in the output, but the autosummary should still generate the pages.
+        .. autosummary::
+            :toctree:
+        
+            WorkArray.__format__
+            WorkArray.__init__
+            WorkArray.__new__
+            WorkArray.__reduce__
+            WorkArray.__reduce_ex__
+            WorkArray.__sizeof__
+            WorkArray.__subclasshook__
+            WorkArray.to_compute
+            WorkArray.to_query
+
+
+
+   
+
+    .. HACK -- the point here is that we don't want this to appear in the output, but the autosummary should still generate the pages.
+        .. autosummary::
+            :toctree:
+        
+            WorkArray.__delattr__
+            WorkArray.__dict__
+            WorkArray.__doc__
+            WorkArray.__getattribute__
+            WorkArray.__hash__
+            WorkArray.__module__
+            WorkArray.__repr__
+            WorkArray.__setattr__
+            WorkArray.__str__
+            WorkArray.__weakref__
+            WorkArray.np_types
+            WorkArray.query_arrays
+            WorkArray.types
+

@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__sizeof__
+=====================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. automethod:: WorkArray.__sizeof__

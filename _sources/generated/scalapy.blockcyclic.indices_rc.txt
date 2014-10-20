@@ -1,0 +1,6 @@
+scalapy.blockcyclic.indices_rc
+==============================
+
+.. currentmodule:: scalapy.blockcyclic
+
+.. autofunction:: indices_rc

@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__reduce_ex__
+============================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.__reduce_ex__

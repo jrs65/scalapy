@@ -1,0 +1,60 @@
+scalapy.core.DistributedMatrix
+==============================
+
+.. currentmodule:: scalapy.core
+
+.. autoclass:: DistributedMatrix
+
+   
+
+    .. HACK -- the point here is that we don't want this to appear in the output, but the autosummary should still generate the pages.
+        .. autosummary::
+            :toctree:
+        
+            DistributedMatrix.__format__
+            DistributedMatrix.__init__
+            DistributedMatrix.__new__
+            DistributedMatrix.__reduce__
+            DistributedMatrix.__reduce_ex__
+            DistributedMatrix.__sizeof__
+            DistributedMatrix.__subclasshook__
+            DistributedMatrix._load_array
+            DistributedMatrix._mk_mpi_dtype
+            DistributedMatrix._mkdesc
+            DistributedMatrix.copy
+            DistributedMatrix.empty_like
+            DistributedMatrix.from_file
+            DistributedMatrix.from_global_array
+            DistributedMatrix.indices
+            DistributedMatrix.redistribute
+            DistributedMatrix.to_file
+            DistributedMatrix.to_global_array
+
+
+
+   
+
+    .. HACK -- the point here is that we don't want this to appear in the output, but the autosummary should still generate the pages.
+        .. autosummary::
+            :toctree:
+        
+            DistributedMatrix.__delattr__
+            DistributedMatrix.__dict__
+            DistributedMatrix.__doc__
+            DistributedMatrix.__getattribute__
+            DistributedMatrix.__hash__
+            DistributedMatrix.__module__
+            DistributedMatrix.__repr__
+            DistributedMatrix.__setattr__
+            DistributedMatrix.__str__
+            DistributedMatrix.__weakref__
+            DistributedMatrix.block_shape
+            DistributedMatrix.context
+            DistributedMatrix.desc
+            DistributedMatrix.dtype
+            DistributedMatrix.global_shape
+            DistributedMatrix.local_array
+            DistributedMatrix.local_shape
+            DistributedMatrix.mpi_dtype
+            DistributedMatrix.sc_dtype
+

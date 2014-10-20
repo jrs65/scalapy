@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext.__format__
+======================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: ProcessContext.__format__

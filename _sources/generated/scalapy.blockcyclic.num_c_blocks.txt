@@ -1,0 +1,6 @@
+scalapy.blockcyclic.num_c_blocks
+================================
+
+.. currentmodule:: scalapy.blockcyclic
+
+.. autofunction:: num_c_blocks

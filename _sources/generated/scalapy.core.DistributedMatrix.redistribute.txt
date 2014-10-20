@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.redistribute
+===========================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.redistribute

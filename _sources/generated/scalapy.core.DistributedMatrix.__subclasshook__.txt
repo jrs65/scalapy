@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__subclasshook__
+===============================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.__subclasshook__

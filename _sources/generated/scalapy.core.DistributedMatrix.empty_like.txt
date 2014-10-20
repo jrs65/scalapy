@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.empty_like
+=========================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.empty_like

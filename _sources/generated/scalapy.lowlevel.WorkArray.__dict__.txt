@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__dict__
+===================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. autoattribute:: WorkArray.__dict__

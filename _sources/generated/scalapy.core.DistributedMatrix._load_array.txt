@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix._load_array
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix._load_array

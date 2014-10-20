@@ -1,0 +1,6 @@
+scalapy.routines.eigh
+=====================
+
+.. currentmodule:: scalapy.routines
+
+.. autofunction:: eigh

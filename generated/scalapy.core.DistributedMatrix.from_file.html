@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>scalapy.core.DistributedMatrix.from_file &mdash; scalapy 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/bootswatch-3.2.0/flatly/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.2.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="top" title="scalapy 0.1 documentation" href="../index.html" />
+    <link rel="up" title="scalapy.core.DistributedMatrix" href="scalapy.core.DistributedMatrix.html" />
+    <link rel="next" title="scalapy.core.DistributedMatrix.to_file" href="scalapy.core.DistributedMatrix.to_file.html" />
+    <link rel="prev" title="scalapy.core.DistributedMatrix.to_global_array" href="scalapy.core.DistributedMatrix.to_global_array.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          scalapy</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            <li class="divider-vertical"></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorial</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../core.html">Core (<tt class="docutils literal"><span class="pre">scalapy.core</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../blockcyclic.html">Blockcyclic Utilities (<tt class="docutils literal"><span class="pre">blockcyclic</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../lowlevel.html">Lowlevel Interface (<tt class="docutils literal"><span class="pre">lowlevel</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../highlevel.html">Highlevel Interface (<tt class="docutils literal"><span class="pre">routines</span></tt>)</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">scalapy.core.DistributedMatrix.from_file</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="scalapy.core.DistributedMatrix.to_global_array.html" title="Previous Chapter: scalapy.core.DistributedMatrix.to_global_array"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; scalapy.core.Dis...</span>
+    </a>
+  </li>
+  <li>
+    <a href="scalapy.core.DistributedMatrix.to_file.html" title="Next Chapter: scalapy.core.DistributedMatrix.to_file"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">scalapy.core.Dis... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="../_sources/generated/scalapy.core.DistributedMatrix.from_file.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
+  <div class="section" id="scalapy-core-distributedmatrix-from-file">
+<h1>scalapy.core.DistributedMatrix.from_file<a class="headerlink" href="#scalapy-core-distributedmatrix-from-file" title="Permalink to this headline">¶</a></h1>
+<dl class="classmethod">
+<dt id="scalapy.core.DistributedMatrix.from_file">
+<em class="property">classmethod </em><tt class="descclassname">DistributedMatrix.</tt><tt class="descname">from_file</tt><big>(</big><em>filename</em>, <em>global_shape</em>, <em>dtype</em>, <em>block_shape=None</em>, <em>context=None</em>, <em>order='F'</em>, <em>displacement=0</em><big>)</big><a class="headerlink" href="#scalapy.core.DistributedMatrix.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in a global array from a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filename</strong> : string</p>
+<blockquote>
+<div><p>Name of file to read in.</p>
+</div></blockquote>
+<p><strong>global_shape</strong> : [nrows, ncols]</p>
+<blockquote>
+<div><p>Shape of global array.</p>
+</div></blockquote>
+<p><strong>dtype</strong> : numpy datatype</p>
+<blockquote>
+<div><p>Datatype of array.</p>
+</div></blockquote>
+<p><strong>block_shape</strong> : [brows, bcols]</p>
+<blockquote>
+<div><p>Shape of block, if None, try to use default size.</p>
+</div></blockquote>
+<p><strong>context</strong> : ProcessContext</p>
+<blockquote>
+<div><p>Description of process distribution.</p>
+</div></blockquote>
+<p><strong>order</strong> : &#8216;F&#8217; or &#8216;C&#8217;</p>
+<blockquote>
+<div><p>Storage order on disk.</p>
+</div></blockquote>
+<p><strong>displacement</strong> : integer</p>
+<blockquote>
+<div><p>Displacement from the start of file (in bytes)</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>dm</strong> : DistributedMatrix</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014, J. Richard Shaw.<br/>
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

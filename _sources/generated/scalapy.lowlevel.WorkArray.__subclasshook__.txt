@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__subclasshook__
+===========================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. automethod:: WorkArray.__subclasshook__

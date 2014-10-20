@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__format__
+=========================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.__format__

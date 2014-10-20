@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.local_shape
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.local_shape

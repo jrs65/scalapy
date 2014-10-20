@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.desc
+===================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.desc

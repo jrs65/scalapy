@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__sizeof__
+=========================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.__sizeof__

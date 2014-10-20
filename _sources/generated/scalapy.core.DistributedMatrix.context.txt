@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.context
+======================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.context

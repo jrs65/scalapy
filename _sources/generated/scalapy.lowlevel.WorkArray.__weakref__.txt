@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__weakref__
+======================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. autoattribute:: WorkArray.__weakref__

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Core (scalapy.core) &mdash; scalapy 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootswatch-3.2.0/flatly/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.2.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="top" title="scalapy 0.1 documentation" href="index.html" />
+    <link rel="next" title="scalapy.core.initmpi" href="generated/scalapy.core.initmpi.html" />
+    <link rel="prev" title="Tutorial" href="tutorial.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          scalapy</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            <li class="divider-vertical"></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="">Core (<tt class="docutils literal"><span class="pre">scalapy.core</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="blockcyclic.html">Blockcyclic Utilities (<tt class="docutils literal"><span class="pre">blockcyclic</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lowlevel.html">Lowlevel Interface (<tt class="docutils literal"><span class="pre">lowlevel</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="highlevel.html">Highlevel Interface (<tt class="docutils literal"><span class="pre">routines</span></tt>)</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Core (<tt class="docutils literal"><span class="pre">scalapy.core</span></tt>)</a><ul>
+<li><a class="reference internal" href="#routines">Routines</a></li>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="tutorial.html" title="Previous Chapter: Tutorial"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Tutorial</span>
+    </a>
+  </li>
+  <li>
+    <a href="generated/scalapy.core.initmpi.html" title="Next Chapter: scalapy.core.initmpi"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">scalapy.core.ini... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/core.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
+  <span class="target" id="module-scalapy.core"></span><div class="section" id="core-scalapy-core">
+<h1>Core (<a class="reference internal" href="#module-scalapy.core" title="scalapy.core"><tt class="xref py py-mod docutils literal"><span class="pre">scalapy.core</span></tt></a>)<a class="headerlink" href="#core-scalapy-core" title="Permalink to this headline">¶</a></h1>
+<p>This module contains the core of <cite>scalapy</cite>: a set of routines and classes to
+describe the distribution of MPI processes involved in the computation, and
+interface with <tt class="docutils literal"><span class="pre">BLACS</span></tt>; and a class which holds a block cyclic distributed
+matrix for computation.</p>
+<div class="section" id="routines">
+<h2>Routines<a class="headerlink" href="#routines" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="generated/scalapy.core.initmpi.html#scalapy.core.initmpi" title="scalapy.core.initmpi"><tt class="xref py py-obj docutils literal"><span class="pre">initmpi</span></tt></a>(gridshape[,&nbsp;block_shape])</td>
+<td>Initialise Scalapack on the current process.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="generated/scalapy.core.ProcessContext.html#scalapy.core.ProcessContext" title="scalapy.core.ProcessContext"><tt class="xref py py-obj docutils literal"><span class="pre">ProcessContext</span></tt></a>(grid_shape[,&nbsp;comm])</td>
+<td>Stores information about an MPI/BLACS process.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="generated/scalapy.core.DistributedMatrix.html#scalapy.core.DistributedMatrix" title="scalapy.core.DistributedMatrix"><tt class="xref py py-obj docutils literal"><span class="pre">DistributedMatrix</span></tt></a>(global_shape[,&nbsp;dtype,&nbsp;...])</td>
+<td>A matrix distributed over multiple MPI processes.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="generated/scalapy.core.ScalapyException.html#scalapy.core.ScalapyException" title="scalapy.core.ScalapyException"><tt class="xref py py-obj docutils literal"><span class="pre">ScalapyException</span></tt></a></td>
+<td>Error in scalapy.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="generated/scalapy.core.ScalapackException.html#scalapy.core.ScalapackException" title="scalapy.core.ScalapackException"><tt class="xref py py-obj docutils literal"><span class="pre">ScalapackException</span></tt></a></td>
+<td>Error in calling Scalapack.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014, J. Richard Shaw.<br/>
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

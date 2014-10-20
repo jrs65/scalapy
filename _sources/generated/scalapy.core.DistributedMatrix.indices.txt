@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.indices
+======================================
+
+.. currentmodule:: scalapy.core
+
+.. automethod:: DistributedMatrix.indices

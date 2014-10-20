@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.local_array
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.local_array

@@ -1,0 +1,48 @@
+scalapy.core.ProcessContext
+===========================
+
+.. currentmodule:: scalapy.core
+
+.. autoclass:: ProcessContext
+
+   
+
+    .. HACK -- the point here is that we don't want this to appear in the output, but the autosummary should still generate the pages.
+        .. autosummary::
+            :toctree:
+        
+            ProcessContext.__format__
+            ProcessContext.__init__
+            ProcessContext.__new__
+            ProcessContext.__reduce__
+            ProcessContext.__reduce_ex__
+            ProcessContext.__sizeof__
+            ProcessContext.__subclasshook__
+
+
+
+   
+
+    .. HACK -- the point here is that we don't want this to appear in the output, but the autosummary should still generate the pages.
+        .. autosummary::
+            :toctree:
+        
+            ProcessContext.__delattr__
+            ProcessContext.__dict__
+            ProcessContext.__doc__
+            ProcessContext.__getattribute__
+            ProcessContext.__hash__
+            ProcessContext.__module__
+            ProcessContext.__repr__
+            ProcessContext.__setattr__
+            ProcessContext.__str__
+            ProcessContext.__weakref__
+            ProcessContext._blacs_context
+            ProcessContext._grid_position
+            ProcessContext._grid_shape
+            ProcessContext._mpi_comm
+            ProcessContext.blacs_context
+            ProcessContext.grid_position
+            ProcessContext.grid_shape
+            ProcessContext.mpi_comm
+

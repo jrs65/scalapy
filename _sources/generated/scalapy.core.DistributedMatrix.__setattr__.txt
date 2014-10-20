@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__setattr__
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.__setattr__

@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.__reduce__
+=====================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. automethod:: WorkArray.__reduce__

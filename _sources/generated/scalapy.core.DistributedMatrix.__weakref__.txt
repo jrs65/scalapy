@@ -1,0 +1,6 @@
+scalapy.core.DistributedMatrix.__weakref__
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: DistributedMatrix.__weakref__

@@ -1,0 +1,6 @@
+scalapy.core.ScalapyException
+=============================
+
+.. currentmodule:: scalapy.core
+
+.. autoexception:: ScalapyException

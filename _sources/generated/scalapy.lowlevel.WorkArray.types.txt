@@ -1,0 +1,6 @@
+scalapy.lowlevel.WorkArray.types
+================================
+
+.. currentmodule:: scalapy.lowlevel
+
+.. autoattribute:: WorkArray.types

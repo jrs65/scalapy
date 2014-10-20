@@ -1,0 +1,6 @@
+scalapy.core.ProcessContext._blacs_context
+==========================================
+
+.. currentmodule:: scalapy.core
+
+.. autoattribute:: ProcessContext._blacs_context
