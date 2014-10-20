@@ -1,3 +1,24 @@
+"""
+==============================================
+Highlevel Interface (:mod:`~scalapy.routines`)
+==============================================
+
+This module presents a high-level interface to ScaLAPACK modelled on the API
+of ``scipy.linalg``. Presently this is quite limited, and is growing as
+required.
+
+Routines
+========
+
+.. autosummary::
+    :toctree: generated/
+
+    eigh
+    cholesky
+    dot
+
+"""
+
 import numpy as np
 
 from . import core, util
@@ -5,10 +26,10 @@ from . import lowlevel as ll
 
 
 def eigh(A, B=None, lower=True, overwrite_a=True, overwrite_b=True, type_=1, eigvals=None):
-    """Compute the eigen-decomposition of a symmetric/hermitian matrix.
+    """Find the eigen-solution of a symmetric/hermitian matrix.
 
-    Use Scalapack to compute the eigenvalues and eigenvectors of a
-    distributed matrix.
+    Use ScaLAPACK to compute the eigenvalues and eigenvectors of a distributed
+    matrix. This routine can also solve the generalised eigenvalue problem.
 
     Parameters
     ----------
@@ -186,28 +207,27 @@ def dot(A, B, transA='N', transB='N'):
     ----------
     A, B : DistributedMatrix
         Matrices to multiply.
-    transA, transB : ['N', 'T', 'H', 'C']
+    transA, transB : ['N', 'T', 'C']
         Whether we should use a transpose, rather than A or B themselves.
-        Either, do nothing ('N'), normal transpose ('T'), Hermitian transpose
-        ('H'), or complex conjugation only ('C').
+        Either, do nothing ('N'), normal transpose ('T'), or Hermitian transpose ('C').
 
     Returns
     -------
     C : DistributedMatrix
     """
 
-    if transA not in ['N', 'T', 'H', 'C']:
+    if transA not in ['N', 'T', 'C']:
         raise core.ScalapyException("Trans argument for matrix A invalid")
-    if transB not in ['N', 'T', 'H', 'C']:
+    if transB not in ['N', 'T', 'C']:
         raise core.ScalapyException("Trans argument for matrix B invalid")
     if A.dtype != B.dtype:
         raise core.ScalapyException("Matrices must have same type")
     # Probably should validate context too
 
-    m = A.global_shape[0] if transA in ['N', 'C'] else A.global_shape[1]
-    n = B.global_shape[1] if transB in ['N', 'C'] else B.global_shape[0]
-    k = A.global_shape[1] if transA in ['N', 'C'] else A.global_shape[0]
-    l = B.global_shape[0] if transB in ['N', 'C'] else B.global_shape[1]
+    m = A.global_shape[0] if transA == 'N' else A.global_shape[1]
+    n = B.global_shape[1] if transB == 'N' else B.global_shape[0]
+    k = A.global_shape[1] if transA == 'N' else A.global_shape[0]
+    l = B.global_shape[0] if transB == 'N' else B.global_shape[1]
 
     if l != k:
         raise core.ScalapyException("Matrix shapes are incompatible.")
@@ -216,10 +236,10 @@ def dot(A, B, transA='N', transB='N'):
 
     args = [transA, transB, m, n, k, 1.0, A, B, 0.0, C]
 
-    call_table = { 'S' : (ll.psgemm, args),
-                   'C' : (ll.pcgemm, args),
-                   'D' : (ll.pdgemm, args),
-                   'Z' : (ll.pzgemm, args) }
+    call_table = { 'S': (ll.psgemm, args),
+                   'C': (ll.pcgemm, args),
+                   'D': (ll.pdgemm, args),
+                   'Z': (ll.pzgemm, args) }
 
 
     func, args = call_table[A.sc_dtype]

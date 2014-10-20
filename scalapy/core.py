@@ -228,6 +228,7 @@ class DistributedMatrix(object):
     to_global_array
     from_file
     to_file
+    redistribute
 
 
     .. _notes:

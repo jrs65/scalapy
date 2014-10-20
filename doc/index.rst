@@ -1,6 +1,6 @@
 
-PyScalapack
-===========
+ScaLAPACK for Python (scalapy)
+==============================
 
 A python wrapper about Scalapack.
 
@@ -21,6 +21,7 @@ Programming References
     core
     blockcyclic
     lowlevel
+    highlevel
 
 Examples
 --------
