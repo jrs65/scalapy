@@ -56,3 +56,25 @@ def dm_from_to_cycle(gshape, bshape):
 
     dm = core.DistributedMatrix.from_global_array(arr, block_shape=bshape)
     assert (dm.to_global_array() == arr).all()
+
+
+def test_dm_redistribute():
+    # Test redistribution of matrices with different blocking and process grids.
+
+    # Generate matrix
+    garr = np.arange(25.0).reshape(5, 5, order='F')
+
+    # Create DistributedMatrix
+    dm3x3 = core.DistributedMatrix.from_global_array(garr, block_shape=[3, 3])
+    dm2x2 = core.DistributedMatrix.from_global_array(garr, block_shape=[2, 2])
+
+    rd2x2 = dm3x3.redistribute(block_shape=[2, 2])
+
+    assert (dm2x2.local_array == rd2x2.local_array).all()
+
+    pc2 = core.ProcessContext([4, 1], comm)
+
+    dmpc2 = core.DistributedMatrix.from_global_array(garr, block_shape=[1, 1], context=pc2)
+    rdpc2 = dm3x3.redistribute(block_shape=[1, 1], context=pc2)
+
+    assert (dmpc2.local_array == rdpc2.local_array).all()

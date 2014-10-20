@@ -135,6 +135,7 @@ import numpy as np
 from .. import core, util
 from . import pblas as _pblas
 from . import scalapack as _scl
+from . import redist as _redist
 
 expand_args = True
 
@@ -278,8 +279,19 @@ class WorkArray(object):
 ## Also try and insert the PBLAS and ScaLAPACK routines into the docstring.
 _mod_dict = globals()
 
+_doc_redist = ''
 _doc_pblas = ''
 _doc_scl = ''
+
+
+# From REDIST
+for rname, robj in _redist.__dict__.iteritems():
+    if type(robj).__name__ == 'fortran':
+        _mod_dict[rname] = _wrap_routine(rname, robj)
+        _doc_redist += '    ' + rname + '\n'
+
+_mod_dict['__doc__'] = _mod_dict['__doc__'].replace('<insert_redist>', _doc_redist)
+
 
 # From PBLAS
 for rname, robj in _pblas.__dict__.iteritems():

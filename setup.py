@@ -139,6 +139,11 @@ blacs_ext = Extension('scalapy.blacs', [cython_file('scalapy/blacs')],
                       extra_compile_args=mpicompileargs,
                       extra_link_args=mpilinkargs)
 
+llredist_ext = Extension('scalapy.lowlevel.redist', ['scalapy/lowlevel/redist.pyf'],
+                         library_dirs=scl_libdir, libraries=scl_lib,
+                         extra_compile_args=(mpicompileargs + omp_args),
+                         extra_link_args=(mpilinkargs + omp_args))
+
 llpblas_ext = Extension('scalapy.lowlevel.pblas', ['scalapy/lowlevel/pblas.pyf'],
                         library_dirs=scl_libdir, libraries=scl_lib,
                         extra_compile_args=(mpicompileargs + omp_args),
@@ -150,7 +155,7 @@ llscalapack_ext = Extension('scalapy.lowlevel.scalapack', ['scalapy/lowlevel/sca
                             extra_link_args=(mpilinkargs + omp_args))
 
 ## Apply Cython to the extensions if it's installed
-exts = [mpi3_ext, blacs_ext, llpblas_ext, llscalapack_ext]
+exts = [mpi3_ext, blacs_ext, llpblas_ext, llscalapack_ext, llredist_ext]
 if HAVE_CYTHON:
     exts = cythonize(exts, include_path=['.', np.get_include(), mpi4py.get_include()])
 

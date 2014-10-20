@@ -58,10 +58,10 @@ _block_shape = None
 
 
 # Map numpy type into MPI type
-typemap = { np.float32 : MPI.FLOAT,
-            np.float64 : MPI.DOUBLE,
+typemap = { np.float32: MPI.FLOAT,
+            np.float64: MPI.DOUBLE,
             np.complex64: MPI.COMPLEX,
-            np.complex128 : MPI.COMPLEX16 }
+            np.complex128: MPI.COMPLEX16 }
 
 
 def _chk_2d_size(shape):
@@ -74,8 +74,6 @@ def _chk_2d_size(shape):
         return False
 
     return True
-
-
 
 
 def initmpi(gridshape, block_shape=None):
@@ -179,16 +177,16 @@ class ProcessContext(object):
         self._grid_shape = tuple(grid_shape)
 
         # Initialise BLACS context
-        self._blacs_context = blacs.sys2blacs_handle(self.mpi_comm)
-
-        blacs.gridinit(self.blacs_context, self.grid_shape[0], self.grid_shape[1])
+        ctxt = blacs.sys2blacs_handle(self.mpi_comm)
+        self._blacs_context = blacs.gridinit(ctxt, self.grid_shape[0], self.grid_shape[1])
 
         blacs_info = blacs.gridinfo(self.blacs_context)
         blacs_size, blacs_pos = blacs_info[:2], blacs_info[2:]
 
         # Check we got the gridsize we wanted
         if blacs_size[0] != self.grid_shape[0] or blacs_size[1] != self.grid_shape[1]:
-            raise ScalapyException("BLACS did not give requested gridsize.")
+            raise ScalapyException("BLACS did not give requested gridsize (requested %s, got %s)."
+                                   % (repr(self.grid_shape), repr(blacs_size)))
 
         # Set the grid position.
         self._grid_position = blacs_pos
@@ -663,3 +661,53 @@ class DistributedMatrix(object):
         f.Set_view(displacement, self.mpi_dtype, self._darr_f, "native")
         f.Write_all(self.local_array)
         f.Close()
+
+    def redistribute(self, block_shape=None, context=None):
+        """Redistribute a matrix with another grid or block shape.
+
+        Parameters
+        ----------
+        block_shape : [brows, bcols], optional
+            New block shape. If `None` use the current block shape.
+        context : ProcessContext, optional
+            New process context. Must be over the same MPI communicator. If
+            `None` use the current communicator.
+
+        Returns
+        -------
+        dm : DistributedMatrix
+            Newly distributed matrix.
+        """
+
+        # Check that we are actually redistributing across something
+        if (block_shape is None) and (context is None):
+            import warnings
+            warnings.warn("Neither block_shape or context is set.")
+
+        # Fix up default parameters
+        if block_shape is None:
+            block_shape = self.block_shape
+        if context is None:
+            context = self.context
+
+        # Check that we are redistributing over the same communicator
+        if context.mpi_comm != self.context.mpi_comm:
+            raise ScalapyException("Can only redsitribute over the same MPI communicator.")
+
+        from . import lowlevel as ll
+
+        dm = DistributedMatrix(self.global_shape, dtype=self.dtype, block_shape=block_shape, context=context)
+
+        args = [self.global_shape[0], self.global_shape[1], self, dm, self.context.blacs_context]
+
+        # Prepare call table
+        call_table = {'S': (ll.psgemr2d, args),
+                      'D': (ll.pdgemr2d, args),
+                      'C': (ll.pcgemr2d, args),
+                      'Z': (ll.pzgemr2d, args)}
+
+        # Call routine
+        func, args = call_table[self.sc_dtype]
+        func(*args)
+
+        return dm
