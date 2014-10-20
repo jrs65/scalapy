@@ -172,7 +172,7 @@ def _call_routine(routine, *args):
     # Expand the DM arguments
     exp_args = _expand_dm(args)
 
-    # Perform a WorkArray if needed
+    # Perform a WorkArray query if needed
     if need_workquery:
         wq_args = _expand_work(exp_args, query=True)
         rv = routine(*util.flatten(wq_args))

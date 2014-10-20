@@ -4,7 +4,7 @@ from . import core, util
 from . import lowlevel as ll
 
 
-def eigh(A, lower=True, overwrite_a=True, eigvals=None):
+def eigh(A, B=None, lower=True, overwrite_a=True, overwrite_b=True, type_=1, eigvals=None):
     """Compute the eigen-decomposition of a symmetric/hermitian matrix.
 
     Use Scalapack to compute the eigenvalues and eigenvectors of a
@@ -13,11 +13,13 @@ def eigh(A, lower=True, overwrite_a=True, eigvals=None):
     Parameters
     ----------
     A : DistributedMatrix
-        The matrix to decompose.
+        A complex hermitian, or real symmetric matrix to eigensolve.
+    B : DistributedMatrix, optional
+        A complex hermitian, or real symmetric positive definite matrix.
     lower : boolean, optional
         Scalapack uses only half of the matrix, by default the lower
         triangle will be used. Set to False to use the upper triangle.
-    overwrite_a : boolean, optional
+    overwrite_a, overwrite_b : boolean, optional
         By default the input matrix is destroyed, if set to False a
         copy is taken and operated on.
     eigvals : tuple (lo, hi), optional
@@ -38,35 +40,86 @@ def eigh(A, lower=True, overwrite_a=True, eigvals=None):
 
     A = A if overwrite_a else A.copy()
 
-    task = 'V'
-    erange = 'A'
-    uplo = "L" if lower else "U"
-    N = A.global_shape[0]
-    low, high = 1, 1
+    if B is None:
+        # Solve the standard eigenvalue problem.
 
-    # Get eigval indices if set
-    if eigvals is not None:
-        low = eigvals[0] + 1
-        high = eigvals[1] + 1
-        erange = 'I'
+        task = 'V'
+        erange = 'A'
+        uplo = "L" if lower else "U"
+        N = A.global_shape[0]
+        low, high = 1, 1
 
-    evecs = core.DistributedMatrix.empty_like(A)
-    evals = np.empty(N, dtype=util.real_equiv(A.dtype))
+        # Get eigval indices if set
+        if eigvals is not None:
+            low = eigvals[0] + 1
+            high = eigvals[1] + 1
+            erange = 'I'
 
-    args = [task, erange, uplo, N, A, 1.0, 1.0, low, high, evals, evecs]
+        evecs = core.DistributedMatrix.empty_like(A)
+        evals = np.empty(N, dtype=util.real_equiv(A.dtype))
 
-    call_table = {'S': (ll.pssyevr, args + [ll.WorkArray('S', 'I')]),
-                  'D': (ll.pdsyevr, args + [ll.WorkArray('D', 'I')]),
-                  'C': (ll.pcheevr, args + [ll.WorkArray('C', 'S', 'I')]),
-                  'Z': (ll.pzheevr, args + [ll.WorkArray('Z', 'D', 'I')])}
+        args = [task, erange, uplo, N, A, 1.0, 1.0, low, high, evals, evecs]
 
-    func, args = call_table[A.sc_dtype]
-    info, m, nz = func(*args)
+        call_table = {'S': (ll.pssyevr, args + [ll.WorkArray('S', 'I')]),
+                      'D': (ll.pdsyevr, args + [ll.WorkArray('D', 'I')]),
+                      'C': (ll.pcheevr, args + [ll.WorkArray('C', 'S', 'I')]),
+                      'Z': (ll.pzheevr, args + [ll.WorkArray('Z', 'D', 'I')])}
 
-    if info < 0:
-        raise Exception("Failure.")
+        func, args = call_table[A.sc_dtype]
+        m, nz, info = func(*args)
 
-    return evals, evecs
+        if info < 0:
+            raise Exception("Failure.")
+
+        return evals, evecs
+
+    else:
+        # Otherwise we need to solve the generalised eigenvalue problem
+        B = B if overwrite_b else B.copy()
+
+        # Validate type
+        if type_ not in [1, 2, 3]:
+            raise core.ScalapackException("Type argument invalid.")
+
+        task = 'V'
+        erange = 'A'
+        uplo = "L" if lower else "U"
+        N = A.global_shape[0]
+        low, high = 1, 1
+
+        # Get eigval indices if set
+        if eigvals is not None:
+            low = eigvals[0] + 1
+            high = eigvals[1] + 1
+            erange = 'I'
+
+        evecs = core.DistributedMatrix.empty_like(A)
+        evals = np.zeros(N, dtype=util.real_equiv(A.dtype))
+
+        # Construct the arguments list for the first part
+        args1 = [type_, task, erange, uplo, N, A, B, 1.0, 1.0, low, high, 0.0, evals, -1.0, evecs]
+
+        # Construct the second half of the arguments list, these are mostly
+        # the useless 'expert' mode arguments
+        npmul = np.prod(A.context.grid_shape)  # NPROW * NPCOL
+        ifail = np.zeros(N, dtype=np.int32)
+        iclustr = np.zeros(2 * npmul, dtype=np.float64)  # Weird issue in f2py wants this to be float64?
+        gap = np.zeros(npmul, dtype=util.real_equiv(A.dtype))
+
+        args2 = [ifail, iclustr, gap]
+
+        call_table = {'S': (ll.pssygvx, args1 + [ll.WorkArray('S', 'I')] + args2),
+                      'D': (ll.pdsygvx, args1 + [ll.WorkArray('D', 'I')] + args2),
+                      'C': (ll.pchegvx, args1 + [ll.WorkArray('C', 'S', 'I')] + args2),
+                      'Z': (ll.pzhegvx, args1 + [ll.WorkArray('Z', 'D', 'I')] + args2)}
+
+        func, args = call_table[A.sc_dtype]
+        m, nz, info = func(*args)
+
+        if info < 0:
+            raise Exception("Failure.")
+
+        return evals, evecs
 
 
 def cholesky(A, lower=False, overwrite_a=False, zero_triangle=True):
