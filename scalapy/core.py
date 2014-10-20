@@ -518,13 +518,22 @@ class DistributedMatrix(object):
         -------
         dm : DistributedMatrix
         """
-        if mat.ndim != 2:
-            raise ScalapyException("Array must be 2d.")
-
         # Broadcast if rank is not set.
         if rank is not None:
             comm = context.mpi_comm if context else _context.mpi_comm
+
+            # Double check that rank is valid.
+            if rank < 0 or rank >= comm.size:
+                raise ScalapyException("Invalid rank.")
+
+            if comm.rank == rank:
+                if mat.ndim != 2:
+                    raise ScalapyException("Array must be 2d.")
+
             mat = comm.bcast(mat, root=rank)
+        else:
+            if mat.ndim != 2:
+                raise ScalapyException("Array must be 2d.")
 
         m = cls(mat.shape, block_shape=block_shape, dtype=mat.dtype.type, context=context)
 
