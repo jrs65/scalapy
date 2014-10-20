@@ -1,6 +1,6 @@
-========
- scalapy
-========
+==============================
+ScaLAPACK for Python (scalapy)
+==============================
 
 ``scalapy`` is a wrapping of Scalapack such that it can be called by Python in
 a friendly manner.
@@ -16,20 +16,23 @@ This package depends upon two python packages ``numpy`` and ``mpi4py``. It is
 written largely in pure Python, but some parts require ``Cython`` and
 ``f2py``. Obviously it also requires an ``MPI`` distribution (OpenMPI and
 IntelMPI supported out the box), and a ``Scalapack`` installation (both Intel
-MKL and NETLIB are currently supported, change setup.py to select).
+MKL and NETLIB are currently supported).
 
 Installation
 ============
 
-To build just go edit ``setup.py`` to choose the correct options, and then
-run::
+To build just use the standard ``setup.py`` script::
 
     $ python setup.py install
 
-Building this is a little bit of an art, as Cython forces the use of the
-compiler that built python itself (when linking). This mean ``mpicc`` cannot
-simply be used, and we need to manually fetch the flags required for building
-with MPI. This is likely to be the source of any difficulties building.
+It will attempt to probe you current environment to determine which MPI
+distribution, and ScaLAPACK installation to use. As this isn't completely
+robust, you can edit ``setup.py`` manually specify what to use.
+
+Documentation
+=============
+
+Limited, but improving, documentation is available `here <http://jrs65.github.com/scalapy/>`_.
 
 MPI Version (OpenMPI 1.8.2 or higher)
 =====================================
