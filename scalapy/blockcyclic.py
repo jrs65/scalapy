@@ -209,7 +209,7 @@ def indices_rc(N, B, p, P):
     nt = numrc(N, B, p, P)
     nb = num_c_lblocks(N, B, p, P)
 
-    ind = np.zeros(nt)
+    ind = np.zeros(nt, dtype='int')
 
     ind[:(nb*B)] = ((np.arange(nb)[:, np.newaxis] * P + p)*B +
                     np.arange(B)[np.newaxis, :]).flatten()
