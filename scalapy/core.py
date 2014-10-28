@@ -498,6 +498,48 @@ class DistributedMatrix(object):
         return (ri, ci)
 
 
+    def local_diagonal_indices(self, allow_non_square=False):
+        """Returns triple of 1D arrays (global_index, local_row_index, local_column_index).
+        
+        Each of these arrays has length equal to the number of elements on the global diagonal
+        which are stored in the local matrix.  For each such element, global_index[i] is its
+        position in the global diagonal, and (local_row_index[i], local_column_index[i]) gives
+        its position in the local array.
+
+        As an example of the use of these arrays, the global operation A_{ij} += i^2 delta_{ij}
+        could be implemented with:
+
+           (global_index, local_row_index, local_column_index) = A.local_diagonal_indices()
+           A.local_array[local_row_index, local_column_index] += global_index**2
+        """
+
+        if (not allow_non_square) and (self.global_shape[0] != self.global_shape[1]):
+            #
+            # Attempting to access the "diagonal" of a non-square matrix probably indicates a bug.
+            # Therefore we raise an exception unless the caller sets the allow_non_square flag.
+            #
+            raise RuntimeError('scalapy.core.DistributedMatrix.local_diagonal_indices() called on non-square matrix, and allow_non_square=False')
+
+        ri, ci = map(blockcyclic.indices_rc,
+                     self.global_shape,
+                     self.block_shape,
+                     self.context.grid_position,
+                     self.context.grid_shape)
+
+        global_index = np.intersect1d(ri, ci)
+        del ri, ci
+
+        t = np.mod(global_index, self.block_shape[0])
+        u = np.divide(global_index, self.block_shape[0] * self.context.grid_shape[0])
+        local_row_index = t + u * self.block_shape[0]
+
+        t = np.mod(global_index, self.block_shape[1])
+        u = np.divide(global_index, self.block_shape[1] * self.context.grid_shape[1])
+        local_column_index = t + u * self.block_shape[1]
+
+        return (global_index, local_row_index, local_column_index)
+
+
     @classmethod
     def from_global_array(cls, mat, rank=None, block_shape=None, context=None):
 
