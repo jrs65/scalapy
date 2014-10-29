@@ -569,6 +569,18 @@ class DistributedMatrix(object):
         return (global_index, local_row_index, local_column_index)
 
 
+    def trace(self):
+        """Returns global matrix trace (the trace is returned on all cores)."""
+
+        (g,r,c) = self.local_diagonal_indices()
+        
+        # Note: np.sum() returns 0 for length-zero array
+        ret = np.array(np.sum(self.local_array[r,c]))
+        self.context.mpi_comm.Allreduce(ret.copy(), ret, MPI.SUM)        
+
+        return ret
+        
+
     @classmethod
     def from_global_array(cls, mat, rank=None, block_shape=None, context=None):
 
