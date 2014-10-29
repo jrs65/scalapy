@@ -435,6 +435,35 @@ class DistributedMatrix(object):
                    dtype=mat.dtype, context=mat.context)
 
 
+    @classmethod
+    def identity(cls, n, dtype=np.float64, block_shape=None, context=None):
+        """Returns distributed n-by-n distributed matrix.
+
+        Parameters
+        ----------
+        n : integer
+           matrix size
+        dtype : np.dtype, optional
+           The datatype of the array. 
+           See DistributedMatrix.__init__ docstring for supported types.
+        block_shape: list of integers, optional
+           The blocking size, packed as ``[Br, Bc]``. If ``None`` uses the default blocking
+           (set via :func:`initmpi`).
+        context : ProcessContext, optional
+           The process context. If not set uses the default (recommended). 
+        """
+
+        ret = cls(global_shape = (n,n),
+                  dtype = dtype,
+                  block_shape = block_shape,
+                  context = context)
+
+        (g,r,c) = ret.local_diagonal_indices()
+
+        ret.local_array[r,c] = 1.0
+        return ret
+        
+
     def copy(self):
         """Create a copy of this DistributedMatrix.
 
@@ -647,6 +676,23 @@ class DistributedMatrix(object):
         comm.Barrier()
 
         return global_array
+
+
+    def __iadd__(self, x):
+        assert isinstance(x, DistributedMatrix)
+        
+        if self.global_shape != x.global_shape:
+            raise RuntimeError("scalapy.DistributedMatrix.__iadd__: incompatible shapes")
+
+        if ((self.block_shape != x.block_shape) 
+            or (self.context.grid_shape != x.context.grid_shape)
+            or (self.context.grid_position != x.context.grid_position)):
+            raise RuntimeError("scalapy.DistributedMatrix.__iadd__: for now, both matrices must have same blocking scheme")
+        
+        # Note: OK if dtypes don't match
+        self.local_array[:] += x.local_array[:]
+
+        return self
 
 
     @classmethod
