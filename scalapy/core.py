@@ -125,6 +125,8 @@ class ProcessContext(object):
     grid_position
     mpi_comm
     blacs_context
+    all_grid_positions
+    all_mpi_ranks
     """
 
     _grid_shape = (1, 1)
@@ -157,6 +159,18 @@ class ProcessContext(object):
     def blacs_context(self):
         """BLACS context handle."""
         return self._blacs_context
+
+
+    @property
+    def all_grid_positions(self):
+        """Returns shape (mpi_comm_size,2) array, such that (arr[i,0], arr[i,1]) gives the grid position of mpi task i."""
+        return self._all_grid_positions
+
+
+    @property
+    def all_mpi_ranks(self):
+        """Inverse of all_grid_positions: returns 2D array such that arr[i,j] gives the mpi rank at grid position (i,j)."""
+        return self._all_mpi_ranks
 
 
     def __init__(self, grid_shape, comm=None):
@@ -194,6 +208,22 @@ class ProcessContext(object):
         # Set the grid position.
         self._grid_position = blacs_pos
 
+        #
+        # As far as I know, BLACS doesn't guarantee any specific association between MPI tasks and grid positions, so
+        # we compute all_grid_positions using MPI_Allgather().
+        #
+        # (Alternate approach: move the call to MPI_Allgather to the all_grid_positions property, and cache the result.  
+        # This would have the advantage that MPI_Allgather() only gets called if needed, but the disadvantage that it 
+        # would hang if the first call to all_grid_positions() is from a serial context.)
+        #
+        t = np.array(self.grid_position)
+        assert t.shape == (2,)
+        self._all_grid_positions = np.zeros((self.mpi_comm.size,2), dtype=t.dtype)
+        self.mpi_comm.Allgather(t, self._all_grid_positions)
+
+        # Compute all_mpi_ranks from all_grid_positions
+        self._all_mpi_ranks = np.zeros(self.grid_shape, dtype=np.int)
+        self._all_mpi_ranks[self._all_grid_positions[:,0],self._all_grid_positions[:,1]] = np.arange(self.mpi_comm.size, dtype=np.int)
 
 
 class DistributedMatrix(object):
@@ -414,7 +444,29 @@ class DistributedMatrix(object):
                                 [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
                                 self.block_shape, self.context.grid_shape,
                                 MPI.ORDER_F).Commit() for ri in range(size) ]
+        
 
+    @staticmethod
+    def _local_indices(global_indices, block_size, grid_size):
+        """Converts an array of global row/col indices to an array of local indices.
+
+        This helper method is used in DistributedMatrix.local_diagonal_indices() and DistributedMatrix.transpose().
+
+        Parameters
+        ----------
+        global_indices : np.ndarray
+            Integer-valued array of global row/col indices
+        block_size : integer
+            Usually DistributedMatrix.block_shape[0] or DistributedMatrix.block_shape[1]
+        grid_size : integer
+            Usually ProcessContext.grid_shape[0] or ProcessContext.grid_shape[1]
+
+        Returns
+        -------
+        local_indices : np.ndarray
+        """
+
+        return np.mod(global_indices, block_size) + block_size * np.divide(global_indices, block_size*grid_size)
 
 
     @classmethod
@@ -556,17 +608,10 @@ class DistributedMatrix(object):
                      self.context.grid_shape)
 
         global_index = np.intersect1d(ri, ci)
-        del ri, ci
+        local_row_index = self._local_indices(global_index, self.block_shape[0], self.context.grid_shape[0])
+        local_col_index = self._local_indices(global_index, self.block_shape[1], self.context.grid_shape[1])
 
-        t = np.mod(global_index, self.block_shape[0])
-        u = np.divide(global_index, self.block_shape[0] * self.context.grid_shape[0])
-        local_row_index = t + u * self.block_shape[0]
-
-        t = np.mod(global_index, self.block_shape[1])
-        u = np.divide(global_index, self.block_shape[1] * self.context.grid_shape[1])
-        local_column_index = t + u * self.block_shape[1]
-
-        return (global_index, local_row_index, local_column_index)
+        return (global_index, local_row_index, local_col_index)
 
 
     def trace(self):
@@ -577,6 +622,87 @@ class DistributedMatrix(object):
         # Note: np.sum() returns 0 for length-zero array
         ret = np.array(np.sum(self.local_array[r,c]))
         self.context.mpi_comm.Allreduce(ret.copy(), ret, MPI.SUM)        
+
+        return ret
+        
+
+    def transpose(self, block_shape=None, context=None):
+        """Returns distributed matrix transpose."""
+
+        if block_shape is None:
+            block_shape = self.block_shape
+        if context is None:
+            context = self.context
+
+        if self.context.mpi_comm is not context.mpi_comm:
+            raise RuntimeError('input/output contexts in DistributedMatrix.transpose() must have the same MPI communicator')
+
+        (m,n) = self.global_shape
+
+        src_rindices = [ blockcyclic.indices_rc(m, self.block_shape[0], p, self.context.grid_shape[0]) for p in xrange(self.context.grid_shape[0]) ]
+        src_cindices = [ blockcyclic.indices_rc(n, self.block_shape[1], p, self.context.grid_shape[1]) for p in xrange(self.context.grid_shape[1]) ]
+        dst_rindices = [ blockcyclic.indices_rc(n, block_shape[0], p, context.grid_shape[0]) for p in xrange(context.grid_shape[0]) ]
+        dst_cindices = [ blockcyclic.indices_rc(m, block_shape[1], p, context.grid_shape[1]) for p in xrange(context.grid_shape[1]) ]
+
+        send_rindices = [ ]
+        for ci in dst_cindices:
+            t = np.intersect1d(ci, src_rindices[self.context.grid_position[0]])
+            t = self._local_indices(t, self.block_shape[0], self.context.grid_shape[0])
+            send_rindices.append(t)
+
+        send_cindices = [ ]
+        for ri in dst_rindices:
+            t = np.intersect1d(ri, src_cindices[self.context.grid_position[1]])
+            t = self._local_indices(t, self.block_shape[1], self.context.grid_shape[1])
+            send_cindices.append(t)
+
+        send_counts = np.array([ len(send_rindices[q]) * len(send_cindices[p]) for (p,q) in context.all_grid_positions ])
+        send_displs = np.concatenate(([0], np.cumsum(send_counts[:-1])))
+        send_buf = np.zeros(np.sum(send_counts), dtype=self.dtype)
+
+        for q in xrange(context.grid_shape[1]):
+            a = self.local_array[send_rindices[q],:]
+            for p in xrange(context.grid_shape[0]):
+                b = a[:,send_cindices[p]]
+                si = send_displs[context.all_mpi_ranks[p,q]]
+                sn = send_counts[context.all_mpi_ranks[p,q]]
+                send_buf[si:si+sn] = np.reshape(np.transpose(b), (-1,))    # note transpose here
+
+        del a,b    # save memory by dropping references
+
+        recv_rindices = [ ]
+        for ci in src_cindices:
+            t = np.intersect1d(ci, dst_rindices[context.grid_position[0]])
+            t = self._local_indices(t, block_shape[0], context.grid_shape[0])
+            recv_rindices.append(t)
+
+        recv_cindices = [ ]
+        for ri in src_rindices:
+            t = np.intersect1d(ri, dst_cindices[context.grid_position[1]])
+            t = self._local_indices(t, block_shape[1], context.grid_shape[1])
+            recv_cindices.append(t)
+
+        recv_counts = np.array([ len(recv_rindices[q]) * len(recv_cindices[p]) for (p,q) in self.context.all_grid_positions ])
+        recv_displs = np.concatenate(([0], np.cumsum(recv_counts[:-1])))
+        recv_buf = np.zeros(np.sum(recv_counts), dtype=self.dtype)
+
+        self.context.mpi_comm.Alltoallv((send_buf, (send_counts, send_displs)),
+                                        (recv_buf, (recv_counts, recv_displs)))
+        
+        del send_buf   # save memory
+
+        ret = DistributedMatrix(global_shape=(n,m),
+                                dtype = self.dtype,
+                                block_shape = block_shape,
+                                context = context)        
+
+        for q in xrange(self.context.grid_shape[1]):
+            a = np.zeros((len(recv_rindices[q]),ret.local_array.shape[1]), dtype=self.dtype)
+            for p in xrange(self.context.grid_shape[0]):
+                ri = recv_displs[self.context.all_mpi_ranks[p,q]]
+                rn = recv_counts[self.context.all_mpi_ranks[p,q]]
+                a[:,recv_cindices[p]] = np.reshape(recv_buf[ri:ri+rn], (len(recv_rindices[q]),len(recv_cindices[p])))
+            ret.local_array[recv_rindices[q],:] = a
 
         return ret
         
