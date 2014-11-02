@@ -544,6 +544,9 @@ class DistributedMatrix(object):
 
             m = cls(mat_shape, block_shape=block_shape, dtype=mat_dtype, context=context)
 
+            # Each process should receive its local sections.
+            rreq = comm.Irecv([m.local_array, m.mpi_dtype], source=rank, tag=0)
+
             if comm.rank == rank:
                 # Post each send
                 reqs = [ comm.Isend([mat, m._darr_list[dt]], dest=dt, tag=0)
@@ -552,11 +555,8 @@ class DistributedMatrix(object):
                 # Wait for requests to complete
                 MPI.Prequest.Waitall(reqs)
 
-            # Each process should receive its local sections.
-            rreq = comm.Irecv([m.local_array, m.mpi_dtype], source=rank, tag=0)
             rreq.Wait()
 
-            # mat = comm.bcast(mat, root=rank)
         else:
             if mat.ndim != 2:
                 raise ScalapyException("Array must be 2d.")
