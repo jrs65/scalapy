@@ -70,7 +70,7 @@ def _chk_2d_size(shape):
     if len(shape) != 2:
         return False
 
-    if shape[0] <= 0 or shape[1] <= 0:
+    if shape[0] < 0 or shape[1] < 0:
         return False
 
     return True
@@ -757,6 +757,9 @@ class DistributedMatrix(object):
     def _load_array(self, mat):
         ## Copy the local data out of the global mat.
 
+        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
+            return
+
         self._darr_f.Pack(mat, self.local_array[:], 0, self.context.mpi_comm)
 
 
@@ -776,6 +779,10 @@ class DistributedMatrix(object):
         matrix : np.ndarray
             The global matrix.
         """
+
+        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
+            return np.zeros(self.global_shape, dtype=self.dtype)
+
         comm = self.context.mpi_comm
 
         bcast = False
@@ -858,6 +865,10 @@ class DistributedMatrix(object):
         -------
         dm : DistributedMatrix
         """
+
+        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
+            return
+
         # Initialise DistributedMatrix
         dm = cls(global_shape, dtype=dtype, block_shape=block_shape, context=context)
 
@@ -878,6 +889,9 @@ class DistributedMatrix(object):
         filename : string
             Name of file to write to.
         """
+
+        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
+            return
 
         # Open the file, and read out the segments
         f = MPI.File.Open(self.context.mpi_comm, filename, MPI.MODE_RDWR | MPI.MODE_CREATE)
