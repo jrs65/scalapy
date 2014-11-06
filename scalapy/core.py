@@ -446,29 +446,6 @@ class DistributedMatrix(object):
                                 MPI.ORDER_F).Commit() for ri in range(size) ]
         
 
-    @staticmethod
-    def _local_indices(global_indices, block_size, grid_size):
-        """Converts an array of global row/col indices to an array of local indices.
-
-        This helper method is used in DistributedMatrix.local_diagonal_indices() and DistributedMatrix.transpose().
-
-        Parameters
-        ----------
-        global_indices : np.ndarray
-            Integer-valued array of global row/col indices
-        block_size : integer
-            Usually DistributedMatrix.block_shape[0] or DistributedMatrix.block_shape[1]
-        grid_size : integer
-            Usually ProcessContext.grid_shape[0] or ProcessContext.grid_shape[1]
-
-        Returns
-        -------
-        local_indices : np.ndarray
-        """
-
-        return np.mod(global_indices, block_size) + block_size * np.divide(global_indices, block_size*grid_size)
-
-
     @classmethod
     def empty_like(cls, mat):
         r"""Create a DistributedMatrix, with the same shape and
@@ -608,8 +585,12 @@ class DistributedMatrix(object):
                      self.context.grid_shape)
 
         global_index = np.intersect1d(ri, ci)
-        local_row_index = self._local_indices(global_index, self.block_shape[0], self.context.grid_shape[0])
-        local_col_index = self._local_indices(global_index, self.block_shape[1], self.context.grid_shape[1])
+
+        (rank, local_row_index) = blockcyclic.localize_indices(global_index, self.block_shape[0], self.context.grid_shape[0])
+        assert np.all(rank == self.context.grid_position[0])
+
+        (rank, local_col_index) = blockcyclic.localize_indices(global_index, self.block_shape[1], self.context.grid_shape[1])
+        assert np.all(rank == self.context.grid_position[1])
 
         return (global_index, local_row_index, local_col_index)
 
@@ -647,13 +628,13 @@ class DistributedMatrix(object):
         send_rindices = [ ]
         for ci in dst_cindices:
             t = np.intersect1d(ci, src_rindices[self.context.grid_position[0]])
-            t = self._local_indices(t, self.block_shape[0], self.context.grid_shape[0])
+            t = blockcyclic.localize_indices(t, self.block_shape[0], self.context.grid_shape[0])[1]
             send_rindices.append(t)
 
         send_cindices = [ ]
         for ri in dst_rindices:
             t = np.intersect1d(ri, src_cindices[self.context.grid_position[1]])
-            t = self._local_indices(t, self.block_shape[1], self.context.grid_shape[1])
+            t = blockcyclic.localize_indices(t, self.block_shape[1], self.context.grid_shape[1])[1]
             send_cindices.append(t)
 
         send_counts = np.array([ len(send_rindices[q]) * len(send_cindices[p]) for (p,q) in context.all_grid_positions ])
@@ -673,13 +654,13 @@ class DistributedMatrix(object):
         recv_rindices = [ ]
         for ci in src_cindices:
             t = np.intersect1d(ci, dst_rindices[context.grid_position[0]])
-            t = self._local_indices(t, block_shape[0], context.grid_shape[0])
+            t = blockcyclic.localize_indices(t, block_shape[0], context.grid_shape[0])[1]
             recv_rindices.append(t)
 
         recv_cindices = [ ]
         for ri in src_rindices:
             t = np.intersect1d(ri, dst_cindices[context.grid_position[1]])
-            t = self._local_indices(t, block_shape[1], context.grid_shape[1])
+            t = blockcyclic.localize_indices(t, block_shape[1], context.grid_shape[1])[1]
             recv_cindices.append(t)
 
         recv_counts = np.array([ len(recv_rindices[q]) * len(recv_cindices[p]) for (p,q) in self.context.all_grid_positions ])
@@ -706,6 +687,81 @@ class DistributedMatrix(object):
 
         return ret
         
+
+    def get_rows(self, rows):
+        r"""Return selected rows of a DistributedMatrix, as a new Distributed Matrix (i.e. moral equivalent of self[rows,:]).
+
+        FIXME wouldn't it be nice to define a __getitem__ which would allow general row/column slicing?
+
+        Parameters
+        ----------
+           rows : 1D numpy array (must be the same on all tasks)
+        """
+
+        (m,n) = self.global_shape
+        B = self.block_shape[0]               # row block length
+        P = self.context.grid_shape[0]        # number of processes in row grid
+        (p0,q0) = self.context.grid_position  # this task's position in grid
+        nc = self.local_array.shape[1]        # number of local columns
+
+        rows = np.array(rows)
+        assert rows.ndim==1
+        assert np.issubdtype(rows.dtype, np.integer)
+        assert np.all(rows >= 0) and np.all(rows < m)
+
+        # gri[p][i] = global row index corresponding to (rank, output_local_index) = (p,i)
+        k = len(rows)   # output matrix will be k-by-n
+        gri = [ blockcyclic.indices_rc(k, B, p, P) for p in xrange(P) ]
+        gri = [ rows[g] for g in gri ]
+
+        # (rrk,lri) = (input_rank, input_local_index) pair corresponding to (rank, output_local_index) = (p,i)
+        rrk = [ ]
+        lri = [ ]
+        for g in gri:
+            (r,l) = blockcyclic.localize_indices(g, B, P)
+            rrk.append(r)
+            lri.append(l)
+
+        # send_indices[p] = input_local_indices to be sent to rank p
+        send_indices = [ l[np.nonzero(r==p0)] for (r,l) in zip(rrk,lri) ]
+
+        # recv_indices[p] = output_local_indices to be received from row rank p
+        recv_indices = [ np.nonzero(rrk[p0]==p)[0] for p in xrange(P) ]
+
+        # per-row block counts and displacements, in units of "rows"
+        scounts = np.array([ len(x) for x in send_indices ])
+        rcounts = np.array([ len(x) for x in recv_indices ])
+        sdispls = np.concatenate(([0], np.cumsum(scounts[:-1])))
+        rdispls = np.concatenate(([0], np.cumsum(rcounts[:-1])))
+
+        # per-mpi-task counts and displacements, in units of "matrix elements"
+        mpi_scounts = np.array([ (scounts[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
+        mpi_rcounts = np.array([ (rcounts[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
+        mpi_sdispls = np.array([ (sdispls[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
+        mpi_rdispls = np.array([ (rdispls[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
+        
+        sbuf = np.zeros(np.sum(scounts)*nc, dtype=self.dtype)
+
+        # pack sbuf
+        for (d,c,si) in zip(sdispls, scounts, send_indices):
+            sbuf[d*nc:(d+c)*nc] = np.reshape(self.local_array[si,:], (-1,))
+        
+        rbuf = np.zeros(np.sum(rcounts)*nc, dtype=self.dtype)
+        
+        self.context.mpi_comm.Alltoallv((sbuf, (mpi_scounts, mpi_sdispls)),
+                                        (rbuf, (mpi_rcounts, mpi_rdispls)))
+
+        del sbuf
+
+        ret = DistributedMatrix((k,n), dtype=self.dtype, block_shape=self.block_shape, context=self.context)
+        assert ret.local_array.shape[1] == nc
+
+        # unpack rbuf
+        for (d,c,ri) in zip(rdispls, rcounts, recv_indices):
+            ret.local_array[ri,:] = np.reshape(rbuf[d*nc:(d+c)*nc], (c,nc))
+
+        return ret
+
 
     @classmethod
     def from_global_array(cls, mat, rank=None, block_shape=None, context=None):

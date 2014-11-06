@@ -220,10 +220,35 @@ def indices_rc(N, B, p, P):
     return ind
 
 
+def localize_indices(global_indices, B, P):
+    """Given an array of "global indices", compute the (rank, local index) pair corresponding to each global index.
+    
+    Parameters
+    ----------
+    global_indices : integer-valued array
+        Array of global indices
+    B : integer
+        Block length.
+    P : integer
+        Number of processes on the side.
 
+    Returns
+    -------
+    rank : integer-valued array
+        Array of ranks (between 0 and P)
+    local_indices : integer-valued array
+        Array of local indices
+    """
 
+    global_indices = np.array(global_indices)
+    assert np.issubdtype(global_indices.dtype, np.integer)
+    assert np.all(global_indices >= 0)
+    assert B > 0
+    assert P > 0
 
-
+    t = np.divide(global_indices, B)
+    u = np.divide(t, P)
+    return (t-u*P, global_indices+B*(u-t))
 
 
 def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F', displacement=0):
