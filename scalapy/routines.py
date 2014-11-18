@@ -246,3 +246,119 @@ def dot(A, B, transA='N', transB='N'):
     func(*args)
 
     return C
+
+
+def lu(A, overwrite_a=True):
+    """Computes the LU factorization of a general m-by-n distributed matrix.
+
+    The decomposition is::
+
+        A = P * L * U
+
+    where P is a permutation matrix, L is lower triangular with unit
+    diagonal elements (lower trapezoidal if m > n) and U is upper
+    triangular (upper trapezoidal if m < n). L and U are stored in A.
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        The matrix to decompose.
+    overwrite_a : boolean, optional
+        By default the input matrix is destroyed, if set to False a
+        copy is taken and operated on.
+
+    Returns
+    -------
+    A : Overwritten by local pieces of the factors L and U from the
+    factorization A = P*L*U. The unit diagonal elements of L are not stored.
+    ipiv : Array contains the pivoting information: local row i was
+    interchanged with global row ipiv[i]. This array is tied to the
+    distributed matrix A.
+
+    """
+
+    A = A if overwrite_a else A.copy()
+
+    M, N = A.global_shape
+
+    ipiv = np.zeros((A.local_shape[0] + A.block_shape[0]), dtype='i')
+
+    args = [M, N, A, ipiv]
+
+    call_table = {'S': (ll.psgetrf, args),
+                  'D': (ll.pdgetrf, args),
+                  'C': (ll.pcgetrf, args),
+                  'Z': (ll.pzgetrf, args)}
+
+    func, args = call_table[A.sc_dtype]
+    info = func(*args)
+
+    if info < 0:
+        raise core.ScalapackException("Failure.")
+
+    return A, ipiv
+
+
+def inv(A, overwrite_a=True):
+    """Computes the inverse of a LU-factored distributed matrix.
+
+    Computes the inverse of a general distributed matrix A using the
+    LU factorization. This method inverts U and then computes the
+inverse
+    of A by solving the system inv(A)*L = inv(U) for inv(A).
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        The matrix to decompose.
+    overwrite_a : boolean, optional
+        By default the input matrix is destroyed, if set to False a
+        copy is taken and operated on.
+
+    Returns
+    -------
+    inv : Overwritten A by local pieces of inv(A).
+    ipiv : Array contains the pivoting information. If ipiv[i]=j, then
+    the local row i was swapped with the global row j.
+    This array is tied to the distributed matrix A.
+
+    """
+
+    # Check if matrix is square
+    util.assert_square(A)
+
+    A = A if overwrite_a else A.copy()
+
+    N, N = A.global_shape
+
+    # first do the LU factorization
+    ipiv = np.zeros((A.local_shape[0] + A.block_shape[0]), dtype='i')
+
+    args = [N, N, A, ipiv]
+
+    call_table = {'S': (ll.psgetrf, args),
+                  'D': (ll.pdgetrf, args),
+                  'C': (ll.pcgetrf, args),
+                  'Z': (ll.pzgetrf, args)}
+
+    func, args = call_table[A.sc_dtype]
+    info = func(*args)
+
+    if info < 0:
+        raise core.ScalapackException("Failure.")
+
+    # then computes the inverse of a LU-factored distributed matrix.
+    args = [N, A, ipiv]
+
+    call_table = {'S': (ll.psgetri, args + [ll.WorkArray('S', 'I')]),
+                  'D': (ll.pdgetri, args + [ll.WorkArray('D', 'I')]),
+                  'C': (ll.pcgetri, args + [ll.WorkArray('C', 'I')]),
+                  'Z': (ll.pzgetri, args + [ll.WorkArray('Z', 'I')])}
+
+    func, args = call_table[A.sc_dtype]
+    info = func(*args)
+
+    if info < 0:
+        raise core.ScalapackException("Failure.")
+
+    return A, ipiv
