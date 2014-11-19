@@ -435,6 +435,24 @@ class DistributedMatrix(object):
                    dtype=mat.dtype, context=mat.context)
 
 
+    @classmethod
+    def empty_trans(cls, mat):
+        r"""Create a DistributedMatrix, with the same blocking
+        but transposed shape as `mat`.
+
+        Parameters
+        ----------
+        mat : DistributedMatrix
+            The matrix to operate.
+
+        Returns
+        -------
+        tmat : DistributedMatrix
+        """
+        return cls([mat.global_shape[1], mat.global_shape[0]], block_shape=mat.block_shape,
+                   dtype=mat.dtype, context=mat.context)
+
+
     def copy(self):
         """Create a copy of this DistributedMatrix.
 

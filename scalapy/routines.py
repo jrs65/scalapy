@@ -310,7 +310,7 @@ inverse
     Parameters
     ----------
     A : DistributedMatrix
-        The matrix to decompose.
+        The matrix to inverse.
     overwrite_a : boolean, optional
         By default the input matrix is destroyed, if set to False a
         copy is taken and operated on.
@@ -362,3 +362,66 @@ inverse
         raise core.ScalapackException("Failure.")
 
     return A, ipiv
+
+
+def transpose(A):
+    """Transpose the distributed matrix.
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        The matrix to transpose.
+
+    Returns
+    -------
+    trans : DistributedMatrix
+        The transpose of `A`
+
+    """
+
+    trans = core.DistributedMatrix.empty_trans(A)
+
+    args = [A.global_shape[1], A.global_shape[0], 1.0, A, 0.0, trans]
+
+    call_table = {'S': (ll.pstran, args),
+                  'D': (ll.pdtran, args),
+                  'C': (ll.pctranu, args),
+                  'Z': (ll.pztranu, args)}
+
+    func, args = call_table[A.sc_dtype]
+    func(*args)
+
+    return trans
+
+
+def hconj(A):
+    """Hermitian conjugate a distributed matrix, i.e., transpose and complex conjugate the distributed matrix.
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        The matrix to Hermitian conjugate.
+
+    Returns
+    -------
+    hermi : DistributedMatrix
+        The Hermitian conjugate of `A`
+
+    """
+
+    # A is real
+    if A.sc_dtype in ['S', 'D']:
+        return transpose(A)
+
+    # A is complex
+    hermi = core.DistributedMatrix.empty_trans(A)
+
+    args = [A.global_shape[1], A.global_shape[0], 1.0, A, 0.0, hermi]
+
+    call_table = {'C': (ll.pctranc, args),
+                  'Z': (ll.pztranc, args)}
+
+    func, args = call_table[A.sc_dtype]
+    func(*args)
+
+    return hermi
