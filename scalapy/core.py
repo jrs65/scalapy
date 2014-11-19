@@ -757,3 +757,81 @@ class DistributedMatrix(object):
         func(*args)
 
         return dm
+
+
+    def transpose(self):
+        """Transpose the distributed matrix."""
+
+        trans = DistributedMatrix.empty_trans(self)
+
+        args = [self.global_shape[1], self.global_shape[0], 1.0, self, 0.0, trans]
+
+        from . import lowlevel as ll
+
+        call_table = {'S': (ll.pstran, args),
+                      'D': (ll.pdtran, args),
+                      'C': (ll.pctranu, args),
+                      'Z': (ll.pztranu, args)}
+
+        func, args = call_table[self.sc_dtype]
+        func(*args)
+
+        return trans
+
+
+    @property
+    def T(self):
+        """Transpose the distributed matrix."""
+        return self.transpose()
+
+
+    def conj(self):
+        """Complex conjugate the distributed matrix."""
+
+        # if real
+        if self.sc_dtype in ['S', 'D']:
+            return self
+
+        # if complex
+        cj = DistributedMatrix.empty_like(self)
+        cj.local_array[:] = self.local_array.conj()
+
+        return cj
+
+
+    @property
+    def C(self):
+        """Complex conjugate the distributed matrix."""
+        return self.conj()
+
+
+    def hconj(self):
+        """Hermitian conjugate the distributed matrix, i.e., transpose
+        and complex conjugate the distributed matrix."""
+
+        # if real
+        if self.sc_dtype in ['S', 'D']:
+            return self.transpose()
+
+        # if complex
+        hermi = DistributedMatrix.empty_trans(self)
+
+        args = [self.global_shape[1], self.global_shape[0], 1.0, self, 0.0, hermi]
+
+        from . import lowlevel as ll
+
+        call_table = {'C': (ll.pctranc, args),
+                      'Z': (ll.pztranc, args)}
+
+        func, args = call_table[self.sc_dtype]
+        func(*args)
+
+        return hermi
+
+
+    @property
+    def H(self):
+        """Hermitian conjugate the distributed matrix, i.e., transpose
+        and complex conjugate the distributed matrix."""
+        return self.hconj()
+

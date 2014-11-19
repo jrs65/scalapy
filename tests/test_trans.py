@@ -52,6 +52,39 @@ def test_trans_Z():
         assert allclose(gAT, gA.T) # compare with numpy result
 
 
+def test_conj_D():
+    ## Test complex conjugate of a real double precision distributed matrix
+    m, n = 245, 357
+
+    gA = np.random.standard_normal((m, n)).astype(np.float64)
+    gA = np.asfortranarray(gA)
+
+    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+
+    dAC = rt.conj(dA)
+    gAC = dAC.to_global_array(rank=0)
+
+    if rank == 0:
+        assert allclose(gAC, gA.conj()) # compare with numpy result
+
+
+def test_conj_Z():
+    ## Test complex conjugate of a complex double precision distributed matrix
+    m, n = 630, 62
+
+    gA = np.random.standard_normal((m, n)).astype(np.float64)
+    gA = gA + 1.0J * np.random.standard_normal((m, n)).astype(np.float64)
+    gA = np.asfortranarray(gA)
+
+    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+
+    dAC = rt.conj(dA)
+    gAC = dAC.to_global_array(rank=0)
+
+    if rank == 0:
+        assert allclose(gAC, gA.conj()) # compare with numpy result
+
+
 def test_hconj_D():
     ## Test Hermitian conjugate of a real double precision distributed matrix
     m, n = 245, 357
@@ -88,5 +121,7 @@ def test_hconj_Z():
 if __name__ == '__main__':
     test_trans_D()
     test_trans_Z()
+    test_conj_D()
+    test_conj_Z()
     test_hconj_D()
     test_hconj_Z()

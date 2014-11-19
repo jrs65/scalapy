@@ -379,23 +379,30 @@ def transpose(A):
 
     """
 
-    trans = core.DistributedMatrix.empty_trans(A)
+    return A.transpose()
 
-    args = [A.global_shape[1], A.global_shape[0], 1.0, A, 0.0, trans]
 
-    call_table = {'S': (ll.pstran, args),
-                  'D': (ll.pdtran, args),
-                  'C': (ll.pctranu, args),
-                  'Z': (ll.pztranu, args)}
+def conj(A):
+    """Complex conjugate a distributed matrix
 
-    func, args = call_table[A.sc_dtype]
-    func(*args)
+    Parameters
+    ----------
+    A : DistributedMatrix
+        The matrix to complex conjugate.
 
-    return trans
+    Returns
+    -------
+    cj : DistributedMatrix
+        The complex conjugate of `A`
+
+    """
+
+    return A.conj()
 
 
 def hconj(A):
-    """Hermitian conjugate a distributed matrix, i.e., transpose and complex conjugate the distributed matrix.
+    """Hermitian conjugate a distributed matrix, i.e., transpose and
+    complex conjugate the distributed matrix.
 
     Parameters
     ----------
@@ -409,19 +416,4 @@ def hconj(A):
 
     """
 
-    # A is real
-    if A.sc_dtype in ['S', 'D']:
-        return transpose(A)
-
-    # A is complex
-    hermi = core.DistributedMatrix.empty_trans(A)
-
-    args = [A.global_shape[1], A.global_shape[0], 1.0, A, 0.0, hermi]
-
-    call_table = {'C': (ll.pctranc, args),
-                  'Z': (ll.pztranc, args)}
-
-    func, args = call_table[A.sc_dtype]
-    func(*args)
-
-    return hermi
+    return A.hconj()
