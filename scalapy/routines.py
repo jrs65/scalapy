@@ -269,11 +269,14 @@ def lu(A, overwrite_a=True):
 
     Returns
     -------
-    A : Overwritten by local pieces of the factors L and U from the
-    factorization A = P*L*U. The unit diagonal elements of L are not stored.
-    ipiv : Array contains the pivoting information: local row i was
-    interchanged with global row ipiv[i]. This array is tied to the
-    distributed matrix A.
+    A : DistributedMatrix
+        Overwritten by local pieces of the factors L and U from the
+        factorization A = P*L*U. The unit diagonal elements of L are
+        not stored.
+    ipiv : np.ndarray
+        Array contains the pivoting information: local row i was
+        interchanged with global row ipiv[i]. This array is tied to
+        the distributed matrix A.
 
     """
 
@@ -317,10 +320,12 @@ inverse
 
     Returns
     -------
-    inv : Overwritten A by local pieces of inv(A).
-    ipiv : Array contains the pivoting information. If ipiv[i]=j, then
-    the local row i was swapped with the global row j.
-    This array is tied to the distributed matrix A.
+    inv : DistributedMatrix
+        The inverse of `A`.
+    ipiv : np.ndarray
+        Array contains the pivoting information. If ipiv[i]=j, then
+        the local row i was swapped with the global row j.
+        This array is tied to the distributed matrix A.
 
     """
 
@@ -362,6 +367,57 @@ inverse
         raise core.ScalapackException("Failure.")
 
     return A, ipiv
+
+
+def pinv(A, overwrite_a=True):
+    """ Compute the (Moore-Penrose) pseudo-inverse of a distributed matrix.
+
+    Calculate a generalized inverse of a distributed matrix using a
+    least-squares solver.
+
+    NOTE: To get correct answer, `A` must have full rank.
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        Matrix to be pseudo-inverted.
+    overwrite_a : boolean, optional
+        By default the input matrix is destroyed, if set to False a
+        copy is taken and operated on.
+
+    Returns
+    -------
+    pinv : DistributedMatrix
+        The pseudo-inverse of matrix `A` is contained in the fist n rows of pinv for the distributed matrix of global shape (m, n).
+
+    """
+
+    # Check if matrix is square
+    # util.assert_square(A)
+
+    A = A if overwrite_a else A.copy()
+
+    M, N = A.global_shape
+
+    # distributed matrix which contains an identity matrix in the first M rows
+    B = core.DistributedMatrix([max(M, N), M], dtype=A.dtype, block_shape=A.block_shape, context=A.context)
+    (g,r,c) = B.local_diagonal_indices(allow_non_square=True)
+    B.local_array[r,c] = 1.0
+
+    args = ['N', M, N, M, A, B]
+
+    call_table = {'S': (ll.psgels, args + [ll.WorkArray('S')]),
+                  'D': (ll.pdgels, args + [ll.WorkArray('D')]),
+                  'C': (ll.pcgels, args + [ll.WorkArray('C')]),
+                  'Z': (ll.pzgels, args + [ll.WorkArray('Z')])}
+
+    func, args = call_table[A.sc_dtype]
+    info = func(*args)
+
+    if info < 0:
+        raise core.ScalapackException("Failure.")
+
+    return B
 
 
 def transpose(A):
