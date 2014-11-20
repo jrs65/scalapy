@@ -212,8 +212,8 @@ class ProcessContext(object):
         # As far as I know, BLACS doesn't guarantee any specific association between MPI tasks and grid positions, so
         # we compute all_grid_positions using MPI_Allgather().
         #
-        # (Alternate approach: move the call to MPI_Allgather to the all_grid_positions property, and cache the result.  
-        # This would have the advantage that MPI_Allgather() only gets called if needed, but the disadvantage that it 
+        # (Alternate approach: move the call to MPI_Allgather to the all_grid_positions property, and cache the result.
+        # This would have the advantage that MPI_Allgather() only gets called if needed, but the disadvantage that it
         # would hang if the first call to all_grid_positions() is from a serial context.)
         #
         t = np.array(self.grid_position)
@@ -239,7 +239,7 @@ class DistributedMatrix(object):
         The blocking size, packed as ``[Br, Bc]``. If ``None`` uses the default blocking
         (set via :func:`initmpi`).
     context : ProcessContext, optional
-        The process context. If not set uses the default (recommended). 
+        The process context. If not set uses the default (recommended).
 
     Attributes
     ----------
@@ -274,10 +274,10 @@ class DistributedMatrix(object):
     character given by :attr:`sc_dtype`).
 
     =================  =================  ==============  ===============================
-    Numpy type         MPI type           Scalapack type  Description                    
+    Numpy type         MPI type           Scalapack type  Description
     =================  =================  ==============  ===============================
-    ``np.float32``     ``MPI.FLOAT``      ``S``           Single precision float            
-    ``np.float64``     ``MPI.DOUBLE``     ``D``           Double precision float         
+    ``np.float32``     ``MPI.FLOAT``      ``S``           Single precision float
+    ``np.float64``     ``MPI.DOUBLE``     ``D``           Double precision float
     ``np.complex64``   ``MPI.COMPLEX``    ``C``           Single precision complex number
     ``np.complex128``  ``MPI.COMPLEX16``  ``Z``           Double precision complex number
     =================  =================  ==============  ===============================
@@ -444,7 +444,7 @@ class DistributedMatrix(object):
                                 [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
                                 self.block_shape, self.context.grid_shape,
                                 MPI.ORDER_F).Commit() for ri in range(size) ]
-        
+
 
     @classmethod
     def empty_like(cls, mat):
@@ -491,13 +491,13 @@ class DistributedMatrix(object):
         n : integer
            matrix size
         dtype : np.dtype, optional
-           The datatype of the array. 
+           The datatype of the array.
            See DistributedMatrix.__init__ docstring for supported types.
         block_shape: list of integers, optional
            The blocking size, packed as ``[Br, Bc]``. If ``None`` uses the default blocking
            (set via :func:`initmpi`).
         context : ProcessContext, optional
-           The process context. If not set uses the default (recommended). 
+           The process context. If not set uses the default (recommended).
         """
 
         ret = cls(global_shape = (n,n),
@@ -576,7 +576,7 @@ class DistributedMatrix(object):
 
     def local_diagonal_indices(self, allow_non_square=False):
         """Returns triple of 1D arrays (global_index, local_row_index, local_column_index).
-        
+
         Each of these arrays has length equal to the number of elements on the global diagonal
         which are stored in the local matrix.  For each such element, global_index[i] is its
         position in the global diagonal, and (local_row_index[i], local_column_index[i]) gives
@@ -617,94 +617,94 @@ class DistributedMatrix(object):
         """Returns global matrix trace (the trace is returned on all cores)."""
 
         (g,r,c) = self.local_diagonal_indices()
-        
+
         # Note: np.sum() returns 0 for length-zero array
         ret = np.array(np.sum(self.local_array[r,c]))
-        self.context.mpi_comm.Allreduce(ret.copy(), ret, MPI.SUM)        
+        self.context.mpi_comm.Allreduce(ret.copy(), ret, MPI.SUM)
 
         return ret
-        
 
-    def transpose(self, block_shape=None, context=None):
-        """Returns distributed matrix transpose."""
 
-        if block_shape is None:
-            block_shape = self.block_shape
-        if context is None:
-            context = self.context
+    # def transpose(self, block_shape=None, context=None):
+    #     """Returns distributed matrix transpose."""
 
-        if self.context.mpi_comm is not context.mpi_comm:
-            raise RuntimeError('input/output contexts in DistributedMatrix.transpose() must have the same MPI communicator')
+    #     if block_shape is None:
+    #         block_shape = self.block_shape
+    #     if context is None:
+    #         context = self.context
 
-        (m,n) = self.global_shape
+    #     if self.context.mpi_comm is not context.mpi_comm:
+    #         raise RuntimeError('input/output contexts in DistributedMatrix.transpose() must have the same MPI communicator')
 
-        src_rindices = [ blockcyclic.indices_rc(m, self.block_shape[0], p, self.context.grid_shape[0]) for p in xrange(self.context.grid_shape[0]) ]
-        src_cindices = [ blockcyclic.indices_rc(n, self.block_shape[1], p, self.context.grid_shape[1]) for p in xrange(self.context.grid_shape[1]) ]
-        dst_rindices = [ blockcyclic.indices_rc(n, block_shape[0], p, context.grid_shape[0]) for p in xrange(context.grid_shape[0]) ]
-        dst_cindices = [ blockcyclic.indices_rc(m, block_shape[1], p, context.grid_shape[1]) for p in xrange(context.grid_shape[1]) ]
+    #     (m,n) = self.global_shape
 
-        send_rindices = [ ]
-        for ci in dst_cindices:
-            t = np.intersect1d(ci, src_rindices[self.context.grid_position[0]])
-            t = blockcyclic.localize_indices(t, self.block_shape[0], self.context.grid_shape[0])[1]
-            send_rindices.append(t)
+    #     src_rindices = [ blockcyclic.indices_rc(m, self.block_shape[0], p, self.context.grid_shape[0]) for p in xrange(self.context.grid_shape[0]) ]
+    #     src_cindices = [ blockcyclic.indices_rc(n, self.block_shape[1], p, self.context.grid_shape[1]) for p in xrange(self.context.grid_shape[1]) ]
+    #     dst_rindices = [ blockcyclic.indices_rc(n, block_shape[0], p, context.grid_shape[0]) for p in xrange(context.grid_shape[0]) ]
+    #     dst_cindices = [ blockcyclic.indices_rc(m, block_shape[1], p, context.grid_shape[1]) for p in xrange(context.grid_shape[1]) ]
 
-        send_cindices = [ ]
-        for ri in dst_rindices:
-            t = np.intersect1d(ri, src_cindices[self.context.grid_position[1]])
-            t = blockcyclic.localize_indices(t, self.block_shape[1], self.context.grid_shape[1])[1]
-            send_cindices.append(t)
+    #     send_rindices = [ ]
+    #     for ci in dst_cindices:
+    #         t = np.intersect1d(ci, src_rindices[self.context.grid_position[0]])
+    #         t = blockcyclic.localize_indices(t, self.block_shape[0], self.context.grid_shape[0])[1]
+    #         send_rindices.append(t)
 
-        send_counts = np.array([ len(send_rindices[q]) * len(send_cindices[p]) for (p,q) in context.all_grid_positions ])
-        send_displs = np.concatenate(([0], np.cumsum(send_counts[:-1])))
-        send_buf = np.zeros(np.sum(send_counts), dtype=self.dtype)
+    #     send_cindices = [ ]
+    #     for ri in dst_rindices:
+    #         t = np.intersect1d(ri, src_cindices[self.context.grid_position[1]])
+    #         t = blockcyclic.localize_indices(t, self.block_shape[1], self.context.grid_shape[1])[1]
+    #         send_cindices.append(t)
 
-        for q in xrange(context.grid_shape[1]):
-            a = self.local_array[send_rindices[q],:]
-            for p in xrange(context.grid_shape[0]):
-                b = a[:,send_cindices[p]]
-                si = send_displs[context.all_mpi_ranks[p,q]]
-                sn = send_counts[context.all_mpi_ranks[p,q]]
-                send_buf[si:si+sn] = np.reshape(np.transpose(b), (-1,))    # note transpose here
+    #     send_counts = np.array([ len(send_rindices[q]) * len(send_cindices[p]) for (p,q) in context.all_grid_positions ])
+    #     send_displs = np.concatenate(([0], np.cumsum(send_counts[:-1])))
+    #     send_buf = np.zeros(np.sum(send_counts), dtype=self.dtype)
 
-        del a,b    # save memory by dropping references
+    #     for q in xrange(context.grid_shape[1]):
+    #         a = self.local_array[send_rindices[q],:]
+    #         for p in xrange(context.grid_shape[0]):
+    #             b = a[:,send_cindices[p]]
+    #             si = send_displs[context.all_mpi_ranks[p,q]]
+    #             sn = send_counts[context.all_mpi_ranks[p,q]]
+    #             send_buf[si:si+sn] = np.reshape(np.transpose(b), (-1,))    # note transpose here
 
-        recv_rindices = [ ]
-        for ci in src_cindices:
-            t = np.intersect1d(ci, dst_rindices[context.grid_position[0]])
-            t = blockcyclic.localize_indices(t, block_shape[0], context.grid_shape[0])[1]
-            recv_rindices.append(t)
+    #     del a,b    # save memory by dropping references
 
-        recv_cindices = [ ]
-        for ri in src_rindices:
-            t = np.intersect1d(ri, dst_cindices[context.grid_position[1]])
-            t = blockcyclic.localize_indices(t, block_shape[1], context.grid_shape[1])[1]
-            recv_cindices.append(t)
+    #     recv_rindices = [ ]
+    #     for ci in src_cindices:
+    #         t = np.intersect1d(ci, dst_rindices[context.grid_position[0]])
+    #         t = blockcyclic.localize_indices(t, block_shape[0], context.grid_shape[0])[1]
+    #         recv_rindices.append(t)
 
-        recv_counts = np.array([ len(recv_rindices[q]) * len(recv_cindices[p]) for (p,q) in self.context.all_grid_positions ])
-        recv_displs = np.concatenate(([0], np.cumsum(recv_counts[:-1])))
-        recv_buf = np.zeros(np.sum(recv_counts), dtype=self.dtype)
+    #     recv_cindices = [ ]
+    #     for ri in src_rindices:
+    #         t = np.intersect1d(ri, dst_cindices[context.grid_position[1]])
+    #         t = blockcyclic.localize_indices(t, block_shape[1], context.grid_shape[1])[1]
+    #         recv_cindices.append(t)
 
-        self.context.mpi_comm.Alltoallv((send_buf, (send_counts, send_displs)),
-                                        (recv_buf, (recv_counts, recv_displs)))
-        
-        del send_buf   # save memory
+    #     recv_counts = np.array([ len(recv_rindices[q]) * len(recv_cindices[p]) for (p,q) in self.context.all_grid_positions ])
+    #     recv_displs = np.concatenate(([0], np.cumsum(recv_counts[:-1])))
+    #     recv_buf = np.zeros(np.sum(recv_counts), dtype=self.dtype)
 
-        ret = DistributedMatrix(global_shape=(n,m),
-                                dtype = self.dtype,
-                                block_shape = block_shape,
-                                context = context)        
+    #     self.context.mpi_comm.Alltoallv((send_buf, (send_counts, send_displs)),
+    #                                     (recv_buf, (recv_counts, recv_displs)))
 
-        for q in xrange(self.context.grid_shape[1]):
-            a = np.zeros((len(recv_rindices[q]),ret.local_array.shape[1]), dtype=self.dtype)
-            for p in xrange(self.context.grid_shape[0]):
-                ri = recv_displs[self.context.all_mpi_ranks[p,q]]
-                rn = recv_counts[self.context.all_mpi_ranks[p,q]]
-                a[:,recv_cindices[p]] = np.reshape(recv_buf[ri:ri+rn], (len(recv_rindices[q]),len(recv_cindices[p])))
-            ret.local_array[recv_rindices[q],:] = a
+    #     del send_buf   # save memory
 
-        return ret
-        
+    #     ret = DistributedMatrix(global_shape=(n,m),
+    #                             dtype = self.dtype,
+    #                             block_shape = block_shape,
+    #                             context = context)
+
+    #     for q in xrange(self.context.grid_shape[1]):
+    #         a = np.zeros((len(recv_rindices[q]),ret.local_array.shape[1]), dtype=self.dtype)
+    #         for p in xrange(self.context.grid_shape[0]):
+    #             ri = recv_displs[self.context.all_mpi_ranks[p,q]]
+    #             rn = recv_counts[self.context.all_mpi_ranks[p,q]]
+    #             a[:,recv_cindices[p]] = np.reshape(recv_buf[ri:ri+rn], (len(recv_rindices[q]),len(recv_cindices[p])))
+    #         ret.local_array[recv_rindices[q],:] = a
+
+    #     return ret
+
 
     def get_rows(self, rows):
         r"""Return selected rows of a DistributedMatrix, as a new Distributed Matrix (i.e. moral equivalent of self[rows,:]).
@@ -757,15 +757,15 @@ class DistributedMatrix(object):
         mpi_rcounts = np.array([ (rcounts[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
         mpi_sdispls = np.array([ (sdispls[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
         mpi_rdispls = np.array([ (rdispls[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
-        
+
         sbuf = np.zeros(np.sum(scounts)*nc, dtype=self.dtype)
 
         # pack sbuf
         for (d,c,si) in zip(sdispls, scounts, send_indices):
             sbuf[d*nc:(d+c)*nc] = np.reshape(self.local_array[si,:], (-1,))
-        
+
         rbuf = np.zeros(np.sum(rcounts)*nc, dtype=self.dtype)
-        
+
         self.context.mpi_comm.Alltoallv((sbuf, (mpi_scounts, mpi_sdispls)),
                                         (rbuf, (mpi_rcounts, mpi_rdispls)))
 
@@ -923,15 +923,15 @@ class DistributedMatrix(object):
 
     def __iadd__(self, x):
         assert isinstance(x, DistributedMatrix)
-        
+
         if self.global_shape != x.global_shape:
             raise RuntimeError("scalapy.DistributedMatrix.__iadd__: incompatible shapes")
 
-        if ((self.block_shape != x.block_shape) 
+        if ((self.block_shape != x.block_shape)
             or (self.context.grid_shape != x.context.grid_shape)
             or (self.context.grid_position != x.context.grid_position)):
             raise RuntimeError("scalapy.DistributedMatrix.__iadd__: for now, both matrices must have same blocking scheme")
-        
+
         # Note: OK if dtypes don't match
         self.local_array[:] += x.local_array[:]
 
