@@ -194,7 +194,7 @@ def _wrap_routine(rname, robj):
         if expand_args:
             return _call_routine(robj, *args)
         else:
-            robj(args)
+            robj(*util.flatten(args))
 
     # Set the function name
     wrapper.__name__ = rname
