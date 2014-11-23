@@ -984,6 +984,10 @@ class DistributedMatrix(object):
 
     def __getitem__(self, items):
         ## numpy array like sling operation, but return a distributed array
+
+        def swap(a, b):
+            return b, a
+            
         if type(items) in [int, long]:
             assert items >= 0, 'Negative index %d' % items
             assert items < self.global_shape[0], 'Invalid index %d' % items
@@ -998,8 +1002,13 @@ class DistributedMatrix(object):
             start = start if start is not None else 0
             stop = stop if stop is not None else self.global_shape[0]
             step = step if step is not None else 1
-            assert start < stop, 'Invalid indices %s' % items
+            assert abs(step) > 0, 'Invalid step 0'
+            if step < 0:
+                step = -step
+                start, stop = swap(stat, stop)
+
             if step == 1:
+                assert start < stop, 'Invalid indices %s' % items
                 m = stop - start
                 n = self.global_shape[1]
                 rows = [(start, m)]
@@ -1010,8 +1019,46 @@ class DistributedMatrix(object):
             return self.copy()
         elif type(items) is tuple:
             assert len(items) == 2, 'Invalid indices %s' % items
-            assert type(items[0]) in [int, long, slice, Ellipsis] and type(items[1]) in [int, long, slice, Ellipsis], 'Invalid indices %s' % items
-            raise Exception('Not implemented yet')
+            assert type(items[0]) in [int, long, slice] or items[0] is Ellipsis and type(items[1]) in [int, long, slice] or items[1] is Ellipsis, 'Invalid indices %s' % items
+            if type(items[0]) is slice:
+                start1, stop1, step1 = items[0].start, items[0].stop, items[0].step
+                start1 = start1 if start1 is not None else 0
+                stop1 = stop1 if stop1 is not None else self.global_shape[0]
+                step1 = step1 if step1 is not None else 1
+                assert abs(step1) > 0, 'Invalid step 0'
+                if step1 < 0:
+                    step1 = -step1
+                    start1, stop1 = swap(start1, stop1)
+
+                if step1 == 1:
+                    assert start1 < stop1, 'Invalid indices %s' % items[0]
+                    m = stop1 - start1
+                    rows = [(start1, m)]
+                else:
+                    raise Exception('Not implemented yet')
+
+                if type(items[1]) is slice:
+                    start2, stop2, step2 = items[1].start, items[1].stop, items[1].step
+                    start2 = start2 if start2 is not None else 0
+                    stop2 = stop2 if stop2 is not None else self.global_shape[1]
+                    step2 = step2 if step2 is not None else 1
+                    assert abs(step2) > 0, 'Invalid step 0'
+                    if step2 < 0:
+                        step2 = -step2
+                        start2, stop2 = swap(start2, stop2)
+
+                    if step2 == 1:
+                        assert start2 < stop2, 'Invalid indices %s' % items[1]
+                        n = stop2 - start2
+                        cols = [(start2, n)]
+                    else:
+                        raise Exception('Not implemented yet')
+
+                else:
+                    raise Exception('Not implemented yet')
+
+            else:
+                raise Exception('Not implemented yet')
         else:
             raise Exception('Invalid indices %s' % items)
 
