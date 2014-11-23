@@ -938,6 +938,95 @@ class DistributedMatrix(object):
         return self
 
 
+    def _section(self, srow=0, nrow=None, scol=0, ncol=None):
+        ## return a section [srow:srow+nrow, scol:scol+ncol] of the global array as a new distributed array
+        nrow = self.global_shape[0] - srow if nrow is None else nrow
+        ncol = self.global_shape[1] - scol if ncol is None else ncol
+        assert nrow > 0 and ncol > 0, 'Invalid number of rows/columns: %d/%d' % (nrow, ncol)
+
+        B = DistributedMatrix([nrow, ncol], dtype=self.dtype, block_shape=self.block_shape, context=self.context)
+
+        args = [nrow, ncol, self.local_array , srow+1, scol+1, self.desc, B.local_array, 1, 1, B.desc, self.context.blacs_context]
+
+        from . import lowlevel as ll
+
+        call_table = {'S': (ll.psgemr2d, args),
+                      'D': (ll.pdgemr2d, args),
+                      'C': (ll.pcgemr2d, args),
+                      'Z': (ll.pzgemr2d, args)}
+
+        func, args = call_table[self.sc_dtype]
+        ll.expand_args = False
+        func(*args)
+
+        return B
+
+
+    def _sec2sec(self, B, srowb=0, scolb=0, srow=0, nrow=None, scol=0, ncol=None):
+        ## copy a section [srow:srow+nrow, scol:scol+ncol] of the global array to another distributed array B starting at (srowb, scolb)
+        nrow = self.global_shape[0] - srow if nrow is None else nrow
+        ncol = self.global_shape[1] - scol if ncol is None else ncol
+        assert nrow > 0 and ncol > 0, 'Invalid number of rows/columns: %d/%d' % (nrow, ncol)
+
+        args = [nrow, ncol, self.local_array , srow+1, scol+1, self.desc, B.local_array, srowb+1, scolb+1, B.desc, self.context.blacs_context]
+
+        from . import lowlevel as ll
+
+        call_table = {'S': (ll.psgemr2d, args),
+                      'D': (ll.pdgemr2d, args),
+                      'C': (ll.pcgemr2d, args),
+                      'Z': (ll.pzgemr2d, args)}
+
+        func, args = call_table[self.sc_dtype]
+        ll.expand_args = False
+        func(*args)
+
+
+    def __getitem__(self, items):
+        ## numpy array like sling operation, but return a distributed array
+        if type(items) in [int, long]:
+            assert items >= 0, 'Negative index %d' % items
+            assert items < self.global_shape[0], 'Invalid index %d' % items
+            srow = items # start row
+            scol = 0     # start column
+            m = 1        # number of rows
+            n = self.global_shape[1] # number of columns
+            rows = [(srow, m)]
+            cols = [(scol, n)]
+        elif type(items) is slice:
+            start, stop, step = items.start, items.stop, items.step
+            start = start if start is not None else 0
+            stop = stop if stop is not None else self.global_shape[0]
+            step = step if step is not None else 1
+            assert start < stop, 'Invalid indices %s' % items
+            if step == 1:
+                m = stop - start
+                n = self.global_shape[1]
+                rows = [(start, m)]
+                cols = [(0, n)]
+            else:
+                raise Exception('Not implemented yet')
+        elif items is Ellipsis:
+            return self.copy()
+        elif type(items) is tuple:
+            assert len(items) == 2, 'Invalid indices %s' % items
+            assert type(items[0]) in [int, long, slice, Ellipsis] and type(items[1]) in [int, long, slice, Ellipsis], 'Invalid indices %s' % items
+            raise Exception('Not implemented yet')
+        else:
+            raise Exception('Invalid indices %s' % items)
+
+        B = DistributedMatrix([m, n], dtype=self.dtype, block_shape=self.block_shape, context=self.context)
+        srowb = 0
+        scolb = 0
+        for (srow, nrow) in rows:
+            for (scol, ncol) in cols:
+                self._sec2sec(B, srowb, scolb, srow, nrow, scol, ncol)
+                scolb += ncol
+            srowb += nrow
+
+        return B
+
+
     @classmethod
     def from_file(cls, filename, global_shape, dtype, block_shape=None, context=None, order='F', displacement=0):
         """Read in a global array from a file.
