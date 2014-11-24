@@ -487,6 +487,70 @@ def pinv(A, overwrite_a=True):
     return B
 
 
+def pinv2(A, overwrite_a=True, cond=None, rcond=None, return_rank=False, check_finite=True):
+    """
+    Compute the (Moore-Penrose) pseudo-inverse of a distributed matrix.
+
+    Calculate a generalized inverse of a distributed matrix using its
+    singular-value decomposition and including all 'large' singular
+    values.
+
+    This need not require that `A` must have full rank.
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        Matrix to be pseudo-inverted.
+    overwrite_a : boolean, optional
+        By default the input matrix is destroyed, if set to False a
+        copy is taken and operated on.
+    cond, rcond : float or None
+        Cutoff for 'small' singular values.
+        Singular values smaller than ``rcond*largest_singular_value``
+        are considered zero.
+        If None or -1, suitable machine precision is used.
+    return_rank : bool, optional
+        if True, return the effective rank of the matrix
+    check_finite : boolean, optional
+        Whether to check that the input matrix contains only finite numbers.
+        Disabling may give a performance gain, but may result in problems
+        (crashes, non-termination) if the inputs do contain infinities or NaNs.
+
+    Returns
+    -------
+    B : DistributedMatrix
+        The pseudo-inverse of matrix `A`.
+    rank : int
+        The effective rank of the matrix.  Returned if return_rank == True
+
+    """
+
+    # if check_finite:
+    #     a = np.asarray_chkfinite(a)
+    # else:
+    #     a = np.asarray(a)
+    A = A if overwrite_a else A.copy()
+
+    U, s, VH = svd(A, overwrite_a=overwrite_a)
+
+    if rcond is not None:
+        cond = rcond
+    if cond in [None,-1]:
+        t = s.dtype.char.lower()
+        factor = {'f': 1E3, 'd': 1E6}
+        cond = factor[t] * np.finfo(t).eps
+
+    rank = np.sum(s > cond * np.max(s))
+    psigma_diag = 1.0 / s[: rank]
+
+    B = dot(U[:, :rank] * psigma_diag, VH[:rank]).H
+
+    if return_rank:
+        return B, rank
+    else:
+        return B
+
+
 def transpose(A):
     """Transpose the distributed matrix.
 
