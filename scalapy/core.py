@@ -33,7 +33,7 @@ Classes
 
 """
 
-
+from numbers import Number
 import numpy as np
 
 from mpi4py import MPI
@@ -527,6 +527,24 @@ class DistributedMatrix(object):
         return cp
 
 
+    def row_indices(self):
+        """The row indices of the global array local to the process.
+        """
+        return blockcyclic.indices_rc(self.global_shape[0],
+                                      self.block_shape[0],
+                                      self.context.grid_position[0],
+                                      self.context.grid_shape[0])
+
+
+    def col_indices(self):
+        """The column indices of the global array local to the process.
+        """
+        return blockcyclic.indices_rc(self.global_shape[1],
+                                      self.block_shape[1],
+                                      self.context.grid_position[1],
+                                      self.context.grid_shape[1])
+
+
     def indices(self, full=True):
         r"""The indices of the elements stored in the local matrix.
 
@@ -936,6 +954,42 @@ class DistributedMatrix(object):
         self.local_array[:] += x.local_array[:]
 
         return self
+
+
+    def __mul__(self, x):
+        if isinstance(x, DistributedMatrix):
+            if self.global_shape != x.global_shape:
+                raise RuntimeError("scalapy.DistributedMatrix.__mul__: incompatible shapes")
+
+            if ((self.block_shape != x.block_shape)
+                or (self.context.grid_shape != x.context.grid_shape)
+                or (self.context.grid_position != x.context.grid_position)):
+                raise RuntimeError("scalapy.DistributedMatrix.__mul__: for now, both matrices must have same blocking scheme")
+
+            B = self.copy()
+
+            # Note: OK if dtypes don't match
+            B.local_array[:] *= x.local_array[:]
+
+            return B
+
+        elif isinstance(x, Number):
+            B = self.copy()
+            B.local_array[:] *= x
+
+            return B
+
+        elif isinstance(x, np.ndarray):
+            if x.ndim != 1 and x.size != self.global_shape[1]:
+                raise RuntimeError("scalapy.DistributedMatrix.__mul__: incompatible shapes")
+
+            B = self.copy()
+            for (i, col) in enumerate(self.col_indices()):
+                B.local_array[:, i] *= x[col]
+
+            return B
+        else:
+            raise RuntimeError('Unsupported type %s' % type(x))
 
 
     def _section(self, srow=0, nrow=None, scol=0, ncol=None):
