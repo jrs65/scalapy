@@ -302,6 +302,73 @@ def lu(A, overwrite_a=True):
     return A, ipiv
 
 
+def svd(A, overwrite_a=True, compute_u=True, compute_v=True):
+    """Distributed matrix Singular Value Decomposition.
+
+    Factors the matrix `A` as U * np.diag(s) * VT, where U and VT are
+    unitary and s is a 1-d array of A's singular values.
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        Matrix to do SVD, shape (m, n).
+    overwrite_a : boolean, optional
+        By default the input matrix is destroyed, if set to False a
+        copy is taken and operated on.
+    compute_u, compute_v : bool, optional
+        Whether or not to compute U and VT in addition to s. True by default.
+
+    Returns
+    -------
+    U : DistributedMatrix
+        Unitary matrices with shape (m, min(m, n)). Only returned when compute_u is True.
+    s : np.ndarray
+        The singular values for `A` with shape (min(m, n)), sorted in descending order.
+    VT : DistributedMatrix
+        Unitary matrices with shape (min(m, n), n). Only returned when compute_v is True.
+
+    """
+
+    A = A if overwrite_a else A.copy()
+
+    m, n = A.global_shape
+    size = min(m, n)
+    sizeb = max(m, n)
+
+    # distributed matrix which contains the first size columns of U (the left singular vectors)
+    U = core.DistributedMatrix([m, size], dtype=A.dtype, block_shape=A.block_shape, context=A.context)
+    # distributed matrix which contains the first size rows of VT (the right singular vectors)
+    VT = core.DistributedMatrix([size, n], dtype=A.dtype, block_shape=A.block_shape, context=A.context)
+    # array of size size. Contains the singular values of A sorted in descending order
+    s = np.empty(size, dtype=util.real_equiv(A.dtype))
+
+    jobu = 'V' if compute_u else 'N'
+    jobvt = 'V' if compute_v else 'N'
+    args = [jobu, jobvt, m, n, A, s, U, VT]
+
+    call_table = {'S': (ll.psgesvd, args + [ll.WorkArray('S')]),
+                  'D': (ll.pdgesvd, args + [ll.WorkArray('D')]),
+                  'C': (ll.pcgesvd, args + [ll.WorkArray('C')] + [np.zeros(1 + 4*sizeb, dtype=np.float32)]),
+                  'Z': (ll.pzgesvd, args + [ll.WorkArray('Z')] + [np.zeros(1 + 4*sizeb, dtype=np.float64)])}
+
+    func, args = call_table[A.sc_dtype]
+    info = func(*args)
+
+    if info < 0:
+        raise core.ScalapackException("Failure.")
+
+    if compute_u:
+        if compute_v:
+            return U, s, VT
+        else:
+            return U, s
+    else:
+        if compute_v:
+            return s, VT
+        else:
+            return s
+
+
 def inv(A, overwrite_a=True):
     """Computes the inverse of a LU-factored distributed matrix.
 
