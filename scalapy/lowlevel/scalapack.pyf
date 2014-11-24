@@ -962,7 +962,7 @@ python module scalapack ! in
             character*1 intent(in) :: jobvt
             integer intent(in) :: m
             integer intent(in) :: n
-            complex intent(in) :: a
+            complex dimension(*),intent(in) :: a
             integer intent(in) :: ia
             integer intent(in) :: ja
             integer dimension(*),intent(inout) :: desca
@@ -2974,7 +2974,7 @@ python module scalapack ! in
             character*1 intent(in) :: jobvt
             integer intent(in) :: m
             integer intent(in) :: n
-            double precision intent(in) :: a
+            double precision dimension(*),intent(in) :: a
             integer intent(in) :: ia
             integer intent(in) :: ja
             integer dimension(*),intent(inout) :: desca
@@ -5204,7 +5204,7 @@ python module scalapack ! in
             character*1 intent(in) :: jobvt
             integer intent(in) :: m
             integer intent(in) :: n
-            real intent(in) :: a
+            real dimension(*),intent(in) :: a
             integer intent(in) :: ia
             integer intent(in) :: ja
             integer dimension(*),intent(inout) :: desca
@@ -7426,7 +7426,7 @@ python module scalapack ! in
             character*1 intent(in) :: jobvt
             integer intent(in) :: m
             integer intent(in) :: n
-            complex*16 intent(in) :: a
+            complex*16 dimension(*),intent(in) :: a
             integer intent(in) :: ia
             integer intent(in) :: ja
             integer dimension(*),intent(inout) :: desca
