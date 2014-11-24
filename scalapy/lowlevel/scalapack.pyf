@@ -7441,7 +7441,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: descvt
             complex*16 dimension(*),intent(inout) :: work
             integer intent(in) :: lwork
-            real dimension(*),intent(inout) :: rwork
+            double precision dimension(*),intent(inout) :: rwork
             integer intent(out) :: info
         end subroutine pzgesvd
         subroutine pzgesvx(fact,trans,n,nrhs,a,ia,ja,desca,af,iaf,jaf,descaf,ipiv,equed,r,c,b,ib,jb,descb,x,ix,jx,descx,rcond,ferr,berr,work,lwork,rwork,lrwork,info) ! in :scalapack:tmp.scalapack/pzgesvx.pyf
