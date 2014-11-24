@@ -1012,6 +1012,7 @@ class DistributedMatrix(object):
         func, args = call_table[self.sc_dtype]
         ll.expand_args = False
         func(*args)
+        ll.expand_args = True
 
         return B
 
@@ -1034,6 +1035,7 @@ class DistributedMatrix(object):
         func, args = call_table[self.sc_dtype]
         ll.expand_args = False
         func(*args)
+        ll.expand_args = True
 
 
     def __getitem__(self, items):
@@ -1041,7 +1043,7 @@ class DistributedMatrix(object):
 
         def swap(a, b):
             return b, a
-            
+
         if type(items) in [int, long]:
             assert items >= 0, 'Negative index %d' % items
             assert items < self.global_shape[0], 'Invalid index %d' % items
