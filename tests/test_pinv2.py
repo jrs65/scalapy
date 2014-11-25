@@ -31,7 +31,6 @@ def test_pinv_D():
 
     pinvA = rt.pinv2(dA)
     gpinvA = pinvA.to_global_array()
-    gpinvA = gpinvA[:n, :]
 
     if rank == 0:
         assert allclose(gA, np.dot(gA, np.dot(gpinvA, gA)))
@@ -53,7 +52,6 @@ def test_pinv_Z():
 
     pinvA = rt.pinv2(dA)
     gpinvA = pinvA.to_global_array()
-    gpinvA = gpinvA[:n, :]
 
     if rank == 0:
         assert allclose(gA, np.dot(gA, np.dot(gpinvA, gA)))
@@ -79,7 +77,6 @@ def test_pinv_Z_alt():
 
     pinvA = rt.pinv2(dA)
     gpinvA = pinvA.to_global_array()
-    gpinvA = gpinvA[:n, :]
 
     if rank == 0:
         assert allclose(gA, np.dot(gA, np.dot(gpinvA, gA)))
