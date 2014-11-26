@@ -1130,6 +1130,114 @@ class DistributedMatrix(object):
         return B
 
 
+    def _copy_from_np(self, a, asrow=0, anrow=None, ascol=0, ancol=None, srow=0, scol=0, rank=0):
+        ## copy a section of a numpy array a[asrow:asrow+anrow, ascol:ascol+ancol] to self[srow:srow+anrow, scol:scol+ancol]
+        if self.context.mpi_comm.rank == rank:
+            assert a.ndim == 1 or a.ndim == 2, 'Unsupported high dimensional array.'
+            a = np.asfortranarray(a.astype(self.dtype)) # type conversion
+            a = a.reshape(-1, a.shape[-1]) # reshape to two dimensional
+            am, an = a.shape
+            assert 0 <= asrow < am, 'Invalid start row index asrow: %s' % asrow
+            assert 0 <= ascol < an, 'Invalid start column index ascol: %s' % ascol
+            m = am - asrow if anrow is None else anrow
+            n = an - ascol if ancol is None else ancol
+            assert 0 < m <= am - asrow, 'Invalid number of rows anrow: %s' % anrow
+            assert 0 < n <= an - ascol, 'Invalid number of columes ancol: %s' % ancol
+        else:
+            m, n = 1, 1
+
+        m = self.context.mpi_comm.bcast(m, root=rank)
+        n = self.context.mpi_comm.bcast(n, root=rank)
+
+        assert 0 <= srow < self.global_shape[0], 'Invalid start row index srow: %s' % srow
+        assert 0 <= scol < self.global_shape[1], 'Invalid start column index scol: %s' % scol
+        assert 0 < m <= self.global_shape[0] - srow, 'Invalid number of rows anrow: %s' % anrow
+        assert 0 < n <= self.global_shape[1] - scol, 'Invalid number of columes ancol: %s' % ancol
+
+        # due to bugs in scalapy, it is needed to first init an process context here
+        ProcessContext([1, self.context.mpi_comm.size], comm=self.context.mpi_comm) # process context
+
+        if self.context.mpi_comm.rank == rank:
+            pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
+            desc = self.desc
+            desc[1] = pc.blacs_context
+            desc[2], desc[3] = a.shape
+            desc[4], desc[5] = a.shape
+            desc[8] = a.shape[0]
+            args = [m, n, a , asrow+1, ascol+1, desc, self.local_array, srow+1, scol+1, self.desc, self.context.blacs_context]
+        else:
+            desc = np.zeros(9, dtype=np.int32)
+            desc[1] = -1
+            args = [m, n, np.zeros(1, dtype=self.dtype) , asrow+1, ascol+1, desc, self.local_array, srow+1, scol+1, self.desc, self.context.blacs_context]
+
+        from . import lowlevel as ll
+
+        call_table = {'S': (ll.psgemr2d, args),
+                      'D': (ll.pdgemr2d, args),
+                      'C': (ll.pcgemr2d, args),
+                      'Z': (ll.pzgemr2d, args)}
+
+        func, args = call_table[self.sc_dtype]
+        ll.expand_args = False
+        func(*args)
+        ll.expand_args = True
+
+        return self
+
+
+    def np2self(self, a, srow=0, scol=0, rank=0):
+        """Copy a one or two dimensional numpy array `a` owned by
+        rank `rank` to the section of the distributed matrix starting
+        at row `srow` and column `scol`.
+        """
+        return self._copy_from_np(a, asrow=0, anrow=None, ascol=0, ancol=None,srow=srow, scol=scol, rank=rank)
+
+
+    def self2np(self, srow=0, nrow=None, scol=0, ncol=None, rank=0):
+        """Copy a section of the distributed matrix
+        self[srow:srow+nrow, scol:scol+ncol] to a two dimensional numpy
+        array owned by rank `rank`.
+        """
+        assert 0 <= srow < self.global_shape[0], 'Invalid start row index srow: %s' % srow
+        assert 0 <= scol < self.global_shape[1], 'Invalid start column index scol: %s' % scol
+        m = self.global_shape[0] - srow if nrow is None else nrow
+        n = self.global_shape[1] - scol if ncol is None else ncol
+        assert 0 < m <= self.global_shape[0] - srow, 'Invalid number of rows anrow: %s' % nrow
+        assert 0 < n <= self.global_shape[1] - scol, 'Invalid number of columes ancol: %s' % ncol
+
+        # due to bugs in scalapy, it is needed to first init an process context here
+        ProcessContext([1, self.context.mpi_comm.size], comm=self.context.mpi_comm) # process context
+
+        if self.context.mpi_comm.rank == rank:
+            a = np.empty((m, n), dtype=self.dtype, order='F')
+            pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
+            desc = self.desc
+            desc[1] = pc.blacs_context
+            desc[2], desc[3] = a.shape
+            desc[4], desc[5] = a.shape
+            desc[8] = a.shape[0]
+            args = [m, n, self.local_array, srow+1, scol+1, self.desc, a , 1, 1, desc, self.context.blacs_context]
+        else:
+            a = None
+            desc = np.zeros(9, dtype=np.int32)
+            desc[1] = -1
+            args = [m, n, self.local_array, srow+1, scol+1, self.desc, np.zeros(1, dtype=self.dtype) , 1, 1, desc, self.context.blacs_context]
+
+        from . import lowlevel as ll
+
+        call_table = {'S': (ll.psgemr2d, args),
+                      'D': (ll.pdgemr2d, args),
+                      'C': (ll.pcgemr2d, args),
+                      'Z': (ll.pzgemr2d, args)}
+
+        func, args = call_table[self.sc_dtype]
+        ll.expand_args = False
+        func(*args)
+        ll.expand_args = True
+
+        return a
+
+
     @classmethod
     def from_file(cls, filename, global_shape, dtype, block_shape=None, context=None, order='F', displacement=0):
         """Read in a global array from a file.
