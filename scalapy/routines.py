@@ -138,7 +138,11 @@ def eigh(A, B=None, lower=True, overwrite_a=True, overwrite_b=True, type_=1, eig
         m, nz, info = func(*args)
 
         if info < 0:
-            raise Exception("Failure.")
+            raise core.ScalapackException("Failure.")
+        elif info > 0 and np.mod(info / 16, 2) != 0:
+            raise core.ScalapackException("The smallest minor order %d of `B` is not positive definite." % ifail[0])
+        else:
+            pass
 
         return evals, evecs
 
