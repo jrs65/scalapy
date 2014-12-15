@@ -1209,10 +1209,11 @@ class DistributedMatrix(object):
         return self._copy_from_np(a, asrow=0, anrow=None, ascol=0, ancol=None,srow=srow, scol=scol, block_shape=block_shape, rank=rank)
 
 
-    def self2np(self, srow=0, nrow=None, scol=0, ncol=None, rank=0):
+    def self2np(self, srow=0, nrow=None, scol=0, ncol=None, block_shape=None, rank=0):
         """Copy a section of the distributed matrix
         self[srow:srow+nrow, scol:scol+ncol] to a two dimensional numpy
-        array owned by rank `rank`.
+        array owned by rank `rank`. Once copy a section equal or less
+        than `block_shape` if the copied section is large.
         """
         assert 0 <= srow < self.global_shape[0], 'Invalid start row index srow: %s' % srow
         assert 0 <= scol < self.global_shape[1], 'Invalid start column index scol: %s' % scol
@@ -1221,35 +1222,53 @@ class DistributedMatrix(object):
         assert 0 < m <= self.global_shape[0] - srow, 'Invalid number of rows anrow: %s' % nrow
         assert 0 < n <= self.global_shape[1] - scol, 'Invalid number of columes ancol: %s' % ncol
 
+        block_shape = self.block_shape if block_shape is None else block_shape
+        if not _chk_2d_size(block_shape):
+            raise ScalapyException("Invalid block_shape")
+
+        bm, bn = block_shape
+        br = blockcyclic.num_blocks(m, bm) # number of blocks for row
+        bc = blockcyclic.num_blocks(n, bn) # number of blocks for column
+        rm = m - (br - 1) * bm # remained number of rows of the last block
+        rn = n - (bc - 1) * bn # remained number of columes of the last block
+
         # due to bugs in scalapy, it is needed to first init an process context here
         ProcessContext([1, self.context.mpi_comm.size], comm=self.context.mpi_comm) # process context
 
         if self.context.mpi_comm.rank == rank:
             a = np.empty((m, n), dtype=self.dtype, order='F')
-            pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
-            desc = self.desc
-            desc[1] = pc.blacs_context
-            desc[2], desc[3] = a.shape
-            desc[4], desc[5] = a.shape
-            desc[8] = a.shape[0]
-            args = [m, n, self.local_array, srow+1, scol+1, self.desc, a , 1, 1, desc, self.context.blacs_context]
         else:
             a = None
-            desc = np.zeros(9, dtype=np.int32)
-            desc[1] = -1
-            args = [m, n, self.local_array, srow+1, scol+1, self.desc, np.zeros(1, dtype=self.dtype) , 1, 1, desc, self.context.blacs_context]
 
-        from . import lowlevel as ll
+        for bri in range(br):
+            M = bm if bri != br - 1 else rm
+            for bci in range(bc):
+                N = bn if bci != bc - 1 else rn
 
-        call_table = {'S': (ll.psgemr2d, args),
-                      'D': (ll.pdgemr2d, args),
-                      'C': (ll.pcgemr2d, args),
-                      'Z': (ll.pzgemr2d, args)}
+                if self.context.mpi_comm.rank == rank:
+                    pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
+                    desc = self.desc
+                    desc[1] = pc.blacs_context
+                    desc[2], desc[3] = a.shape
+                    desc[4], desc[5] = a.shape
+                    desc[8] = a.shape[0]
+                    args = [M, N, self.local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, a , 1+bm*bri, 1+bn*bci, desc, self.context.blacs_context]
+                else:
+                    desc = np.zeros(9, dtype=np.int32)
+                    desc[1] = -1
+                    args = [M, N, self.local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, np.zeros(1, dtype=self.dtype) , 1+bm*bri, 1+bn*bci, desc, self.context.blacs_context]
 
-        func, args = call_table[self.sc_dtype]
-        ll.expand_args = False
-        func(*args)
-        ll.expand_args = True
+                from . import lowlevel as ll
+
+                call_table = {'S': (ll.psgemr2d, args),
+                              'D': (ll.pdgemr2d, args),
+                              'C': (ll.pcgemr2d, args),
+                              'Z': (ll.pzgemr2d, args)}
+
+                func, args = call_table[self.sc_dtype]
+                ll.expand_args = False
+                func(*args)
+                ll.expand_args = True
 
         return a
 
