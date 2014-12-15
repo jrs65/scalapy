@@ -1130,8 +1130,8 @@ class DistributedMatrix(object):
         return B
 
 
-    def _copy_from_np(self, a, asrow=0, anrow=None, ascol=0, ancol=None, srow=0, scol=0, rank=0):
-        ## copy a section of a numpy array a[asrow:asrow+anrow, ascol:ascol+ancol] to self[srow:srow+anrow, scol:scol+ancol]
+    def _copy_from_np(self, a, asrow=0, anrow=None, ascol=0, ancol=None, srow=0, scol=0, block_shape=None, rank=0):
+        ## copy a section of a numpy array a[asrow:asrow+anrow, ascol:ascol+ancol] to self[srow:srow+anrow, scol:scol+ancol], once per block_shape
         if self.context.mpi_comm.rank == rank:
             assert a.ndim == 1 or a.ndim == 2, 'Unsupported high dimensional array.'
             a = np.asfortranarray(a.astype(self.dtype)) # type conversion
@@ -1146,51 +1146,67 @@ class DistributedMatrix(object):
         else:
             m, n = 1, 1
 
-        m = self.context.mpi_comm.bcast(m, root=rank)
-        n = self.context.mpi_comm.bcast(n, root=rank)
+        m = self.context.mpi_comm.bcast(m, root=rank) # number of rows to copy
+        n = self.context.mpi_comm.bcast(n, root=rank) # number of columes to copy
 
         assert 0 <= srow < self.global_shape[0], 'Invalid start row index srow: %s' % srow
         assert 0 <= scol < self.global_shape[1], 'Invalid start column index scol: %s' % scol
         assert 0 < m <= self.global_shape[0] - srow, 'Invalid number of rows anrow: %s' % anrow
         assert 0 < n <= self.global_shape[1] - scol, 'Invalid number of columes ancol: %s' % ancol
 
+        block_shape = self.block_shape if block_shape is None else block_shape
+        if not _chk_2d_size(block_shape):
+            raise ScalapyException("Invalid block_shape")
+
+        bm, bn = block_shape
+        br = blockcyclic.num_blocks(m, bm) # number of blocks for row
+        bc = blockcyclic.num_blocks(n, bn) # number of blocks for column
+        rm = m - (br - 1) * bm # remained number of rows of the last block
+        rn = n - (bc - 1) * bn # remained number of columes of the last block
+
         # due to bugs in scalapy, it is needed to first init an process context here
         ProcessContext([1, self.context.mpi_comm.size], comm=self.context.mpi_comm) # process context
 
-        if self.context.mpi_comm.rank == rank:
-            pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
-            desc = self.desc
-            desc[1] = pc.blacs_context
-            desc[2], desc[3] = a.shape
-            desc[4], desc[5] = a.shape
-            desc[8] = a.shape[0]
-            args = [m, n, a , asrow+1, ascol+1, desc, self.local_array, srow+1, scol+1, self.desc, self.context.blacs_context]
-        else:
-            desc = np.zeros(9, dtype=np.int32)
-            desc[1] = -1
-            args = [m, n, np.zeros(1, dtype=self.dtype) , asrow+1, ascol+1, desc, self.local_array, srow+1, scol+1, self.desc, self.context.blacs_context]
+        for bri in range(br):
+            M = bm if bri != br - 1 else rm
+            for bci in range(bc):
+                N = bn if bci != bc - 1 else rn
 
-        from . import lowlevel as ll
+                if self.context.mpi_comm.rank == rank:
+                    pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
+                    desc = self.desc
+                    desc[1] = pc.blacs_context
+                    desc[2], desc[3] = a.shape
+                    desc[4], desc[5] = a.shape
+                    desc[8] = a.shape[0]
+                    args = [M, N, a, asrow+1+bm*bri, ascol+1+bn*bci, desc, self.local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, self.context.blacs_context]
+                else:
+                    desc = np.zeros(9, dtype=np.int32)
+                    desc[1] = -1
+                    args = [M, N, np.zeros(1, dtype=self.dtype) , asrow+1+bm*bri, ascol+1+bn*bci, desc, self.local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, self.context.blacs_context]
 
-        call_table = {'S': (ll.psgemr2d, args),
-                      'D': (ll.pdgemr2d, args),
-                      'C': (ll.pcgemr2d, args),
-                      'Z': (ll.pzgemr2d, args)}
+                from . import lowlevel as ll
 
-        func, args = call_table[self.sc_dtype]
-        ll.expand_args = False
-        func(*args)
-        ll.expand_args = True
+                call_table = {'S': (ll.psgemr2d, args),
+                              'D': (ll.pdgemr2d, args),
+                              'C': (ll.pcgemr2d, args),
+                              'Z': (ll.pzgemr2d, args)}
+
+                func, args = call_table[self.sc_dtype]
+                ll.expand_args = False
+                func(*args)
+                ll.expand_args = True
 
         return self
 
 
-    def np2self(self, a, srow=0, scol=0, rank=0):
+    def np2self(self, a, srow=0, scol=0, block_shape=None, rank=0):
         """Copy a one or two dimensional numpy array `a` owned by
         rank `rank` to the section of the distributed matrix starting
-        at row `srow` and column `scol`.
+        at row `srow` and column `scol`. Once copy a section equal
+        or less than `block_shape` if `a` is large.
         """
-        return self._copy_from_np(a, asrow=0, anrow=None, ascol=0, ancol=None,srow=srow, scol=scol, rank=rank)
+        return self._copy_from_np(a, asrow=0, anrow=None, ascol=0, ancol=None,srow=srow, scol=scol, block_shape=block_shape, rank=rank)
 
 
     def self2np(self, srow=0, nrow=None, scol=0, ncol=None, rank=0):
