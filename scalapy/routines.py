@@ -61,7 +61,7 @@ def _pxxxgvx(ibtype, jobz, erange, uplo, A, B, vl, vu, il, iu, abstol=0.0, orfac
     # the useless 'expert' mode arguments
     npmul = np.prod(A.context.grid_shape)  # NPROW * NPCOL
     ifail = np.zeros(N, dtype=np.int32)
-    iclustr = np.zeros(2 * npmul, dtype=np.float64)  # Weird issue in f2py wants this to be float64?
+    iclustr = np.zeros(2 * npmul, dtype=np.int32)
     gap = np.zeros(npmul, dtype=util.real_equiv(A.dtype))
 
     args2 = [ifail, iclustr, gap]

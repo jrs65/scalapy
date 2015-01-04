@@ -1195,7 +1195,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: iwork
             integer intent(in) :: liwork
             integer dimension(*),intent(inout) :: ifail
-            real dimension(*),intent(inout) :: iclustr
+            integer dimension(*),intent(inout) :: iclustr
             real dimension(*),intent(inout) :: gap
             integer intent(out) :: info
         end subroutine pcheevx
@@ -1262,7 +1262,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: iwork
             integer intent(in) :: liwork
             integer dimension(*),intent(inout) :: ifail
-            real dimension(*),intent(inout) :: iclustr
+            integer dimension(*),intent(inout) :: iclustr
             real dimension(*),intent(inout) :: gap
             integer intent(out) :: info
         end subroutine pchegvx
@@ -4533,7 +4533,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: iwork
             integer intent(in) :: liwork
             integer dimension(*),intent(inout) :: ifail
-            double precision dimension(*),intent(inout) :: iclustr
+            integer dimension(*),intent(inout) :: iclustr
             double precision dimension(*),intent(inout) :: gap
             integer intent(out) :: info
         end subroutine pdsyevx
@@ -4598,7 +4598,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: iwork
             integer intent(in) :: liwork
             integer dimension(*),intent(inout) :: ifail
-            double precision dimension(*),intent(inout) :: iclustr
+            integer dimension(*),intent(inout) :: iclustr
             double precision dimension(*),intent(inout) :: gap
             integer intent(out) :: info
         end subroutine pdsygvx
@@ -6763,7 +6763,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: iwork
             integer intent(in) :: liwork
             integer dimension(*),intent(inout) :: ifail
-            real dimension(*),intent(inout) :: iclustr
+            integer dimension(*),intent(inout) :: iclustr
             real dimension(*),intent(inout) :: gap
             integer intent(out) :: info
         end subroutine pssyevx
@@ -6828,7 +6828,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: iwork
             integer intent(in) :: liwork
             integer dimension(*),intent(inout) :: ifail
-            real dimension(*),intent(inout) :: iclustr
+            integer dimension(*),intent(inout) :: iclustr
             real dimension(*),intent(inout) :: gap
             integer intent(out) :: info
         end subroutine pssygvx
@@ -7659,7 +7659,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: iwork
             integer intent(in) :: liwork
             integer dimension(*),intent(inout) :: ifail
-            double precision dimension(*),intent(inout) :: iclustr
+            integer dimension(*),intent(inout) :: iclustr
             double precision dimension(*),intent(inout) :: gap
             integer intent(out) :: info
         end subroutine pzheevx
@@ -7726,7 +7726,7 @@ python module scalapack ! in
             integer dimension(*),intent(inout) :: iwork
             integer intent(in) :: liwork
             integer dimension(*),intent(inout) :: ifail
-            double precision dimension(*),intent(inout) :: iclustr
+            integer dimension(*),intent(inout) :: iclustr
             double precision dimension(*),intent(inout) :: gap
             integer intent(out) :: info
         end subroutine pzhegvx
