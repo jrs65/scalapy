@@ -25,43 +25,31 @@ from . import core, util
 from . import lowlevel as ll
 
 
+def _pxxxevr(jobz, erange, uplo, A, vl, vu, il, iu):
+    # wrapper for ScaLAPACK pssyevr, pdsyevr, pcheevr, pzheevr
+
+    n = A.global_shape[0]
+
+    w = np.empty(n, dtype=util.real_equiv(A.dtype))
+    Z = core.DistributedMatrix.empty_like(A)
+
+    args = [jobz, erange, uplo, n, A, vl, vu, il, iu, w, Z]
+
+    call_table = {'S': (ll.pssyevr, args + [ll.WorkArray('S', 'I')]),
+                  'D': (ll.pdsyevr, args + [ll.WorkArray('D', 'I')]),
+                  'C': (ll.pcheevr, args + [ll.WorkArray('C', 'S', 'I')]),
+                  'Z': (ll.pzheevr, args + [ll.WorkArray('Z', 'D', 'I')])}
+
+    func, args = call_table[A.sc_dtype]
+    m, nz, info = func(*args)
+
+    return w, Z, m, nz, info
+
+
 def _pxxxgvx(ibtype, jobz, erange, uplo, A, B, vl, vu, il, iu, abstol=0.0, orfac=-1.0):
+    # wrapper for ScaLAPACK pssygvx, pdsygvx, pchegvx, pzhegvx
 
-    # # Check if matrix is square
-    # util.assert_square(A)
-    # util.assert_square(B)
-
-    # # Validate type
-    # if ibtype not in [1, 2, 3]:
-    #     raise core.ScalapackException("Type argument invalid")
-    # # Validate job
-    # if jobz not in ['N', 'V']:
-    #     raise core.ScalapackException("Job argument invalid")
-    # # Validate range
-    # if erange not in ['A', 'V', 'I']:
-    #     raise core.ScalapackException("Range argument invalid")
-    # # Validate uplo
-    # if uplo not in ['U', 'L']:
-    #     raise core.ScalapackException("Uplo argument invalid")
-
-
-    # # task = 'V'
-    # # erange = 'A'
-    # # uplo = "L" if lower else "U"
-    # assert A.global_shape == B.global_shape, 'Not the same global shape'
     N = A.global_shape[0]
-
-    # if erange == 'V':
-    #     assert vl <= vu, 'Invalid range [%f, %f]' % (vl, vu)
-    # if erange == 'I':
-    #     assert 1 <= il and np.min(il, n) <= iu <= N, 'Invalid indices %d, %d' % (il, iu)
-    # low, high = 1, 1
-
-    # # Get eigval indices if set
-    # if eigvals is not None:
-    #     low = eigvals[0] + 1
-    #     high = eigvals[1] + 1
-    #     erange = 'I'
 
     Z = core.DistributedMatrix.empty_like(A)
     w = np.zeros(N, dtype=util.real_equiv(A.dtype))
@@ -86,37 +74,7 @@ def _pxxxgvx(ibtype, jobz, erange, uplo, A, B, vl, vu, il, iu, abstol=0.0, orfac
     func, args = call_table[A.sc_dtype]
     m, nz, info = func(*args)
 
-    # if info < 0:
-    #     raise core.ScalapackException("Failure.")
-    # elif info > 0 and np.mod(info / 16, 2) != 0:
-    #     raise core.ScalapackException("The smallest minor order %d of `B` is not positive definite." % ifail[0])
-    # else:
-    #     pass
-
     return w, Z, m, nz, info, ifail
-
-
-def _pxxxevr(jobz, erange, uplo, A, vl, vu, il, iu):
-    # wrapper for ScaLAPACK pssyevr, pdsyevr, pcheevr, pzheevr
-
-    n = A.global_shape[0]
-
-    w = np.empty(n, dtype=util.real_equiv(A.dtype))
-    Z = core.DistributedMatrix.empty_like(A)
-
-    args = [jobz, erange, uplo, n, A, vl, vu, il, iu, w, Z]
-
-    call_table = {'S': (ll.pssyevr, args + [ll.WorkArray('S', 'I')]),
-                  'D': (ll.pdsyevr, args + [ll.WorkArray('D', 'I')]),
-                  'C': (ll.pcheevr, args + [ll.WorkArray('C', 'S', 'I')]),
-                  'Z': (ll.pzheevr, args + [ll.WorkArray('Z', 'D', 'I')])}
-
-    func, args = call_table[A.sc_dtype]
-    m, nz, info = func(*args)
-
-    return w, Z, m, nz, info
-
-
 
 
 def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_b=True, type_=1, eigbounds=None, eigvals=None):
@@ -185,19 +143,6 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
 
         evals, evecs, m, nz, info = _pxxxevr(task, erange, uplo, A, vl, vu, il, iu)
 
-        # evecs = core.DistributedMatrix.empty_like(A)
-        # evals = np.empty(N, dtype=util.real_equiv(A.dtype))
-
-        # args = [task, erange, uplo, N, A, 1.0, 1.0, low, high, evals, evecs]
-
-        # call_table = {'S': (ll.pssyevr, args + [ll.WorkArray('S', 'I')]),
-        #               'D': (ll.pdsyevr, args + [ll.WorkArray('D', 'I')]),
-        #               'C': (ll.pcheevr, args + [ll.WorkArray('C', 'S', 'I')]),
-        #               'Z': (ll.pzheevr, args + [ll.WorkArray('Z', 'D', 'I')])}
-
-        # func, args = call_table[A.sc_dtype]
-        # m, nz, info = func(*args)
-
         if info == 0:
             if task == 'N':
                 return evals[:m]
@@ -208,13 +153,9 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
         if info > 0:
             raise core.ScalapackException("Unknown error")
 
-        # if info < 0:
-        #     raise Exception("Failure.")
-
-        # return evals, evecs
-
     else:
         # Otherwise we need to solve the generalised eigenvalue problem
+
         # Check if matrix is square
         util.assert_square(B)
         assert A.global_shape == B.global_shape, 'Not the same global shape'
@@ -224,23 +165,6 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
         # Validate type
         if type_ not in [1, 2, 3]:
             raise core.ScalapackException("Type argument invalid.")
-
-        # task = 'V'
-        # erange = 'A'
-        # uplo = "L" if lower else "U"
-        # N = A.global_shape[0]
-        # vl, vu = 0.0, 1.0
-        # low, high = 1, 1
-
-        # # Get eigval bounds if set
-        # if ebounds is not None:
-        #     vl, vu = ebounds
-        #     erange = 'V'
-        # # Get eigval indices if set
-        # elif eigvals is not None:
-        #     low = eigvals[0] + N + 1 if eigvals[0] < 0 else eigvals[0] + 1
-        #     high = eigvals[1] + N + 1 if eigvals[1] < 0 else eigvals[1] + 1
-        #     erange = 'I'
 
         evals, evecs, m, nz, info, ifail = _pxxxgvx(type_, task, erange, uplo, A, B, vl, vu, il, iu)
 
@@ -264,40 +188,6 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
                 raise core.ScalapackException("The smallest minor order %d of `B` is not positive definite" % ifail[0])
             else:
                 raise core.ScalapackException("Unknown error")
-
-        # return evals, evecs
-
-        # evecs = core.DistributedMatrix.empty_like(A)
-        # evals = np.zeros(N, dtype=util.real_equiv(A.dtype))
-
-        # # Construct the arguments list for the first part
-        # args1 = [type_, task, erange, uplo, N, A, B, 1.0, 1.0, low, high, 0.0, evals, -1.0, evecs]
-
-        # # Construct the second half of the arguments list, these are mostly
-        # # the useless 'expert' mode arguments
-        # npmul = np.prod(A.context.grid_shape)  # NPROW * NPCOL
-        # ifail = np.zeros(N, dtype=np.int32)
-        # iclustr = np.zeros(2 * npmul, dtype=np.float64)  # Weird issue in f2py wants this to be float64?
-        # gap = np.zeros(npmul, dtype=util.real_equiv(A.dtype))
-
-        # args2 = [ifail, iclustr, gap]
-
-        # call_table = {'S': (ll.pssygvx, args1 + [ll.WorkArray('S', 'I')] + args2),
-        #               'D': (ll.pdsygvx, args1 + [ll.WorkArray('D', 'I')] + args2),
-        #               'C': (ll.pchegvx, args1 + [ll.WorkArray('C', 'S', 'I')] + args2),
-        #               'Z': (ll.pzhegvx, args1 + [ll.WorkArray('Z', 'D', 'I')] + args2)}
-
-        # func, args = call_table[A.sc_dtype]
-        # m, nz, info = func(*args)
-
-        # if info < 0:
-        #     raise core.ScalapackException("Failure.")
-        # elif info > 0 and np.mod(info / 16, 2) != 0:
-        #     raise core.ScalapackException("The smallest minor order %d of `B` is not positive definite." % ifail[0])
-        # else:
-        #     pass
-
-        # return evals, evecs
 
 
 def cholesky(A, lower=False, overwrite_a=False, zero_triangle=True):
