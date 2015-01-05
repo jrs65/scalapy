@@ -292,7 +292,7 @@ class DistributedMatrix(object):
         place.
         """
         if self._loccal_empty:
-            return np.zeros(self.local_shape, order='F', dtype=dtype)
+            return np.zeros(self.local_shape, order='F', dtype=self.dtype)
         else:
             return self._local_array
 
