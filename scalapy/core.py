@@ -64,14 +64,18 @@ typemap = { np.float32: MPI.FLOAT,
             np.complex128: MPI.COMPLEX16 }
 
 
-def _chk_2d_size(shape):
-    # Check that the shape describes a valid 2D grid.
+def _chk_2d_size(shape, positive=True):
+    # Check that the shape describes a valid 2D grid. Zero shape not allowed when positive = True.
 
     if len(shape) != 2:
         return False
 
-    if shape[0] < 0 or shape[1] < 0:
-        return False
+    if positive:
+        if shape[0] <= 0 or shape[1] <= 0:
+            return False
+    else:
+        if shape[0] < 0 or shape[1] < 0:
+            return False
 
     return True
 
@@ -371,7 +375,7 @@ class DistributedMatrix(object):
         self._dtype = dtype
 
         ## Check and set global_shape
-        if not _chk_2d_size(global_shape):
+        if not _chk_2d_size(global_shape, positive=False):
             raise ScalapyException("Array global shape invalid.")
 
         self._global_shape = tuple(global_shape)
