@@ -291,7 +291,10 @@ class DistributedMatrix(object):
         reference is readonly, the array itself can be modified in
         place.
         """
-        return self._local_array
+        if self._loccal_empty:
+            return np.zeros(self.local_shape, order='F', dtype=dtype)
+        else:
+            return self._local_array
 
 
     @property
@@ -391,7 +394,12 @@ class DistributedMatrix(object):
         self._context = context if context else _context
 
         # Allocate the local array.
-        self._local_array = np.zeros(self.local_shape, order='F', dtype=dtype)
+        self._loccal_empty = True if self.local_shape[0] == 0 or self.local_shape[1] == 0 else False
+        if self._loccal_empty:
+            # as f2py can not handle zero sized array, we have to create an non-empty local array
+            self._local_array = np.zeros(1, dtype=dtype)
+        else:
+            self._local_array = np.zeros(self.local_shape, order='F', dtype=dtype)
 
         # Create the descriptor
         self._mkdesc()
@@ -1000,7 +1008,7 @@ class DistributedMatrix(object):
 
         B = DistributedMatrix([nrow, ncol], dtype=self.dtype, block_shape=self.block_shape, context=self.context)
 
-        args = [nrow, ncol, self.local_array , srow+1, scol+1, self.desc, B.local_array, 1, 1, B.desc, self.context.blacs_context]
+        args = [nrow, ncol, self._local_array , srow+1, scol+1, self.desc, B._local_array, 1, 1, B.desc, self.context.blacs_context]
 
         from . import lowlevel as ll
 
@@ -1023,7 +1031,7 @@ class DistributedMatrix(object):
         ncol = self.global_shape[1] - scol if ncol is None else ncol
         assert nrow > 0 and ncol > 0, 'Invalid number of rows/columns: %d/%d' % (nrow, ncol)
 
-        args = [nrow, ncol, self.local_array , srow+1, scol+1, self.desc, B.local_array, srowb+1, scolb+1, B.desc, self.context.blacs_context]
+        args = [nrow, ncol, self._local_array , srow+1, scol+1, self.desc, B._local_array, srowb+1, scolb+1, B.desc, self.context.blacs_context]
 
         from . import lowlevel as ll
 
@@ -1179,11 +1187,11 @@ class DistributedMatrix(object):
                     desc[2], desc[3] = a.shape
                     desc[4], desc[5] = a.shape
                     desc[8] = a.shape[0]
-                    args = [M, N, a, asrow+1+bm*bri, ascol+1+bn*bci, desc, self.local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, self.context.blacs_context]
+                    args = [M, N, a, asrow+1+bm*bri, ascol+1+bn*bci, desc, self._local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, self.context.blacs_context]
                 else:
                     desc = np.zeros(9, dtype=np.int32)
                     desc[1] = -1
-                    args = [M, N, np.zeros(1, dtype=self.dtype) , asrow+1+bm*bri, ascol+1+bn*bci, desc, self.local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, self.context.blacs_context]
+                    args = [M, N, np.zeros(1, dtype=self.dtype) , asrow+1+bm*bri, ascol+1+bn*bci, desc, self._local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, self.context.blacs_context]
 
                 from . import lowlevel as ll
 
@@ -1252,11 +1260,11 @@ class DistributedMatrix(object):
                     desc[2], desc[3] = a.shape
                     desc[4], desc[5] = a.shape
                     desc[8] = a.shape[0]
-                    args = [M, N, self.local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, a , 1+bm*bri, 1+bn*bci, desc, self.context.blacs_context]
+                    args = [M, N, self._local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, a , 1+bm*bri, 1+bn*bci, desc, self.context.blacs_context]
                 else:
                     desc = np.zeros(9, dtype=np.int32)
                     desc[1] = -1
-                    args = [M, N, self.local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, np.zeros(1, dtype=self.dtype) , 1+bm*bri, 1+bn*bci, desc, self.context.blacs_context]
+                    args = [M, N, self._local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, np.zeros(1, dtype=self.dtype) , 1+bm*bri, 1+bn*bci, desc, self.context.blacs_context]
 
                 from . import lowlevel as ll
 

@@ -159,7 +159,7 @@ def _expand_dm(args):
     exp_args = []
     for arg in args:
         if isinstance(arg, core.DistributedMatrix):
-            arg = [ arg.local_array, 1, 1, arg.desc ]
+            arg = [ arg._local_array, 1, 1, arg.desc ]
         exp_args.append(arg)
     return exp_args
 
