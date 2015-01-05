@@ -147,7 +147,7 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
             if task == 'N':
                 return evals[:m]
             else:
-                return evals[:m], evecs[:m]
+                return evals[:m], evecs[:, :m]
         if info < 0:
             raise core.ScalapackException("Failure with info = %d" % info)
         if info > 0:
@@ -172,7 +172,7 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
             if task == 'N':
                 return evals[:m]
             else:
-                return evals[:m], evecs[:m]
+                return evals[:m], evecs[:, :m]
         if info < 0:
             raise core.ScalapackException("Failure with info = %d" % info)
         if info > 0:
