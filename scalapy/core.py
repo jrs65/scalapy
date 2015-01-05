@@ -1062,84 +1062,139 @@ class DistributedMatrix(object):
         def swap(a, b):
             return b, a
 
-        if type(items) in [int, long]:
-            assert items >= 0, 'Negative index %d' % items
-            assert items < self.global_shape[0], 'Invalid index %d' % items
-            srow = items # start row
-            scol = 0     # start column
-            m = 1        # number of rows
-            n = self.global_shape[1] # number of columns
-            rows = [(srow, m)]
-            cols = [(scol, n)]
-        elif type(items) is slice:
-            start, stop, step = items.start, items.stop, items.step
-            start = start if start is not None else 0
-            stop = stop if stop is not None else self.global_shape[0]
+        def regularize_idx(idx, N, axis):
+            idx1 = idx if idx >= 0 else idx + N
+            if idx1 < 0 or idx1 >= N:
+                raise IndexError('Index %d is out of bounds for axis %d with size %d' % (idx, axis, N))
+
+            return 1, [(idx1, 1)]
+
+        def regularize_slice(slc, N):
+
+            start, stop, step = slc.start, slc.stop, slc.step
             step = step if step is not None else 1
-            assert abs(step) > 0, 'Invalid step 0'
-            if step < 0:
-                step = -step
-                start, stop = swap(stat, stop)
+            if step == 0:
+                raise ValueError('slice step cannot be zero')
+            if step > 0:
+                start = start if start is not None else 0
+                stop = stop if stop is not None else N
+            else:
+                start = start if start is not None else N-1
+                if stop is None:
+                    stop_is_none = True
+                else:
+                    stop_is_none = False
+                stop = stop if stop is not None else 0
+            start = start if start >= 0 else start + N
+            stop = stop if stop >= 0 else stop + N
+            start = max(0, start)
+            start = min(N, start)
+            stop = max(0, stop)
+            stop = min(N, stop)
 
             if step == 1:
-                assert start < stop, 'Invalid indices %s' % items
-                m = stop - start
-                n = self.global_shape[1]
-                rows = [(start, m)]
-                cols = [(0, n)]
+                m = stop -start
+                if m > 0:
+                    return m, [(start, m)]
+                else:
+                    return 0, []
             else:
-                raise Exception('Not implemented yet')
+                m = 0
+                lst = []
+                if step > 0:
+                    while(start < stop):
+                        lst.append((start, 1))
+                        m += 1
+                        start += step
+                if step < 0:
+                    while(start > stop):
+                        lst.append((start, 1))
+                        m += 1
+                        start += step
+                    if stop_is_none and start == stop:
+                        m += 1
+                        lst.append((0, 1))
+
+                return m, lst
+
+        Nrows, Ncols = self.global_shape
+
+        if type(items) in [int, long]:
+            m, rows = regularize_idx(items, Nrows, 0)
+            n = Ncols # number of columns
+            cols = [(0, Ncols)]
+        elif type(items) is slice:
+            if items == slice(None, None, None):
+                return self.copy()
+
+            m, rows = regularize_slice(items, Nrows)
+            n = Ncols
+            cols = [(0, Ncols)]
+
         elif items is Ellipsis:
             return self.copy()
         elif type(items) is tuple:
-            assert len(items) == 2, 'Invalid indices %s' % items
-            assert type(items[0]) in [int, long, slice] or items[0] is Ellipsis and type(items[1]) in [int, long, slice] or items[1] is Ellipsis, 'Invalid indices %s' % items
-            if type(items[0]) is slice:
-                start1, stop1, step1 = items[0].start, items[0].stop, items[0].step
-                start1 = start1 if start1 is not None else 0
-                stop1 = stop1 if stop1 is not None else self.global_shape[0]
-                step1 = step1 if step1 is not None else 1
-                assert abs(step1) > 0, 'Invalid step 0'
-                if step1 < 0:
-                    step1 = -step1
-                    start1, stop1 = swap(start1, stop1)
+            if len(items) != 2:
+                raise ValueError('Invalid indices %s' % items)
+            if not ((type(items[0]) in [int, long, slice] or items[0] is Ellipsis) and (type(items[1]) in [int, long, slice] or items[1] is Ellipsis)):
+                raise ValueError('Invalid indices %s' % items)
 
-                if step1 == 1:
-                    assert start1 < stop1, 'Invalid indices %s' % items[0]
-                    m = stop1 - start1
-                    rows = [(start1, m)]
+            if type(items[0]) in [int, long]:
+                m, rows = regularize_idx(items[0], Nrows, 0)
+
+                if type(items[1]) in [int, long]:
+                    n, cols = regularize_idx(items[1], Ncols, 1)
+                elif type(items[1]) is slice:
+                    n, cols = regularize_slice(items[1], Ncols)
+                elif items[1] is Ellipsis:
+                    n = Ncols
+                    cols = [(0, Ncols)]
                 else:
-                    raise Exception('Not implemented yet')
+                    raise ValueError('Invalid indices %s' % items)
 
-                if type(items[1]) is slice:
-                    start2, stop2, step2 = items[1].start, items[1].stop, items[1].step
-                    start2 = start2 if start2 is not None else 0
-                    stop2 = stop2 if stop2 is not None else self.global_shape[1]
-                    step2 = step2 if step2 is not None else 1
-                    assert abs(step2) > 0, 'Invalid step 0'
-                    if step2 < 0:
-                        step2 = -step2
-                        start2, stop2 = swap(start2, stop2)
+            elif type(items[0]) is slice:
+                m, rows = regularize_slice(items[0], Nrows)
 
-                    if step2 == 1:
-                        assert start2 < stop2, 'Invalid indices %s' % items[1]
-                        n = stop2 - start2
-                        cols = [(start2, n)]
-                    else:
-                        raise Exception('Not implemented yet')
+                if type(items[1]) in [int, long]:
+                    n, cols = regularize_idx(items[1], Ncols, 1)
+                elif type(items[1]) is slice:
+                    if items[0] == slice(None, None, None) and items[1] == slice(None, None, None):
+                        return self.copy()
 
+                    n, cols = regularize_slice(items[1], Ncols)
+                elif items[1] is Ellipsis:
+                    if items[0] == slice(None, None, None):
+                        return self.copy()
+
+                    n = Ncols
+                    cols = [(0, Ncols)]
                 else:
-                    raise Exception('Not implemented yet')
+                    raise ValueError('Invalid indices %s' % items)
+
+            elif items[0] is Ellipsis:
+                m = Nrows
+                rows = [(0, Nrows)]
+
+                if type(items[1]) in [int, long]:
+                    n, cols = regularize_idx(items[1], Ncols, 1)
+                elif type(items[1]) is slice:
+                    if items[1] == slice(None, None, None):
+                        return self.copy()
+                    n, cols = regularize_slice(items[1], Ncols)
+                elif items[1] is Ellipsis:
+                    return self.copy()
+                else:
+                    raise ValueError('Invalid indices %s' % items)
 
             else:
-                raise Exception('Not implemented yet')
+                raise ValueError('Invalid indices %s' % items)
         else:
-            raise Exception('Invalid indices %s' % items)
+            raise ValueError('Invalid indices %s' % items)
 
         B = DistributedMatrix([m, n], dtype=self.dtype, block_shape=self.block_shape, context=self.context)
         srowb = 0
-        scolb = 0
         for (srow, nrow) in rows:
+            scolb = 0
             for (scol, ncol) in cols:
                 self._sec2sec(B, srowb, scolb, srow, nrow, scol, ncol)
                 scolb += ncol
