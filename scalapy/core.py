@@ -862,18 +862,19 @@ class DistributedMatrix(object):
 
             m = cls(mat_shape, block_shape=block_shape, dtype=mat_dtype, context=context)
 
-            # Each process should receive its local sections.
-            rreq = comm.Irecv([m.local_array, m.mpi_dtype], source=rank, tag=0)
+            if mat_shape[0] != 0 and mat_shape[1] != 0:
+                # Each process should receive its local sections.
+                rreq = comm.Irecv([m.local_array, m.mpi_dtype], source=rank, tag=0)
 
-            if comm.rank == rank:
-                # Post each send
-                reqs = [ comm.Isend([mat, m._darr_list[dt]], dest=dt, tag=0)
-                             for dt in range(comm.size) ]
+                if comm.rank == rank:
+                    # Post each send
+                    reqs = [ comm.Isend([mat, m._darr_list[dt]], dest=dt, tag=0)
+                                 for dt in range(comm.size) ]
 
-                # Wait for requests to complete
-                MPI.Prequest.Waitall(reqs)
+                    # Wait for requests to complete
+                    MPI.Prequest.Waitall(reqs)
 
-            rreq.Wait()
+                rreq.Wait()
 
         else:
             if mat.ndim != 2:
