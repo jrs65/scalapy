@@ -432,30 +432,35 @@ class DistributedMatrix(object):
         ##   These are required for reading in and out of arrays and files.
 
         # Get MPI process info
-        rank = self.context.mpi_comm.rank
-        size = self.context.mpi_comm.size
+        if self.global_shape[0] == 0 or self.global_shape[1] == 0:
+            self._darr_f = None
+            self._darr_c = None
+            self._darr_list = []
+        else:
+            rank = self.context.mpi_comm.rank
+            size = self.context.mpi_comm.size
 
-        # Create distributed array view (F-ordered)
-        self._darr_f = self.mpi_dtype.Create_darray(size, rank,
-                            self.global_shape,
-                            [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
-                            self.block_shape, self.context.grid_shape,
-                            MPI.ORDER_F)
-        self._darr_f.Commit()
-
-        # Create distributed array view (F-ordered)
-        self._darr_c = self.mpi_dtype.Create_darray(size, rank,
-                            self.global_shape,
-                            [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
-                            self.block_shape, self.context.grid_shape,
-                            MPI.ORDER_C).Commit()
-
-        # Create list of types for all ranks (useful for passing to global array)
-        self._darr_list = [ self.mpi_dtype.Create_darray(size, ri,
+            # Create distributed array view (F-ordered)
+            self._darr_f = self.mpi_dtype.Create_darray(size, rank,
                                 self.global_shape,
                                 [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
                                 self.block_shape, self.context.grid_shape,
-                                MPI.ORDER_F).Commit() for ri in range(size) ]
+                                MPI.ORDER_F)
+            self._darr_f.Commit()
+
+            # Create distributed array view (F-ordered)
+            self._darr_c = self.mpi_dtype.Create_darray(size, rank,
+                                self.global_shape,
+                                [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
+                                self.block_shape, self.context.grid_shape,
+                                MPI.ORDER_C).Commit()
+
+            # Create list of types for all ranks (useful for passing to global array)
+            self._darr_list = [ self.mpi_dtype.Create_darray(size, ri,
+                                    self.global_shape,
+                                    [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
+                                    self.block_shape, self.context.grid_shape,
+                                    MPI.ORDER_F).Commit() for ri in range(size) ]
 
 
     @classmethod
