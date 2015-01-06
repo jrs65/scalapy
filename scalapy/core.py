@@ -80,7 +80,7 @@ def _chk_2d_size(shape, positive=True):
     return True
 
 
-def initmpi(gridshape, block_shape=None, comm=None):
+def initmpi(gridshape=[1, MPI.COMM_WORLD.size], block_shape=[2, 2]):
     r"""Initialise Scalapack on the current process.
 
     This routine sets up the BLACS grid, and sets the default context
@@ -91,18 +91,15 @@ def initmpi(gridshape, block_shape=None, comm=None):
     gridsize : array_like
         A two element list (or other tuple etc), containing the
         requested shape for the process grid e.g. `[nprow, npcol]`.
-    blocksize : array_like, optional
+    block_shape : array_like, optional
         The default blocksize for new arrays. A two element, [`brow,
         bcol]` list.
-    comm : mpi4py.MPI.Comm, optional
-        The MPI communicator to create a BLACS context for. If comm=None,
-        then use MPI.COMM_WORLD instead.
     """
 
     global _context, _block_shape
 
     # Setup the default context
-    _context = ProcessContext(gridshape, comm=comm)
+    _context = ProcessContext(gridshape)
 
     # Set default blocksize
     _block_shape = tuple(block_shape)
