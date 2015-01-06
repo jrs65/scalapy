@@ -33,7 +33,7 @@ Classes
 
 """
 
-
+from numbers import Number
 import numpy as np
 
 from mpi4py import MPI
@@ -64,14 +64,18 @@ typemap = { np.float32: MPI.FLOAT,
             np.complex128: MPI.COMPLEX16 }
 
 
-def _chk_2d_size(shape):
-    # Check that the shape describes a valid 2D grid.
+def _chk_2d_size(shape, positive=True):
+    # Check that the shape describes a valid 2D grid. Zero shape not allowed when positive = True.
 
     if len(shape) != 2:
         return False
 
-    if shape[0] <= 0 or shape[1] <= 0:
-        return False
+    if positive:
+        if shape[0] <= 0 or shape[1] <= 0:
+            return False
+    else:
+        if shape[0] < 0 or shape[1] < 0:
+            return False
 
     return True
 
@@ -125,6 +129,8 @@ class ProcessContext(object):
     grid_position
     mpi_comm
     blacs_context
+    all_grid_positions
+    all_mpi_ranks
     """
 
     _grid_shape = (1, 1)
@@ -157,6 +163,18 @@ class ProcessContext(object):
     def blacs_context(self):
         """BLACS context handle."""
         return self._blacs_context
+
+
+    @property
+    def all_grid_positions(self):
+        """Returns shape (mpi_comm_size,2) array, such that (arr[i,0], arr[i,1]) gives the grid position of mpi task i."""
+        return self._all_grid_positions
+
+
+    @property
+    def all_mpi_ranks(self):
+        """Inverse of all_grid_positions: returns 2D array such that arr[i,j] gives the mpi rank at grid position (i,j)."""
+        return self._all_mpi_ranks
 
 
     def __init__(self, grid_shape, comm=None):
@@ -194,6 +212,22 @@ class ProcessContext(object):
         # Set the grid position.
         self._grid_position = blacs_pos
 
+        #
+        # As far as I know, BLACS doesn't guarantee any specific association between MPI tasks and grid positions, so
+        # we compute all_grid_positions using MPI_Allgather().
+        #
+        # (Alternate approach: move the call to MPI_Allgather to the all_grid_positions property, and cache the result.
+        # This would have the advantage that MPI_Allgather() only gets called if needed, but the disadvantage that it
+        # would hang if the first call to all_grid_positions() is from a serial context.)
+        #
+        t = np.array(self.grid_position)
+        assert t.shape == (2,)
+        self._all_grid_positions = np.zeros((self.mpi_comm.size,2), dtype=t.dtype)
+        self.mpi_comm.Allgather(t, self._all_grid_positions)
+
+        # Compute all_mpi_ranks from all_grid_positions
+        self._all_mpi_ranks = np.zeros(self.grid_shape, dtype=np.int)
+        self._all_mpi_ranks[self._all_grid_positions[:,0],self._all_grid_positions[:,1]] = np.arange(self.mpi_comm.size, dtype=np.int)
 
 
 class DistributedMatrix(object):
@@ -209,7 +243,7 @@ class DistributedMatrix(object):
         The blocking size, packed as ``[Br, Bc]``. If ``None`` uses the default blocking
         (set via :func:`initmpi`).
     context : ProcessContext, optional
-        The process context. If not set uses the default (recommended). 
+        The process context. If not set uses the default (recommended).
 
     Attributes
     ----------
@@ -244,10 +278,10 @@ class DistributedMatrix(object):
     character given by :attr:`sc_dtype`).
 
     =================  =================  ==============  ===============================
-    Numpy type         MPI type           Scalapack type  Description                    
+    Numpy type         MPI type           Scalapack type  Description
     =================  =================  ==============  ===============================
-    ``np.float32``     ``MPI.FLOAT``      ``S``           Single precision float            
-    ``np.float64``     ``MPI.DOUBLE``     ``D``           Double precision float         
+    ``np.float32``     ``MPI.FLOAT``      ``S``           Single precision float
+    ``np.float64``     ``MPI.DOUBLE``     ``D``           Double precision float
     ``np.complex64``   ``MPI.COMPLEX``    ``C``           Single precision complex number
     ``np.complex128``  ``MPI.COMPLEX16``  ``Z``           Double precision complex number
     =================  =================  ==============  ===============================
@@ -261,7 +295,10 @@ class DistributedMatrix(object):
         reference is readonly, the array itself can be modified in
         place.
         """
-        return self._local_array
+        if self._loccal_empty:
+            return np.zeros(self.local_shape, order='F', dtype=self.dtype)
+        else:
+            return self._local_array
 
 
     @property
@@ -338,7 +375,7 @@ class DistributedMatrix(object):
         self._dtype = dtype
 
         ## Check and set global_shape
-        if not _chk_2d_size(global_shape):
+        if not _chk_2d_size(global_shape, positive=False):
             raise ScalapyException("Array global shape invalid.")
 
         self._global_shape = tuple(global_shape)
@@ -361,7 +398,12 @@ class DistributedMatrix(object):
         self._context = context if context else _context
 
         # Allocate the local array.
-        self._local_array = np.zeros(self.local_shape, order='F', dtype=dtype)
+        self._loccal_empty = True if self.local_shape[0] == 0 or self.local_shape[1] == 0 else False
+        if self._loccal_empty:
+            # as f2py can not handle zero sized array, we have to create an non-empty local array
+            self._local_array = np.zeros(1, dtype=dtype)
+        else:
+            self._local_array = np.zeros(self.local_shape, order='F', dtype=dtype)
 
         # Create the descriptor
         self._mkdesc()
@@ -390,31 +432,35 @@ class DistributedMatrix(object):
         ##   These are required for reading in and out of arrays and files.
 
         # Get MPI process info
-        rank = self.context.mpi_comm.rank
-        size = self.context.mpi_comm.size
+        if self.global_shape[0] == 0 or self.global_shape[1] == 0:
+            self._darr_f = None
+            self._darr_c = None
+            self._darr_list = []
+        else:
+            rank = self.context.mpi_comm.rank
+            size = self.context.mpi_comm.size
 
-        # Create distributed array view (F-ordered)
-        self._darr_f = self.mpi_dtype.Create_darray(size, rank,
-                            self.global_shape,
-                            [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
-                            self.block_shape, self.context.grid_shape,
-                            MPI.ORDER_F)
-        self._darr_f.Commit()
-
-        # Create distributed array view (F-ordered)
-        self._darr_c = self.mpi_dtype.Create_darray(size, rank,
-                            self.global_shape,
-                            [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
-                            self.block_shape, self.context.grid_shape,
-                            MPI.ORDER_C).Commit()
-
-        # Create list of types for all ranks (useful for passing to global array)
-        self._darr_list = [ self.mpi_dtype.Create_darray(size, ri,
+            # Create distributed array view (F-ordered)
+            self._darr_f = self.mpi_dtype.Create_darray(size, rank,
                                 self.global_shape,
                                 [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
                                 self.block_shape, self.context.grid_shape,
-                                MPI.ORDER_F).Commit() for ri in range(size) ]
+                                MPI.ORDER_F)
+            self._darr_f.Commit()
 
+            # Create distributed array view (F-ordered)
+            self._darr_c = self.mpi_dtype.Create_darray(size, rank,
+                                self.global_shape,
+                                [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
+                                self.block_shape, self.context.grid_shape,
+                                MPI.ORDER_C).Commit()
+
+            # Create list of types for all ranks (useful for passing to global array)
+            self._darr_list = [ self.mpi_dtype.Create_darray(size, ri,
+                                    self.global_shape,
+                                    [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
+                                    self.block_shape, self.context.grid_shape,
+                                    MPI.ORDER_F).Commit() for ri in range(size) ]
 
 
     @classmethod
@@ -435,6 +481,53 @@ class DistributedMatrix(object):
                    dtype=mat.dtype, context=mat.context)
 
 
+    @classmethod
+    def empty_trans(cls, mat):
+        r"""Create a DistributedMatrix, with the same blocking
+        but transposed shape as `mat`.
+
+        Parameters
+        ----------
+        mat : DistributedMatrix
+            The matrix to operate.
+
+        Returns
+        -------
+        tmat : DistributedMatrix
+        """
+        return cls([mat.global_shape[1], mat.global_shape[0]], block_shape=mat.block_shape,
+                   dtype=mat.dtype, context=mat.context)
+
+
+    @classmethod
+    def identity(cls, n, dtype=np.float64, block_shape=None, context=None):
+        """Returns distributed n-by-n distributed matrix.
+
+        Parameters
+        ----------
+        n : integer
+           matrix size
+        dtype : np.dtype, optional
+           The datatype of the array.
+           See DistributedMatrix.__init__ docstring for supported types.
+        block_shape: list of integers, optional
+           The blocking size, packed as ``[Br, Bc]``. If ``None`` uses the default blocking
+           (set via :func:`initmpi`).
+        context : ProcessContext, optional
+           The process context. If not set uses the default (recommended).
+        """
+
+        ret = cls(global_shape = (n,n),
+                  dtype = dtype,
+                  block_shape = block_shape,
+                  context = context)
+
+        (g,r,c) = ret.local_diagonal_indices()
+
+        ret.local_array[r,c] = 1.0
+        return ret
+
+
     def copy(self):
         """Create a copy of this DistributedMatrix.
 
@@ -449,6 +542,24 @@ class DistributedMatrix(object):
         cp.local_array[:] = self.local_array
 
         return cp
+
+
+    def row_indices(self):
+        """The row indices of the global array local to the process.
+        """
+        return blockcyclic.indices_rc(self.global_shape[0],
+                                      self.block_shape[0],
+                                      self.context.grid_position[0],
+                                      self.context.grid_shape[0])
+
+
+    def col_indices(self):
+        """The column indices of the global array local to the process.
+        """
+        return blockcyclic.indices_rc(self.global_shape[1],
+                                      self.block_shape[1],
+                                      self.context.grid_position[1],
+                                      self.context.grid_shape[1])
 
 
     def indices(self, full=True):
@@ -498,6 +609,213 @@ class DistributedMatrix(object):
         return (ri, ci)
 
 
+    def local_diagonal_indices(self, allow_non_square=False):
+        """Returns triple of 1D arrays (global_index, local_row_index, local_column_index).
+
+        Each of these arrays has length equal to the number of elements on the global diagonal
+        which are stored in the local matrix.  For each such element, global_index[i] is its
+        position in the global diagonal, and (local_row_index[i], local_column_index[i]) gives
+        its position in the local array.
+
+        As an example of the use of these arrays, the global operation A_{ij} += i^2 delta_{ij}
+        could be implemented with:
+
+           (global_index, local_row_index, local_column_index) = A.local_diagonal_indices()
+           A.local_array[local_row_index, local_column_index] += global_index**2
+        """
+
+        if (not allow_non_square) and (self.global_shape[0] != self.global_shape[1]):
+            #
+            # Attempting to access the "diagonal" of a non-square matrix probably indicates a bug.
+            # Therefore we raise an exception unless the caller sets the allow_non_square flag.
+            #
+            raise RuntimeError('scalapy.core.DistributedMatrix.local_diagonal_indices() called on non-square matrix, and allow_non_square=False')
+
+        ri, ci = map(blockcyclic.indices_rc,
+                     self.global_shape,
+                     self.block_shape,
+                     self.context.grid_position,
+                     self.context.grid_shape)
+
+        global_index = np.intersect1d(ri, ci)
+
+        (rank, local_row_index) = blockcyclic.localize_indices(global_index, self.block_shape[0], self.context.grid_shape[0])
+        assert np.all(rank == self.context.grid_position[0])
+
+        (rank, local_col_index) = blockcyclic.localize_indices(global_index, self.block_shape[1], self.context.grid_shape[1])
+        assert np.all(rank == self.context.grid_position[1])
+
+        return (global_index, local_row_index, local_col_index)
+
+
+    def trace(self):
+        """Returns global matrix trace (the trace is returned on all cores)."""
+
+        (g,r,c) = self.local_diagonal_indices()
+
+        # Note: np.sum() returns 0 for length-zero array
+        ret = np.array(np.sum(self.local_array[r,c]))
+        self.context.mpi_comm.Allreduce(ret.copy(), ret, MPI.SUM)
+
+        return ret
+
+
+    # def transpose(self, block_shape=None, context=None):
+    #     """Returns distributed matrix transpose."""
+
+    #     if block_shape is None:
+    #         block_shape = self.block_shape
+    #     if context is None:
+    #         context = self.context
+
+    #     if self.context.mpi_comm is not context.mpi_comm:
+    #         raise RuntimeError('input/output contexts in DistributedMatrix.transpose() must have the same MPI communicator')
+
+    #     (m,n) = self.global_shape
+
+    #     src_rindices = [ blockcyclic.indices_rc(m, self.block_shape[0], p, self.context.grid_shape[0]) for p in xrange(self.context.grid_shape[0]) ]
+    #     src_cindices = [ blockcyclic.indices_rc(n, self.block_shape[1], p, self.context.grid_shape[1]) for p in xrange(self.context.grid_shape[1]) ]
+    #     dst_rindices = [ blockcyclic.indices_rc(n, block_shape[0], p, context.grid_shape[0]) for p in xrange(context.grid_shape[0]) ]
+    #     dst_cindices = [ blockcyclic.indices_rc(m, block_shape[1], p, context.grid_shape[1]) for p in xrange(context.grid_shape[1]) ]
+
+    #     send_rindices = [ ]
+    #     for ci in dst_cindices:
+    #         t = np.intersect1d(ci, src_rindices[self.context.grid_position[0]])
+    #         t = blockcyclic.localize_indices(t, self.block_shape[0], self.context.grid_shape[0])[1]
+    #         send_rindices.append(t)
+
+    #     send_cindices = [ ]
+    #     for ri in dst_rindices:
+    #         t = np.intersect1d(ri, src_cindices[self.context.grid_position[1]])
+    #         t = blockcyclic.localize_indices(t, self.block_shape[1], self.context.grid_shape[1])[1]
+    #         send_cindices.append(t)
+
+    #     send_counts = np.array([ len(send_rindices[q]) * len(send_cindices[p]) for (p,q) in context.all_grid_positions ])
+    #     send_displs = np.concatenate(([0], np.cumsum(send_counts[:-1])))
+    #     send_buf = np.zeros(np.sum(send_counts), dtype=self.dtype)
+
+    #     for q in xrange(context.grid_shape[1]):
+    #         a = self.local_array[send_rindices[q],:]
+    #         for p in xrange(context.grid_shape[0]):
+    #             b = a[:,send_cindices[p]]
+    #             si = send_displs[context.all_mpi_ranks[p,q]]
+    #             sn = send_counts[context.all_mpi_ranks[p,q]]
+    #             send_buf[si:si+sn] = np.reshape(np.transpose(b), (-1,))    # note transpose here
+
+    #     del a,b    # save memory by dropping references
+
+    #     recv_rindices = [ ]
+    #     for ci in src_cindices:
+    #         t = np.intersect1d(ci, dst_rindices[context.grid_position[0]])
+    #         t = blockcyclic.localize_indices(t, block_shape[0], context.grid_shape[0])[1]
+    #         recv_rindices.append(t)
+
+    #     recv_cindices = [ ]
+    #     for ri in src_rindices:
+    #         t = np.intersect1d(ri, dst_cindices[context.grid_position[1]])
+    #         t = blockcyclic.localize_indices(t, block_shape[1], context.grid_shape[1])[1]
+    #         recv_cindices.append(t)
+
+    #     recv_counts = np.array([ len(recv_rindices[q]) * len(recv_cindices[p]) for (p,q) in self.context.all_grid_positions ])
+    #     recv_displs = np.concatenate(([0], np.cumsum(recv_counts[:-1])))
+    #     recv_buf = np.zeros(np.sum(recv_counts), dtype=self.dtype)
+
+    #     self.context.mpi_comm.Alltoallv((send_buf, (send_counts, send_displs)),
+    #                                     (recv_buf, (recv_counts, recv_displs)))
+
+    #     del send_buf   # save memory
+
+    #     ret = DistributedMatrix(global_shape=(n,m),
+    #                             dtype = self.dtype,
+    #                             block_shape = block_shape,
+    #                             context = context)
+
+    #     for q in xrange(self.context.grid_shape[1]):
+    #         a = np.zeros((len(recv_rindices[q]),ret.local_array.shape[1]), dtype=self.dtype)
+    #         for p in xrange(self.context.grid_shape[0]):
+    #             ri = recv_displs[self.context.all_mpi_ranks[p,q]]
+    #             rn = recv_counts[self.context.all_mpi_ranks[p,q]]
+    #             a[:,recv_cindices[p]] = np.reshape(recv_buf[ri:ri+rn], (len(recv_rindices[q]),len(recv_cindices[p])))
+    #         ret.local_array[recv_rindices[q],:] = a
+
+    #     return ret
+
+
+    # def get_rows(self, rows):
+    #     r"""Return selected rows of a DistributedMatrix, as a new Distributed Matrix (i.e. moral equivalent of self[rows,:]).
+
+    #     FIXME wouldn't it be nice to define a __getitem__ which would allow general row/column slicing?
+
+    #     Parameters
+    #     ----------
+    #        rows : 1D numpy array (must be the same on all tasks)
+    #     """
+
+    #     (m,n) = self.global_shape
+    #     B = self.block_shape[0]               # row block length
+    #     P = self.context.grid_shape[0]        # number of processes in row grid
+    #     (p0,q0) = self.context.grid_position  # this task's position in grid
+    #     nc = self.local_array.shape[1]        # number of local columns
+
+    #     rows = np.array(rows)
+    #     assert rows.ndim==1
+    #     assert np.issubdtype(rows.dtype, np.integer)
+    #     assert np.all(rows >= 0) and np.all(rows < m)
+
+    #     # gri[p][i] = global row index corresponding to (rank, output_local_index) = (p,i)
+    #     k = len(rows)   # output matrix will be k-by-n
+    #     gri = [ blockcyclic.indices_rc(k, B, p, P) for p in xrange(P) ]
+    #     gri = [ rows[g] for g in gri ]
+
+    #     # (rrk,lri) = (input_rank, input_local_index) pair corresponding to (rank, output_local_index) = (p,i)
+    #     rrk = [ ]
+    #     lri = [ ]
+    #     for g in gri:
+    #         (r,l) = blockcyclic.localize_indices(g, B, P)
+    #         rrk.append(r)
+    #         lri.append(l)
+
+    #     # send_indices[p] = input_local_indices to be sent to rank p
+    #     send_indices = [ l[np.nonzero(r==p0)] for (r,l) in zip(rrk,lri) ]
+
+    #     # recv_indices[p] = output_local_indices to be received from row rank p
+    #     recv_indices = [ np.nonzero(rrk[p0]==p)[0] for p in xrange(P) ]
+
+    #     # per-row block counts and displacements, in units of "rows"
+    #     scounts = np.array([ len(x) for x in send_indices ])
+    #     rcounts = np.array([ len(x) for x in recv_indices ])
+    #     sdispls = np.concatenate(([0], np.cumsum(scounts[:-1])))
+    #     rdispls = np.concatenate(([0], np.cumsum(rcounts[:-1])))
+
+    #     # per-mpi-task counts and displacements, in units of "matrix elements"
+    #     mpi_scounts = np.array([ (scounts[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
+    #     mpi_rcounts = np.array([ (rcounts[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
+    #     mpi_sdispls = np.array([ (sdispls[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
+    #     mpi_rdispls = np.array([ (rdispls[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
+
+    #     sbuf = np.zeros(np.sum(scounts)*nc, dtype=self.dtype)
+
+    #     # pack sbuf
+    #     for (d,c,si) in zip(sdispls, scounts, send_indices):
+    #         sbuf[d*nc:(d+c)*nc] = np.reshape(self.local_array[si,:], (-1,))
+
+    #     rbuf = np.zeros(np.sum(rcounts)*nc, dtype=self.dtype)
+
+    #     self.context.mpi_comm.Alltoallv((sbuf, (mpi_scounts, mpi_sdispls)),
+    #                                     (rbuf, (mpi_rcounts, mpi_rdispls)))
+
+    #     del sbuf
+
+    #     ret = DistributedMatrix((k,n), dtype=self.dtype, block_shape=self.block_shape, context=self.context)
+    #     assert ret.local_array.shape[1] == nc
+
+    #     # unpack rbuf
+    #     for (d,c,ri) in zip(rdispls, rcounts, recv_indices):
+    #         ret.local_array[ri,:] = np.reshape(rbuf[d*nc:(d+c)*nc], (c,nc))
+
+    #     return ret
+
+
     @classmethod
     def from_global_array(cls, mat, rank=None, block_shape=None, context=None):
 
@@ -544,18 +862,19 @@ class DistributedMatrix(object):
 
             m = cls(mat_shape, block_shape=block_shape, dtype=mat_dtype, context=context)
 
-            # Each process should receive its local sections.
-            rreq = comm.Irecv([m.local_array, m.mpi_dtype], source=rank, tag=0)
+            if mat_shape[0] != 0 and mat_shape[1] != 0:
+                # Each process should receive its local sections.
+                rreq = comm.Irecv([m.local_array, m.mpi_dtype], source=rank, tag=0)
 
-            if comm.rank == rank:
-                # Post each send
-                reqs = [ comm.Isend([mat, m._darr_list[dt]], dest=dt, tag=0)
-                             for dt in range(comm.size) ]
+                if comm.rank == rank:
+                    # Post each send
+                    reqs = [ comm.Isend([mat, m._darr_list[dt]], dest=dt, tag=0)
+                                 for dt in range(comm.size) ]
 
-                # Wait for requests to complete
-                MPI.Prequest.Waitall(reqs)
+                    # Wait for requests to complete
+                    MPI.Prequest.Waitall(reqs)
 
-            rreq.Wait()
+                rreq.Wait()
 
         else:
             if mat.ndim != 2:
@@ -571,6 +890,9 @@ class DistributedMatrix(object):
 
     def _load_array(self, mat):
         ## Copy the local data out of the global mat.
+
+        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
+            return
 
         self._darr_f.Pack(mat, self.local_array[:], 0, self.context.mpi_comm)
 
@@ -591,6 +913,10 @@ class DistributedMatrix(object):
         matrix : np.ndarray
             The global matrix.
         """
+
+        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
+            return np.zeros(self.global_shape, dtype=self.dtype)
+
         comm = self.context.mpi_comm
 
         bcast = False
@@ -631,6 +957,395 @@ class DistributedMatrix(object):
         return global_array
 
 
+    def __iadd__(self, x):
+        assert isinstance(x, DistributedMatrix)
+
+        if self.global_shape != x.global_shape:
+            raise RuntimeError("scalapy.DistributedMatrix.__iadd__: incompatible shapes")
+
+        if ((self.block_shape != x.block_shape)
+            or (self.context.grid_shape != x.context.grid_shape)
+            or (self.context.grid_position != x.context.grid_position)):
+            raise RuntimeError("scalapy.DistributedMatrix.__iadd__: for now, both matrices must have same blocking scheme")
+
+        # Note: OK if dtypes don't match
+        self.local_array[:] += x.local_array[:]
+
+        return self
+
+
+    def __mul__(self, x):
+        if isinstance(x, DistributedMatrix):
+            if self.global_shape != x.global_shape:
+                raise RuntimeError("scalapy.DistributedMatrix.__mul__: incompatible shapes")
+
+            if ((self.block_shape != x.block_shape)
+                or (self.context.grid_shape != x.context.grid_shape)
+                or (self.context.grid_position != x.context.grid_position)):
+                raise RuntimeError("scalapy.DistributedMatrix.__mul__: for now, both matrices must have same blocking scheme")
+
+            B = self.copy()
+
+            # Note: OK if dtypes don't match
+            B.local_array[:] *= x.local_array[:]
+
+            return B
+
+        elif isinstance(x, Number):
+            B = self.copy()
+            B.local_array[:] *= x
+
+            return B
+
+        elif isinstance(x, np.ndarray):
+            if x.ndim != 1 and x.size != self.global_shape[1]:
+                raise RuntimeError("scalapy.DistributedMatrix.__mul__: incompatible shapes")
+
+            B = self.copy()
+            for (i, col) in enumerate(self.col_indices()):
+                B.local_array[:, i] *= x[col]
+
+            return B
+        else:
+            raise RuntimeError('Unsupported type %s' % type(x))
+
+
+    def _section(self, srow=0, nrow=None, scol=0, ncol=None):
+        ## return a section [srow:srow+nrow, scol:scol+ncol] of the global array as a new distributed array
+        nrow = self.global_shape[0] - srow if nrow is None else nrow
+        ncol = self.global_shape[1] - scol if ncol is None else ncol
+        assert nrow > 0 and ncol > 0, 'Invalid number of rows/columns: %d/%d' % (nrow, ncol)
+
+        B = DistributedMatrix([nrow, ncol], dtype=self.dtype, block_shape=self.block_shape, context=self.context)
+
+        args = [nrow, ncol, self._local_array , srow+1, scol+1, self.desc, B._local_array, 1, 1, B.desc, self.context.blacs_context]
+
+        from . import lowlevel as ll
+
+        call_table = {'S': (ll.psgemr2d, args),
+                      'D': (ll.pdgemr2d, args),
+                      'C': (ll.pcgemr2d, args),
+                      'Z': (ll.pzgemr2d, args)}
+
+        func, args = call_table[self.sc_dtype]
+        ll.expand_args = False
+        func(*args)
+        ll.expand_args = True
+
+        return B
+
+
+    def _sec2sec(self, B, srowb=0, scolb=0, srow=0, nrow=None, scol=0, ncol=None):
+        ## copy a section [srow:srow+nrow, scol:scol+ncol] of the global array to another distributed array B starting at (srowb, scolb)
+        nrow = self.global_shape[0] - srow if nrow is None else nrow
+        ncol = self.global_shape[1] - scol if ncol is None else ncol
+        assert nrow > 0 and ncol > 0, 'Invalid number of rows/columns: %d/%d' % (nrow, ncol)
+
+        args = [nrow, ncol, self._local_array , srow+1, scol+1, self.desc, B._local_array, srowb+1, scolb+1, B.desc, self.context.blacs_context]
+
+        from . import lowlevel as ll
+
+        call_table = {'S': (ll.psgemr2d, args),
+                      'D': (ll.pdgemr2d, args),
+                      'C': (ll.pcgemr2d, args),
+                      'Z': (ll.pzgemr2d, args)}
+
+        func, args = call_table[self.sc_dtype]
+        ll.expand_args = False
+        func(*args)
+        ll.expand_args = True
+
+
+    def __getitem__(self, items):
+        ## numpy array like sling operation, but return a distributed array
+
+        def swap(a, b):
+            return b, a
+
+        def regularize_idx(idx, N, axis):
+            idx1 = idx if idx >= 0 else idx + N
+            if idx1 < 0 or idx1 >= N:
+                raise IndexError('Index %d is out of bounds for axis %d with size %d' % (idx, axis, N))
+
+            return 1, [(idx1, 1)]
+
+        def regularize_slice(slc, N):
+
+            start, stop, step = slc.start, slc.stop, slc.step
+            step = step if step is not None else 1
+            if step == 0:
+                raise ValueError('slice step cannot be zero')
+            if step > 0:
+                start = start if start is not None else 0
+                stop = stop if stop is not None else N
+            else:
+                start = start if start is not None else N-1
+                if stop is None:
+                    stop_is_none = True
+                else:
+                    stop_is_none = False
+                stop = stop if stop is not None else 0
+            start = start if start >= 0 else start + N
+            stop = stop if stop >= 0 else stop + N
+            start = max(0, start)
+            start = min(N, start)
+            stop = max(0, stop)
+            stop = min(N, stop)
+
+            if step == 1:
+                m = stop -start
+                if m > 0:
+                    return m, [(start, m)]
+                else:
+                    return 0, []
+            else:
+                m = 0
+                lst = []
+                if step > 0:
+                    while(start < stop):
+                        lst.append((start, 1))
+                        m += 1
+                        start += step
+                if step < 0:
+                    while(start > stop):
+                        lst.append((start, 1))
+                        m += 1
+                        start += step
+                    if stop_is_none and start == stop:
+                        m += 1
+                        lst.append((0, 1))
+
+                return m, lst
+
+        Nrows, Ncols = self.global_shape
+
+        if type(items) in [int, long]:
+            m, rows = regularize_idx(items, Nrows, 0)
+            n = Ncols # number of columns
+            cols = [(0, Ncols)]
+        elif type(items) is slice:
+            if items == slice(None, None, None):
+                return self.copy()
+
+            m, rows = regularize_slice(items, Nrows)
+            n = Ncols
+            cols = [(0, Ncols)]
+
+        elif items is Ellipsis:
+            return self.copy()
+        elif type(items) is tuple:
+            if len(items) != 2:
+                raise ValueError('Invalid indices %s' % items)
+            if not ((type(items[0]) in [int, long, slice] or items[0] is Ellipsis) and (type(items[1]) in [int, long, slice] or items[1] is Ellipsis)):
+                raise ValueError('Invalid indices %s' % items)
+
+            if type(items[0]) in [int, long]:
+                m, rows = regularize_idx(items[0], Nrows, 0)
+
+                if type(items[1]) in [int, long]:
+                    n, cols = regularize_idx(items[1], Ncols, 1)
+                elif type(items[1]) is slice:
+                    n, cols = regularize_slice(items[1], Ncols)
+                elif items[1] is Ellipsis:
+                    n = Ncols
+                    cols = [(0, Ncols)]
+                else:
+                    raise ValueError('Invalid indices %s' % items)
+
+            elif type(items[0]) is slice:
+                m, rows = regularize_slice(items[0], Nrows)
+
+                if type(items[1]) in [int, long]:
+                    n, cols = regularize_idx(items[1], Ncols, 1)
+                elif type(items[1]) is slice:
+                    if items[0] == slice(None, None, None) and items[1] == slice(None, None, None):
+                        return self.copy()
+
+                    n, cols = regularize_slice(items[1], Ncols)
+                elif items[1] is Ellipsis:
+                    if items[0] == slice(None, None, None):
+                        return self.copy()
+
+                    n = Ncols
+                    cols = [(0, Ncols)]
+                else:
+                    raise ValueError('Invalid indices %s' % items)
+
+            elif items[0] is Ellipsis:
+                m = Nrows
+                rows = [(0, Nrows)]
+
+                if type(items[1]) in [int, long]:
+                    n, cols = regularize_idx(items[1], Ncols, 1)
+                elif type(items[1]) is slice:
+                    if items[1] == slice(None, None, None):
+                        return self.copy()
+                    n, cols = regularize_slice(items[1], Ncols)
+                elif items[1] is Ellipsis:
+                    return self.copy()
+                else:
+                    raise ValueError('Invalid indices %s' % items)
+
+            else:
+                raise ValueError('Invalid indices %s' % items)
+        else:
+            raise ValueError('Invalid indices %s' % items)
+
+        B = DistributedMatrix([m, n], dtype=self.dtype, block_shape=self.block_shape, context=self.context)
+        srowb = 0
+        for (srow, nrow) in rows:
+            scolb = 0
+            for (scol, ncol) in cols:
+                self._sec2sec(B, srowb, scolb, srow, nrow, scol, ncol)
+                scolb += ncol
+            srowb += nrow
+
+        return B
+
+
+    def _copy_from_np(self, a, asrow=0, anrow=None, ascol=0, ancol=None, srow=0, scol=0, block_shape=None, rank=0):
+        ## copy a section of a numpy array a[asrow:asrow+anrow, ascol:ascol+ancol] to self[srow:srow+anrow, scol:scol+ancol], once per block_shape
+        if self.context.mpi_comm.rank == rank:
+            assert a.ndim == 1 or a.ndim == 2, 'Unsupported high dimensional array.'
+            a = np.asfortranarray(a.astype(self.dtype)) # type conversion
+            a = a.reshape(-1, a.shape[-1]) # reshape to two dimensional
+            am, an = a.shape
+            assert 0 <= asrow < am, 'Invalid start row index asrow: %s' % asrow
+            assert 0 <= ascol < an, 'Invalid start column index ascol: %s' % ascol
+            m = am - asrow if anrow is None else anrow
+            n = an - ascol if ancol is None else ancol
+            assert 0 < m <= am - asrow, 'Invalid number of rows anrow: %s' % anrow
+            assert 0 < n <= an - ascol, 'Invalid number of columes ancol: %s' % ancol
+        else:
+            m, n = 1, 1
+
+        m = self.context.mpi_comm.bcast(m, root=rank) # number of rows to copy
+        n = self.context.mpi_comm.bcast(n, root=rank) # number of columes to copy
+
+        assert 0 <= srow < self.global_shape[0], 'Invalid start row index srow: %s' % srow
+        assert 0 <= scol < self.global_shape[1], 'Invalid start column index scol: %s' % scol
+        assert 0 < m <= self.global_shape[0] - srow, 'Invalid number of rows anrow: %s' % anrow
+        assert 0 < n <= self.global_shape[1] - scol, 'Invalid number of columes ancol: %s' % ancol
+
+        block_shape = self.block_shape if block_shape is None else block_shape
+        if not _chk_2d_size(block_shape):
+            raise ScalapyException("Invalid block_shape")
+
+        bm, bn = block_shape
+        br = blockcyclic.num_blocks(m, bm) # number of blocks for row
+        bc = blockcyclic.num_blocks(n, bn) # number of blocks for column
+        rm = m - (br - 1) * bm # remained number of rows of the last block
+        rn = n - (bc - 1) * bn # remained number of columes of the last block
+
+        # due to bugs in scalapy, it is needed to first init an process context here
+        ProcessContext([1, self.context.mpi_comm.size], comm=self.context.mpi_comm) # process context
+
+        for bri in range(br):
+            M = bm if bri != br - 1 else rm
+            for bci in range(bc):
+                N = bn if bci != bc - 1 else rn
+
+                if self.context.mpi_comm.rank == rank:
+                    pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
+                    desc = self.desc
+                    desc[1] = pc.blacs_context
+                    desc[2], desc[3] = a.shape
+                    desc[4], desc[5] = a.shape
+                    desc[8] = a.shape[0]
+                    args = [M, N, a, asrow+1+bm*bri, ascol+1+bn*bci, desc, self._local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, self.context.blacs_context]
+                else:
+                    desc = np.zeros(9, dtype=np.int32)
+                    desc[1] = -1
+                    args = [M, N, np.zeros(1, dtype=self.dtype) , asrow+1+bm*bri, ascol+1+bn*bci, desc, self._local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, self.context.blacs_context]
+
+                from . import lowlevel as ll
+
+                call_table = {'S': (ll.psgemr2d, args),
+                              'D': (ll.pdgemr2d, args),
+                              'C': (ll.pcgemr2d, args),
+                              'Z': (ll.pzgemr2d, args)}
+
+                func, args = call_table[self.sc_dtype]
+                ll.expand_args = False
+                func(*args)
+                ll.expand_args = True
+
+        return self
+
+
+    def np2self(self, a, srow=0, scol=0, block_shape=None, rank=0):
+        """Copy a one or two dimensional numpy array `a` owned by
+        rank `rank` to the section of the distributed matrix starting
+        at row `srow` and column `scol`. Once copy a section equal
+        or less than `block_shape` if `a` is large.
+        """
+        return self._copy_from_np(a, asrow=0, anrow=None, ascol=0, ancol=None,srow=srow, scol=scol, block_shape=block_shape, rank=rank)
+
+
+    def self2np(self, srow=0, nrow=None, scol=0, ncol=None, block_shape=None, rank=0):
+        """Copy a section of the distributed matrix
+        self[srow:srow+nrow, scol:scol+ncol] to a two dimensional numpy
+        array owned by rank `rank`. Once copy a section equal or less
+        than `block_shape` if the copied section is large.
+        """
+        assert 0 <= srow < self.global_shape[0], 'Invalid start row index srow: %s' % srow
+        assert 0 <= scol < self.global_shape[1], 'Invalid start column index scol: %s' % scol
+        m = self.global_shape[0] - srow if nrow is None else nrow
+        n = self.global_shape[1] - scol if ncol is None else ncol
+        assert 0 < m <= self.global_shape[0] - srow, 'Invalid number of rows anrow: %s' % nrow
+        assert 0 < n <= self.global_shape[1] - scol, 'Invalid number of columes ancol: %s' % ncol
+
+        block_shape = self.block_shape if block_shape is None else block_shape
+        if not _chk_2d_size(block_shape):
+            raise ScalapyException("Invalid block_shape")
+
+        bm, bn = block_shape
+        br = blockcyclic.num_blocks(m, bm) # number of blocks for row
+        bc = blockcyclic.num_blocks(n, bn) # number of blocks for column
+        rm = m - (br - 1) * bm # remained number of rows of the last block
+        rn = n - (bc - 1) * bn # remained number of columes of the last block
+
+        # due to bugs in scalapy, it is needed to first init an process context here
+        ProcessContext([1, self.context.mpi_comm.size], comm=self.context.mpi_comm) # process context
+
+        if self.context.mpi_comm.rank == rank:
+            a = np.empty((m, n), dtype=self.dtype, order='F')
+        else:
+            a = None
+
+        for bri in range(br):
+            M = bm if bri != br - 1 else rm
+            for bci in range(bc):
+                N = bn if bci != bc - 1 else rn
+
+                if self.context.mpi_comm.rank == rank:
+                    pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
+                    desc = self.desc
+                    desc[1] = pc.blacs_context
+                    desc[2], desc[3] = a.shape
+                    desc[4], desc[5] = a.shape
+                    desc[8] = a.shape[0]
+                    args = [M, N, self._local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, a , 1+bm*bri, 1+bn*bci, desc, self.context.blacs_context]
+                else:
+                    desc = np.zeros(9, dtype=np.int32)
+                    desc[1] = -1
+                    args = [M, N, self._local_array, srow+1+bm*bri, scol+1+bn*bci, self.desc, np.zeros(1, dtype=self.dtype) , 1+bm*bri, 1+bn*bci, desc, self.context.blacs_context]
+
+                from . import lowlevel as ll
+
+                call_table = {'S': (ll.psgemr2d, args),
+                              'D': (ll.pdgemr2d, args),
+                              'C': (ll.pcgemr2d, args),
+                              'Z': (ll.pzgemr2d, args)}
+
+                func, args = call_table[self.sc_dtype]
+                ll.expand_args = False
+                func(*args)
+                ll.expand_args = True
+
+        return a
+
+
     @classmethod
     def from_file(cls, filename, global_shape, dtype, block_shape=None, context=None, order='F', displacement=0):
         """Read in a global array from a file.
@@ -656,6 +1371,10 @@ class DistributedMatrix(object):
         -------
         dm : DistributedMatrix
         """
+
+        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
+            return
+
         # Initialise DistributedMatrix
         dm = cls(global_shape, dtype=dtype, block_shape=block_shape, context=context)
 
@@ -676,6 +1395,9 @@ class DistributedMatrix(object):
         filename : string
             Name of file to write to.
         """
+
+        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
+            return
 
         # Open the file, and read out the segments
         f = MPI.File.Open(self.context.mpi_comm, filename, MPI.MODE_RDWR | MPI.MODE_CREATE)
@@ -739,3 +1461,80 @@ class DistributedMatrix(object):
         func(*args)
 
         return dm
+
+
+    def transpose(self):
+        """Transpose the distributed matrix."""
+
+        trans = DistributedMatrix.empty_trans(self)
+
+        args = [self.global_shape[1], self.global_shape[0], 1.0, self, 0.0, trans]
+
+        from . import lowlevel as ll
+
+        call_table = {'S': (ll.pstran, args),
+                      'D': (ll.pdtran, args),
+                      'C': (ll.pctranu, args),
+                      'Z': (ll.pztranu, args)}
+
+        func, args = call_table[self.sc_dtype]
+        func(*args)
+
+        return trans
+
+
+    @property
+    def T(self):
+        """Transpose the distributed matrix."""
+        return self.transpose()
+
+
+    def conj(self):
+        """Complex conjugate the distributed matrix."""
+
+        # if real
+        if self.sc_dtype in ['S', 'D']:
+            return self
+
+        # if complex
+        cj = DistributedMatrix.empty_like(self)
+        cj.local_array[:] = self.local_array.conj()
+
+        return cj
+
+
+    @property
+    def C(self):
+        """Complex conjugate the distributed matrix."""
+        return self.conj()
+
+
+    def hconj(self):
+        """Hermitian conjugate the distributed matrix, i.e., transpose
+        and complex conjugate the distributed matrix."""
+
+        # if real
+        if self.sc_dtype in ['S', 'D']:
+            return self.transpose()
+
+        # if complex
+        hermi = DistributedMatrix.empty_trans(self)
+
+        args = [self.global_shape[1], self.global_shape[0], 1.0, self, 0.0, hermi]
+
+        from . import lowlevel as ll
+
+        call_table = {'C': (ll.pctranc, args),
+                      'Z': (ll.pztranc, args)}
+
+        func, args = call_table[self.sc_dtype]
+        func(*args)
+
+        return hermi
+
+
+    @property
+    def H(self):
+        """Hermitian conjugate the distributed matrix, i.e., transpose
+        and complex conjugate the distributed matrix."""
+        return self.hconj()

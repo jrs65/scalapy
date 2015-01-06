@@ -159,7 +159,7 @@ def _expand_dm(args):
     exp_args = []
     for arg in args:
         if isinstance(arg, core.DistributedMatrix):
-            arg = [ arg.local_array, 1, 1, arg.desc ]
+            arg = [ arg._local_array, 1, 1, arg.desc ]
         exp_args.append(arg)
     return exp_args
 
@@ -194,7 +194,7 @@ def _wrap_routine(rname, robj):
         if expand_args:
             return _call_routine(robj, *args)
         else:
-            robj(args)
+            robj(*util.flatten(args))
 
     # Set the function name
     wrapper.__name__ = rname
