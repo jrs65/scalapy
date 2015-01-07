@@ -51,8 +51,8 @@ def _pxxxgvx(ibtype, jobz, erange, uplo, A, B, vl, vu, il, iu, abstol=0.0, orfac
 
     N = A.global_shape[0]
 
-    Z = core.DistributedMatrix.empty_like(A)
     w = np.zeros(N, dtype=util.real_equiv(A.dtype))
+    Z = core.DistributedMatrix.empty_like(A)
 
     # Construct the arguments list for the first part
     args1 = [ibtype, jobz, erange, uplo, N, A, B, vl, vu, il, iu, abstol, w, orfac, Z]
@@ -102,8 +102,9 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
         The lower and upper bounds of the interval to searched for eigenvalues.
         Takes precedence over `eigvals`.
     eigvals : tuple (lo, hi), optional
-        Indices of the lowest and highest eigenvalues you would like to
-        calculate. Indexed from zero, negative from the end. Take action only if `eigbounds` is None.
+        Indices of the lowest and highest (inclusive) eigenvalues you would
+        like to calculate. Indexed from zero, negative from the end. Take
+        action only if `eigbounds` is None.
 
     Returns
     -------
