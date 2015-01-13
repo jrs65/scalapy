@@ -80,7 +80,7 @@ def _chk_2d_size(shape, positive=True):
     return True
 
 
-def initmpi(gridshape=[1, MPI.COMM_WORLD.size], block_shape=[2, 2]):
+def initmpi(gridshape=None, block_shape=[32, 32]):
     r"""Initialise Scalapack on the current process.
 
     This routine sets up the BLACS grid, and sets the default context
