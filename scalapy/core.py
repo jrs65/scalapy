@@ -1372,8 +1372,8 @@ class DistributedMatrix(object):
         dm : DistributedMatrix
         """
 
-        if (self.global_shape[0] == 0) or (self.global_shape[1] == 0):
-            return
+        if (global_shape[0] == 0) or (global_shape[1] == 0):
+            return None
 
         # Initialise DistributedMatrix
         dm = cls(global_shape, dtype=dtype, block_shape=block_shape, context=context)
