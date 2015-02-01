@@ -80,7 +80,7 @@ def _chk_2d_size(shape, positive=True):
     return True
 
 
-def initmpi(gridshape, block_shape=None, comm=None):
+def initmpi(gridshape=None, block_shape=[32, 32]):
     r"""Initialise Scalapack on the current process.
 
     This routine sets up the BLACS grid, and sets the default context
@@ -91,18 +91,15 @@ def initmpi(gridshape, block_shape=None, comm=None):
     gridsize : array_like
         A two element list (or other tuple etc), containing the
         requested shape for the process grid e.g. `[nprow, npcol]`.
-    blocksize : array_like, optional
+    block_shape : array_like, optional
         The default blocksize for new arrays. A two element, [`brow,
         bcol]` list.
-    comm : mpi4py.MPI.Comm, optional
-        The MPI communicator to create a BLACS context for. If comm=None,
-        then use MPI.COMM_WORLD instead.
     """
 
     global _context, _block_shape
 
     # Setup the default context
-    _context = ProcessContext(gridshape, comm=comm)
+    _context = ProcessContext(gridshape)
 
     # Set default blocksize
     _block_shape = tuple(block_shape)
@@ -1205,27 +1202,43 @@ class DistributedMatrix(object):
 
     def _copy_from_np(self, a, asrow=0, anrow=None, ascol=0, ancol=None, srow=0, scol=0, block_shape=None, rank=0):
         ## copy a section of a numpy array a[asrow:asrow+anrow, ascol:ascol+ancol] to self[srow:srow+anrow, scol:scol+ancol], once per block_shape
+
+        Nrow, Ncol = self.global_shape
+        srow = srow if srow >= 0 else srow + Nrow
+        srow = max(0, srow)
+        srow = min(srow, Nrow)
+        scol = scol if scol >= 0 else scol + Ncol
+        scol = max(0, scol)
+        scol = min(scol, Ncol)
         if self.context.mpi_comm.rank == rank:
-            assert a.ndim == 1 or a.ndim == 2, 'Unsupported high dimensional array.'
+            if not (a.ndim == 1 or a.ndim == 2):
+                raise ScalapyException('Unsupported high dimensional array.')
+
             a = np.asfortranarray(a.astype(self.dtype)) # type conversion
             a = a.reshape(-1, a.shape[-1]) # reshape to two dimensional
             am, an = a.shape
-            assert 0 <= asrow < am, 'Invalid start row index asrow: %s' % asrow
-            assert 0 <= ascol < an, 'Invalid start column index ascol: %s' % ascol
+            asrow = asrow if asrow >= 0 else asrow + am
+            asrow = max(0, asrow)
+            asrow = min(asrow, am)
+            ascol = ascol if ascol >= 0 else ascol + an
+            ascol = max(0, ascol)
+            ascol = min(ascol, an)
             m = am - asrow if anrow is None else anrow
+            m = max(0, m)
+            m = min(m, am - asrow, Nrow - srow)
             n = an - ascol if ancol is None else ancol
-            assert 0 < m <= am - asrow, 'Invalid number of rows anrow: %s' % anrow
-            assert 0 < n <= an - ascol, 'Invalid number of columes ancol: %s' % ancol
+            n = max(0, n)
+            n = min(n, an - ascol, Ncol - scol)
         else:
             m, n = 1, 1
 
+        asrow = self.context.mpi_comm.bcast(asrow, root=rank)
+        ascol = self.context.mpi_comm.bcast(ascol, root=rank)
         m = self.context.mpi_comm.bcast(m, root=rank) # number of rows to copy
         n = self.context.mpi_comm.bcast(n, root=rank) # number of columes to copy
 
-        assert 0 <= srow < self.global_shape[0], 'Invalid start row index srow: %s' % srow
-        assert 0 <= scol < self.global_shape[1], 'Invalid start column index scol: %s' % scol
-        assert 0 < m <= self.global_shape[0] - srow, 'Invalid number of rows anrow: %s' % anrow
-        assert 0 < n <= self.global_shape[1] - scol, 'Invalid number of columes ancol: %s' % ancol
+        if m == 0 or n == 0:
+            return self
 
         block_shape = self.block_shape if block_shape is None else block_shape
         if not _chk_2d_size(block_shape):
@@ -1244,7 +1257,6 @@ class DistributedMatrix(object):
             M = bm if bri != br - 1 else rm
             for bci in range(bc):
                 N = bn if bci != bc - 1 else rn
-
                 if self.context.mpi_comm.rank == rank:
                     pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
                     desc = self.desc
@@ -1288,12 +1300,27 @@ class DistributedMatrix(object):
         array owned by rank `rank`. Once copy a section equal or less
         than `block_shape` if the copied section is large.
         """
-        assert 0 <= srow < self.global_shape[0], 'Invalid start row index srow: %s' % srow
-        assert 0 <= scol < self.global_shape[1], 'Invalid start column index scol: %s' % scol
-        m = self.global_shape[0] - srow if nrow is None else nrow
-        n = self.global_shape[1] - scol if ncol is None else ncol
-        assert 0 < m <= self.global_shape[0] - srow, 'Invalid number of rows anrow: %s' % nrow
-        assert 0 < n <= self.global_shape[1] - scol, 'Invalid number of columes ancol: %s' % ncol
+        Nrow, Ncol = self.global_shape
+        srow = srow if srow >= 0 else srow + Nrow
+        srow = max(0, srow)
+        srow = min(srow, Nrow)
+        scol = scol if scol >= 0 else scol + Ncol
+        scol = max(0, scol)
+        scol = min(scol, Ncol)
+        m = Nrow - srow if nrow is None else nrow
+        m = max(0, m)
+        m = min(m, Nrow - srow)
+        n = Ncol - scol if ncol is None else ncol
+        n = max(0, n)
+        n = min(n, Ncol - scol)
+
+        if self.context.mpi_comm.rank == rank:
+            a = np.empty((m, n), dtype=self.dtype, order='F')
+        else:
+            a = None
+
+        if m == 0 or n == 0:
+            return a
 
         block_shape = self.block_shape if block_shape is None else block_shape
         if not _chk_2d_size(block_shape):
@@ -1308,16 +1335,10 @@ class DistributedMatrix(object):
         # due to bugs in scalapy, it is needed to first init an process context here
         ProcessContext([1, self.context.mpi_comm.size], comm=self.context.mpi_comm) # process context
 
-        if self.context.mpi_comm.rank == rank:
-            a = np.empty((m, n), dtype=self.dtype, order='F')
-        else:
-            a = None
-
         for bri in range(br):
             M = bm if bri != br - 1 else rm
             for bci in range(bc):
                 N = bn if bci != bc - 1 else rn
-
                 if self.context.mpi_comm.rank == rank:
                     pc = ProcessContext([1, 1], comm=MPI.COMM_SELF) # process context
                     desc = self.desc

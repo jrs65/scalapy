@@ -51,8 +51,8 @@ def _pxxxgvx(ibtype, jobz, erange, uplo, A, B, vl, vu, il, iu, abstol=0.0, orfac
 
     N = A.global_shape[0]
 
-    Z = core.DistributedMatrix.empty_like(A)
     w = np.zeros(N, dtype=util.real_equiv(A.dtype))
+    Z = core.DistributedMatrix.empty_like(A)
 
     # Construct the arguments list for the first part
     args1 = [ibtype, jobz, erange, uplo, N, A, B, vl, vu, il, iu, abstol, w, orfac, Z]
@@ -102,8 +102,9 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
         The lower and upper bounds of the interval to searched for eigenvalues.
         Takes precedence over `eigvals`.
     eigvals : tuple (lo, hi), optional
-        Indices of the lowest and highest eigenvalues you would like to
-        calculate. Indexed from zero, negative from the end. Take action only if `eigbounds` is None.
+        Indices of the lowest and highest (inclusive) eigenvalues you would
+        like to calculate. Indexed from zero, negative from the end. Take
+        action only if `eigbounds` is None.
 
     Returns
     -------
@@ -233,6 +234,8 @@ def cholesky(A, lower=False, overwrite_a=False, zero_triangle=True):
 
     if info < 0:
         raise core.ScalapackException("Failure.")
+    elif info > 0:
+        raise core.ScalapackException("The leading minor of order %d is not positive-definite, and the factorization could not be completed." % info)
 
     ## Zero other triangle
     # by default scalapack doesn't touch the other triangle
@@ -481,6 +484,60 @@ inverse
         raise core.ScalapackException("Failure.")
 
     return A, ipiv
+
+
+def triinv(A, lower=False, unit_triangular=False, overwrite_a=True):
+    """Computes the inverse of a triangular distributed matrix.
+
+    Computes the inverse of a real or complex upper or lower triangular
+    distributed matrix.
+
+    Parameters
+    ----------
+    A : DistributedMatrix
+        The matrix to inverse.
+    lower : boolean, optional
+        True if `A` is lower triangular, else upper triangular (the default).
+        The other triangular part of `A` is not referenced.
+    unit_triangular : boolean, optional
+        True if `A` is unit triangular (with 1 on the diagonal), else
+        non-unit triangular (the default).
+    overwrite_a : boolean, optional
+        By default the input matrix is destroyed, if set to False a
+        copy is taken and operated on.
+
+    Returns
+    -------
+    inv : DistributedMatrix
+        The inverse of `A`.
+    """
+
+    # Check if matrix is square
+    util.assert_square(A)
+
+    A = A if overwrite_a else A.copy()
+
+    N, N = A.global_shape
+
+    uplo = 'L' if lower else 'U'
+    diag = 'U' if unit_triangular else 'N'
+
+    args = [uplo, diag, N, A]
+
+    call_table = {'S': (ll.pstrtri, args),
+                  'D': (ll.pdtrtri, args),
+                  'C': (ll.pctrtri, args),
+                  'Z': (ll.pztrtri, args)}
+
+    func, args = call_table[A.sc_dtype]
+    info = func(*args)
+
+    if info < 0:
+        raise core.ScalapackException("Failure.")
+    elif info > 0:
+        raise core.ScalapackException("The triangular matrix is singular and its inverse can not be computed.")
+
+    return A
 
 
 def pinv(A, overwrite_a=True):
