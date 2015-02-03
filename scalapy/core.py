@@ -1031,14 +1031,23 @@ class DistributedMatrix(object):
 
         return B
 
-
     def _sec2sec(self, B, srowb=0, scolb=0, srow=0, nrow=None, scol=0, ncol=None):
-        ## copy a section [srow:srow+nrow, scol:scol+ncol] of the global array to another distributed array B starting at (srowb, scolb)
+        # copy a section [srow:srow+nrow, scol:scol+ncol] of the global array to
+        # another distributed array B starting at (srowb, scolb)
+
+        # Copy to the end of the row/column if the numbers are not set.
         nrow = self.global_shape[0] - srow if nrow is None else nrow
         ncol = self.global_shape[1] - scol if ncol is None else ncol
-        assert nrow > 0 and ncol > 0, 'Invalid number of rows/columns: %d/%d' % (nrow, ncol)
 
-        args = [nrow, ncol, self._local_array , srow+1, scol+1, self.desc, B._local_array, srowb+1, scolb+1, B.desc, self.context.blacs_context]
+        # Check the number of rows and columns
+        if nrow <= 0 or ncol <= 0:
+            raise ScalapyException('Invalid number of rows/columns: %d/%d' % (nrow, ncol))
+
+        # Set up the argument list
+        args = [nrow, ncol,
+                self._local_array, srow+1, scol+1, self.desc,
+                B._local_array, srowb+1, scolb+1, B.desc,
+                self.context.blacs_context]
 
         from . import lowlevel as ll
 
@@ -1052,14 +1061,16 @@ class DistributedMatrix(object):
         func(*args)
         ll.expand_args = True
 
-
     def __getitem__(self, items):
-        ## numpy array like sling operation, but return a distributed array
+        # numpy-like global slicing operation, but returns a distributed array.
+        #
+        # Supports basic numpy slicing with start and stop, and positive step
 
         def swap(a, b):
             return b, a
 
         def regularize_idx(idx, N, axis):
+            # Regularize an index to check it is valid
             idx1 = idx if idx >= 0 else idx + N
             if idx1 < 0 or idx1 >= N:
                 raise IndexError('Index %d is out of bounds for axis %d with size %d' % (idx, axis, N))
@@ -1067,9 +1078,16 @@ class DistributedMatrix(object):
             return 1, [(idx1, 1)]
 
         def regularize_slice(slc, N):
+            # Regularize a slice object
+            #
+            # Takes a slice object and the axis length, and returns the total
+            # number of elements in the slice and an array of (start, length)
+            # tuples describing the blocks making up the slice
 
             start, stop, step = slc.start, slc.stop, slc.step
             step = step if step is not None else 1
+
+            # Check the step
             if step == 0:
                 raise ValueError('slice step cannot be zero')
             if step > 0:
@@ -1089,12 +1107,15 @@ class DistributedMatrix(object):
             stop = max(0, stop)
             stop = min(N, stop)
 
+            # If the step is 1 things are simple...
             if step == 1:
-                m = stop -start
+                m = stop - start
                 if m > 0:
                     return m, [(start, m)]
                 else:
                     return 0, []
+
+            # ... if it is greater than one divide up into a series of blocks
             else:
                 m = 0
                 lst = []
@@ -1114,70 +1135,88 @@ class DistributedMatrix(object):
 
                 return m, lst
 
-        Nrows, Ncols = self.global_shape
 
+        nrow, ncol = self.global_shape
+
+        # First replace any Ellipsis with a slice(None, None, None) object, this
+        # is fine because the matrix is always 2D
+        if items is Ellipsis:
+            items = slice(None, None, None)
+        if items is tuple:
+            items = tuple([slice(None, None, None) if items is Ellipsis else item for item in items])
+
+        # First case deal with just a single slice (either an int or slice object)
         if type(items) in [int, long]:
-            m, rows = regularize_idx(items, Nrows, 0)
-            n = Ncols # number of columns
-            cols = [(0, Ncols)]
+            m, rows = regularize_idx(items, nrow, 0)
+            n = ncol # number of columns
+            cols = [(0, ncol)]
         elif type(items) is slice:
             if items == slice(None, None, None):
                 return self.copy()
 
-            m, rows = regularize_slice(items, Nrows)
-            n = Ncols
-            cols = [(0, Ncols)]
-
+            m, rows = regularize_slice(items, nrow)
+            n = ncol
+            cols = [(0, ncol)]
         elif items is Ellipsis:
             return self.copy()
+
+        # Then deal with the case of a tuple (i.e. slicing both dimensions)
         elif type(items) is tuple:
+
+            # Check we have two indexed dimensions
             if len(items) != 2:
-                raise ValueError('Invalid indices %s' % items)
-            if not ((type(items[0]) in [int, long, slice] or items[0] is Ellipsis) and (type(items[1]) in [int, long, slice] or items[1] is Ellipsis)):
+                raise ValueError('Two many indices for 2D matrix: %s' % repr(items))
+
+            # Check the types in the slicing are correct
+            if not ((type(items[0]) in [int, long, slice] or items[0] is Ellipsis) and
+                    (type(items[1]) in [int, long, slice] or items[1] is Ellipsis)):
                 raise ValueError('Invalid indices %s' % items)
 
+            # Process case of wanting a specific row
             if type(items[0]) in [int, long]:
-                m, rows = regularize_idx(items[0], Nrows, 0)
+                m, rows = regularize_idx(items[0], nrow, 0)
 
                 if type(items[1]) in [int, long]:
-                    n, cols = regularize_idx(items[1], Ncols, 1)
+                    n, cols = regularize_idx(items[1], ncol, 1)
                 elif type(items[1]) is slice:
-                    n, cols = regularize_slice(items[1], Ncols)
+                    n, cols = regularize_slice(items[1], ncol)
                 elif items[1] is Ellipsis:
-                    n = Ncols
-                    cols = [(0, Ncols)]
+                    n = ncol
+                    cols = [(0, ncol)]
                 else:
                     raise ValueError('Invalid indices %s' % items)
 
+            # Case of wanting a slice of rows
             elif type(items[0]) is slice:
-                m, rows = regularize_slice(items[0], Nrows)
+                m, rows = regularize_slice(items[0], nrow)
 
                 if type(items[1]) in [int, long]:
-                    n, cols = regularize_idx(items[1], Ncols, 1)
+                    n, cols = regularize_idx(items[1], ncol, 1)
                 elif type(items[1]) is slice:
                     if items[0] == slice(None, None, None) and items[1] == slice(None, None, None):
                         return self.copy()
 
-                    n, cols = regularize_slice(items[1], Ncols)
+                    n, cols = regularize_slice(items[1], ncol)
                 elif items[1] is Ellipsis:
                     if items[0] == slice(None, None, None):
                         return self.copy()
 
-                    n = Ncols
-                    cols = [(0, Ncols)]
+                    n = ncol
+                    cols = [(0, ncol)]
                 else:
                     raise ValueError('Invalid indices %s' % items)
 
+            # Or an Ellipsis
             elif items[0] is Ellipsis:
-                m = Nrows
-                rows = [(0, Nrows)]
+                m = nrow
+                rows = [(0, nrow)]
 
                 if type(items[1]) in [int, long]:
-                    n, cols = regularize_idx(items[1], Ncols, 1)
+                    n, cols = regularize_idx(items[1], ncol, 1)
                 elif type(items[1]) is slice:
                     if items[1] == slice(None, None, None):
                         return self.copy()
-                    n, cols = regularize_slice(items[1], Ncols)
+                    n, cols = regularize_slice(items[1], ncol)
                 elif items[1] is Ellipsis:
                     return self.copy()
                 else:
@@ -1188,8 +1227,11 @@ class DistributedMatrix(object):
         else:
             raise ValueError('Invalid indices %s' % items)
 
+        # Create output DistributedMatrix
         B = DistributedMatrix([m, n], dtype=self.dtype, block_shape=self.block_shape, context=self.context)
         srowb = 0
+
+        # Iterate over blocks to copy from self to new output matrix
         for (srow, nrow) in rows:
             scolb = 0
             for (scol, ncol) in cols:
