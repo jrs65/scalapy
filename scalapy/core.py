@@ -1139,7 +1139,7 @@ class DistributedMatrix(object):
         nrow, ncol = self.global_shape
 
         # First replace any Ellipsis with a slice(None, None, None) object, this
-        # is fine because the matrix is always 2D
+        # is fine because the matrix is always 2D and it vastly simplifies the logic
         if items is Ellipsis:
             items = slice(None, None, None)
         if items is tuple:
@@ -1148,7 +1148,7 @@ class DistributedMatrix(object):
         # First case deal with just a single slice (either an int or slice object)
         if type(items) in [int, long]:
             m, rows = regularize_idx(items, nrow, 0)
-            n = ncol # number of columns
+            n = ncol  # number of columns
             cols = [(0, ncol)]
         elif type(items) is slice:
             if items == slice(None, None, None):
@@ -1157,8 +1157,6 @@ class DistributedMatrix(object):
             m, rows = regularize_slice(items, nrow)
             n = ncol
             cols = [(0, ncol)]
-        elif items is Ellipsis:
-            return self.copy()
 
         # Then deal with the case of a tuple (i.e. slicing both dimensions)
         elif type(items) is tuple:
@@ -1180,9 +1178,6 @@ class DistributedMatrix(object):
                     n, cols = regularize_idx(items[1], ncol, 1)
                 elif type(items[1]) is slice:
                     n, cols = regularize_slice(items[1], ncol)
-                elif items[1] is Ellipsis:
-                    n = ncol
-                    cols = [(0, ncol)]
                 else:
                     raise ValueError('Invalid indices %s' % items)
 
@@ -1197,28 +1192,6 @@ class DistributedMatrix(object):
                         return self.copy()
 
                     n, cols = regularize_slice(items[1], ncol)
-                elif items[1] is Ellipsis:
-                    if items[0] == slice(None, None, None):
-                        return self.copy()
-
-                    n = ncol
-                    cols = [(0, ncol)]
-                else:
-                    raise ValueError('Invalid indices %s' % items)
-
-            # Or an Ellipsis
-            elif items[0] is Ellipsis:
-                m = nrow
-                rows = [(0, nrow)]
-
-                if type(items[1]) in [int, long]:
-                    n, cols = regularize_idx(items[1], ncol, 1)
-                elif type(items[1]) is slice:
-                    if items[1] == slice(None, None, None):
-                        return self.copy()
-                    n, cols = regularize_slice(items[1], ncol)
-                elif items[1] is Ellipsis:
-                    return self.copy()
                 else:
                     raise ValueError('Invalid indices %s' % items)
 
