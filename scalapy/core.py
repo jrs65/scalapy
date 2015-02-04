@@ -282,6 +282,27 @@ class DistributedMatrix(object):
     ``np.complex64``   ``MPI.COMPLEX``    ``C``           Single precision complex number
     ``np.complex128``  ``MPI.COMPLEX16``  ``Z``           Double precision complex number
     =================  =================  ==============  ===============================
+
+    Slicing
+    -------
+
+    Basic slicing is implemented for :class:`DistributedMatrix` objects allowing
+    us to cut out sections of the global matrix, giving a new
+    :class:`DistributedMatrix` containing the section and distributed over the
+    same :class:`ProcessContext`. Note that this creates a *copy* of the
+    original data, *not* a view of it. To use this simply do::
+
+        dm = DistributedMatrix((10, 10), dtype=np.complex128)
+
+        # Copy the first five columns
+        five_cols = dm[: :5]
+
+        # Copy out the third and second to last rows
+        two_rows = dm[-3:-1]
+
+        # Copy every other row
+        alternating_rows = dm[::2]
+
     """
 
     @property
@@ -582,11 +603,11 @@ class DistributedMatrix(object):
         -----
 
         As an example a DistributedMatrix defined globally as
-        :math:`M_{ij} = i + j` can be created by:
+        :math:`M_{ij} = i + j` can be created by::
 
-        >>> dm = DistributedMatrix(100, 100)
-        >>> rows, cols = dm.indices()
-        >>> dm.local_array[:] = rows + cols
+            dm = DistributedMatrix(100, 100)
+            rows, cols = dm.indices()
+            dm.local_array[:] = rows + cols
         """
 
         ri, ci = map(blockcyclic.indices_rc,
@@ -615,7 +636,7 @@ class DistributedMatrix(object):
         its position in the local array.
 
         As an example of the use of these arrays, the global operation A_{ij} += i^2 delta_{ij}
-        could be implemented with:
+        could be implemented with::
 
            (global_index, local_row_index, local_column_index) = A.local_diagonal_indices()
            A.local_array[local_row_index, local_column_index] += global_index**2
@@ -646,7 +667,7 @@ class DistributedMatrix(object):
 
 
     def trace(self):
-        """Returns global matrix trace (the trace is returned on all cores)."""
+        """Returns global matrix trace (the trace is returned on all ranks)."""
 
         (g,r,c) = self.local_diagonal_indices()
 
@@ -655,163 +676,6 @@ class DistributedMatrix(object):
         self.context.mpi_comm.Allreduce(ret.copy(), ret, MPI.SUM)
 
         return ret
-
-
-    # def transpose(self, block_shape=None, context=None):
-    #     """Returns distributed matrix transpose."""
-
-    #     if block_shape is None:
-    #         block_shape = self.block_shape
-    #     if context is None:
-    #         context = self.context
-
-    #     if self.context.mpi_comm is not context.mpi_comm:
-    #         raise RuntimeError('input/output contexts in DistributedMatrix.transpose() must have the same MPI communicator')
-
-    #     (m,n) = self.global_shape
-
-    #     src_rindices = [ blockcyclic.indices_rc(m, self.block_shape[0], p, self.context.grid_shape[0]) for p in xrange(self.context.grid_shape[0]) ]
-    #     src_cindices = [ blockcyclic.indices_rc(n, self.block_shape[1], p, self.context.grid_shape[1]) for p in xrange(self.context.grid_shape[1]) ]
-    #     dst_rindices = [ blockcyclic.indices_rc(n, block_shape[0], p, context.grid_shape[0]) for p in xrange(context.grid_shape[0]) ]
-    #     dst_cindices = [ blockcyclic.indices_rc(m, block_shape[1], p, context.grid_shape[1]) for p in xrange(context.grid_shape[1]) ]
-
-    #     send_rindices = [ ]
-    #     for ci in dst_cindices:
-    #         t = np.intersect1d(ci, src_rindices[self.context.grid_position[0]])
-    #         t = blockcyclic.localize_indices(t, self.block_shape[0], self.context.grid_shape[0])[1]
-    #         send_rindices.append(t)
-
-    #     send_cindices = [ ]
-    #     for ri in dst_rindices:
-    #         t = np.intersect1d(ri, src_cindices[self.context.grid_position[1]])
-    #         t = blockcyclic.localize_indices(t, self.block_shape[1], self.context.grid_shape[1])[1]
-    #         send_cindices.append(t)
-
-    #     send_counts = np.array([ len(send_rindices[q]) * len(send_cindices[p]) for (p,q) in context.all_grid_positions ])
-    #     send_displs = np.concatenate(([0], np.cumsum(send_counts[:-1])))
-    #     send_buf = np.zeros(np.sum(send_counts), dtype=self.dtype)
-
-    #     for q in xrange(context.grid_shape[1]):
-    #         a = self.local_array[send_rindices[q],:]
-    #         for p in xrange(context.grid_shape[0]):
-    #             b = a[:,send_cindices[p]]
-    #             si = send_displs[context.all_mpi_ranks[p,q]]
-    #             sn = send_counts[context.all_mpi_ranks[p,q]]
-    #             send_buf[si:si+sn] = np.reshape(np.transpose(b), (-1,))    # note transpose here
-
-    #     del a,b    # save memory by dropping references
-
-    #     recv_rindices = [ ]
-    #     for ci in src_cindices:
-    #         t = np.intersect1d(ci, dst_rindices[context.grid_position[0]])
-    #         t = blockcyclic.localize_indices(t, block_shape[0], context.grid_shape[0])[1]
-    #         recv_rindices.append(t)
-
-    #     recv_cindices = [ ]
-    #     for ri in src_rindices:
-    #         t = np.intersect1d(ri, dst_cindices[context.grid_position[1]])
-    #         t = blockcyclic.localize_indices(t, block_shape[1], context.grid_shape[1])[1]
-    #         recv_cindices.append(t)
-
-    #     recv_counts = np.array([ len(recv_rindices[q]) * len(recv_cindices[p]) for (p,q) in self.context.all_grid_positions ])
-    #     recv_displs = np.concatenate(([0], np.cumsum(recv_counts[:-1])))
-    #     recv_buf = np.zeros(np.sum(recv_counts), dtype=self.dtype)
-
-    #     self.context.mpi_comm.Alltoallv((send_buf, (send_counts, send_displs)),
-    #                                     (recv_buf, (recv_counts, recv_displs)))
-
-    #     del send_buf   # save memory
-
-    #     ret = DistributedMatrix(global_shape=(n,m),
-    #                             dtype = self.dtype,
-    #                             block_shape = block_shape,
-    #                             context = context)
-
-    #     for q in xrange(self.context.grid_shape[1]):
-    #         a = np.zeros((len(recv_rindices[q]),ret.local_array.shape[1]), dtype=self.dtype)
-    #         for p in xrange(self.context.grid_shape[0]):
-    #             ri = recv_displs[self.context.all_mpi_ranks[p,q]]
-    #             rn = recv_counts[self.context.all_mpi_ranks[p,q]]
-    #             a[:,recv_cindices[p]] = np.reshape(recv_buf[ri:ri+rn], (len(recv_rindices[q]),len(recv_cindices[p])))
-    #         ret.local_array[recv_rindices[q],:] = a
-
-    #     return ret
-
-
-    # def get_rows(self, rows):
-    #     r"""Return selected rows of a DistributedMatrix, as a new Distributed Matrix (i.e. moral equivalent of self[rows,:]).
-
-    #     FIXME wouldn't it be nice to define a __getitem__ which would allow general row/column slicing?
-
-    #     Parameters
-    #     ----------
-    #        rows : 1D numpy array (must be the same on all tasks)
-    #     """
-
-    #     (m,n) = self.global_shape
-    #     B = self.block_shape[0]               # row block length
-    #     P = self.context.grid_shape[0]        # number of processes in row grid
-    #     (p0,q0) = self.context.grid_position  # this task's position in grid
-    #     nc = self.local_array.shape[1]        # number of local columns
-
-    #     rows = np.array(rows)
-    #     assert rows.ndim==1
-    #     assert np.issubdtype(rows.dtype, np.integer)
-    #     assert np.all(rows >= 0) and np.all(rows < m)
-
-    #     # gri[p][i] = global row index corresponding to (rank, output_local_index) = (p,i)
-    #     k = len(rows)   # output matrix will be k-by-n
-    #     gri = [ blockcyclic.indices_rc(k, B, p, P) for p in xrange(P) ]
-    #     gri = [ rows[g] for g in gri ]
-
-    #     # (rrk,lri) = (input_rank, input_local_index) pair corresponding to (rank, output_local_index) = (p,i)
-    #     rrk = [ ]
-    #     lri = [ ]
-    #     for g in gri:
-    #         (r,l) = blockcyclic.localize_indices(g, B, P)
-    #         rrk.append(r)
-    #         lri.append(l)
-
-    #     # send_indices[p] = input_local_indices to be sent to rank p
-    #     send_indices = [ l[np.nonzero(r==p0)] for (r,l) in zip(rrk,lri) ]
-
-    #     # recv_indices[p] = output_local_indices to be received from row rank p
-    #     recv_indices = [ np.nonzero(rrk[p0]==p)[0] for p in xrange(P) ]
-
-    #     # per-row block counts and displacements, in units of "rows"
-    #     scounts = np.array([ len(x) for x in send_indices ])
-    #     rcounts = np.array([ len(x) for x in recv_indices ])
-    #     sdispls = np.concatenate(([0], np.cumsum(scounts[:-1])))
-    #     rdispls = np.concatenate(([0], np.cumsum(rcounts[:-1])))
-
-    #     # per-mpi-task counts and displacements, in units of "matrix elements"
-    #     mpi_scounts = np.array([ (scounts[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
-    #     mpi_rcounts = np.array([ (rcounts[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
-    #     mpi_sdispls = np.array([ (sdispls[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
-    #     mpi_rdispls = np.array([ (rdispls[p]*nc if q==q0 else 0)  for (p,q) in self.context.all_grid_positions ])
-
-    #     sbuf = np.zeros(np.sum(scounts)*nc, dtype=self.dtype)
-
-    #     # pack sbuf
-    #     for (d,c,si) in zip(sdispls, scounts, send_indices):
-    #         sbuf[d*nc:(d+c)*nc] = np.reshape(self.local_array[si,:], (-1,))
-
-    #     rbuf = np.zeros(np.sum(rcounts)*nc, dtype=self.dtype)
-
-    #     self.context.mpi_comm.Alltoallv((sbuf, (mpi_scounts, mpi_sdispls)),
-    #                                     (rbuf, (mpi_rcounts, mpi_rdispls)))
-
-    #     del sbuf
-
-    #     ret = DistributedMatrix((k,n), dtype=self.dtype, block_shape=self.block_shape, context=self.context)
-    #     assert ret.local_array.shape[1] == nc
-
-    #     # unpack rbuf
-    #     for (d,c,ri) in zip(rdispls, rcounts, recv_indices):
-    #         ret.local_array[ri,:] = np.reshape(rbuf[d*nc:(d+c)*nc], (c,nc))
-
-    #     return ret
-
 
     @classmethod
     def from_global_array(cls, mat, rank=None, block_shape=None, context=None):
@@ -1006,7 +870,6 @@ class DistributedMatrix(object):
         else:
             raise RuntimeError('Unsupported type %s' % type(x))
 
-
     def _section(self, srow=0, nrow=None, scol=0, ncol=None):
         ## return a section [srow:srow+nrow, scol:scol+ncol] of the global array as a new distributed array
         nrow = self.global_shape[0] - srow if nrow is None else nrow
@@ -1025,9 +888,7 @@ class DistributedMatrix(object):
                       'Z': (ll.pzgemr2d, args)}
 
         func, args = call_table[self.sc_dtype]
-        ll.expand_args = False
         func(*args)
-        ll.expand_args = True
 
         return B
 
@@ -1057,9 +918,7 @@ class DistributedMatrix(object):
                       'Z': (ll.pzgemr2d, args)}
 
         func, args = call_table[self.sc_dtype]
-        ll.expand_args = False
         func(*args)
-        ll.expand_args = True
 
     def __getitem__(self, items):
         # numpy-like global slicing operation, but returns a distributed array.
@@ -1138,7 +997,7 @@ class DistributedMatrix(object):
 
         nrow, ncol = self.global_shape
 
-        # First replace any Ellipsis with a slice(None, None, None) object, this
+        # First replace any Ellipsis with a full slice(None, None, None) object, this
         # is fine because the matrix is always 2D and it vastly simplifies the logic
         if items is Ellipsis:
             items = slice(None, None, None)
@@ -1293,9 +1152,7 @@ class DistributedMatrix(object):
                               'Z': (ll.pzgemr2d, args)}
 
                 func, args = call_table[self.sc_dtype]
-                ll.expand_args = False
                 func(*args)
-                ll.expand_args = True
 
         return self
 
@@ -1375,9 +1232,7 @@ class DistributedMatrix(object):
                               'Z': (ll.pzgemr2d, args)}
 
                 func, args = call_table[self.sc_dtype]
-                ll.expand_args = False
                 func(*args)
-                ll.expand_args = True
 
         return a
 
