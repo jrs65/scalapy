@@ -21,6 +21,7 @@ Routines
     num_c_lblocks 
     partial_last_block
 """
+from __future__ import print_function
 
 import numpy as np
 
@@ -406,7 +407,7 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
     # Length of filename required for write (in bytes).
     filelength = displacement + gshape[0]*gshape[1]
 
-    print filelength, darr.Get_size()
+    print(filelength, darr.Get_size())
 
     # Open the file, and read out the segments
     f = MPI.File.Open(comm, fname, MPI.MODE_RDWR | MPI.MODE_CREATE)

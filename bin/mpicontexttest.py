@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 from mpi4py import MPI
 import numpy as np
@@ -51,7 +52,7 @@ for i in range(world_comm.size):
     world_comm.Barrier()
 
     if rank == i:
-        print "Group %i. Group rank %i. Rank %i. " % (group_index, group_rank, rank)
-        print evals[-10:]
-        print
+        print("Group %i. Group rank %i. Rank %i. " % (group_index, group_rank, rank))
+        print(evals[-10:])
+        print()
         

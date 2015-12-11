@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import scipy.linalg as la
 
@@ -37,8 +38,8 @@ def test_cholesky_D():
     if rank == 0:
         gUn = la.cholesky(gA)
 
-        print gUn
-        print gUd
+        print(gUn)
+        print(gUd)
         assert allclose(gUn, gUd)
 
 

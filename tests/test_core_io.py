@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 
 from mpi4py import MPI
@@ -37,8 +38,8 @@ def test_basic_io():
 
     if rank == 0:
         farr2 = np.fromfile(fname2, dtype=np.float64)
-        print farr2
-        print farr
+        print(farr2)
+        print(farr)
         assert (farr == farr2).all()
 
 

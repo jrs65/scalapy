@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 from setuptools import find_packages
 from numpy.distutils.core import setup, Extension
@@ -114,18 +115,18 @@ def cython_file(filename):
 
 omp_args = ['-fopenmp'] if use_omp else []
 
-print "============================================================================="
-print "Building Scalapy...."
-print
-print "  ScaLAPACK: %s" % scalapackversion
-print "  MPI: %s" % mpiversion
-print "  OpenMP: %s" % repr(use_omp)
-print
-print "  Compile args: %s" % repr(mpicompileargs)
-print "  Libraries: %s" % repr(scl_lib + mpilinkargs)
-print "  Library path: %s" % repr(scl_libdir)
-print
-print "============================================================================="
+print("=============================================================================")
+print("Building Scalapy....")
+print()
+print("  ScaLAPACK: %s" % scalapackversion)
+print("  MPI: %s" % mpiversion)
+print("  OpenMP: %s" % repr(use_omp))
+print()
+print("  Compile args: %s" % repr(mpicompileargs))
+print("  Libraries: %s" % repr(scl_lib + mpilinkargs))
+print("  Library path: %s" % repr(scl_libdir))
+print()
+print("=============================================================================")
 
 ## Setup the extensions we are going to build
 mpi3_ext = Extension('scalapy.mpi3util', [cython_file('scalapy/mpi3util')],

@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 
 import sys
@@ -94,7 +95,7 @@ def fill_missing(args):
         if arg['type'] is None:
 
             if previous is None:
-                print args
+                print(args)
                 raise ParseException('Could not match argument')
 
             arg['type'] = previous['type']
@@ -138,7 +139,7 @@ def scalapack2pyf(inputfile, outputfile=None):
     sig_pyf = args_to_fsig(*parsed)
 
     if outputfile is None:
-        print sig_pyf
+        print(sig_pyf)
     else:
         with open(outputfile, 'w+') as f:
             f.write(sig_pyf)
@@ -155,8 +156,8 @@ if __name__ == '__main__':
     try:
         scalapack2pyf(inputfile, outputfile)
     except ParseException as e:
-        print "Error processing %s" % inputfile
-        print "  --", e.message
+        print("Error processing %s" % inputfile)
+        print("  --", e.message)
         sys.exit(1)
 
 

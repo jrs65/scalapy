@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import scalapy
 import numpy as np
@@ -45,20 +46,20 @@ A = scalapy.DistributedMatrix([n, n])
 
 
 if rank == 0:
-    print "==============================================="
-    print "Decomposing  %i x %i global matrix" % (n, n)
-    print
-    print "Local shape: %i x %i" % A.local_shape
-    print "Blocksize:   %i x %i" % (B, B)
-    print "Pgrid size:  %i x %i" % (npx, npy)
-    print
-    print "Number of threads: %i" % (int(os.environ['OMP_NUM_THREADS']) if 'OMP_NUM_THREADS' in os.environ else 0)
-    print "==============================================="
-    print
+    print("===============================================")
+    print("Decomposing  %i x %i global matrix" % (n, n))
+    print()
+    print("Local shape: %i x %i" % A.local_shape)
+    print("Blocksize:   %i x %i" % (B, B))
+    print("Pgrid size:  %i x %i" % (npx, npy))
+    print()
+    print("Number of threads: %i" % (int(os.environ['OMP_NUM_THREADS']) if 'OMP_NUM_THREADS' in os.environ else 0))
+    print("===============================================")
+    print()
 
 
 if comm.Get_rank() == 0:
-    print "Setting up..."
+    print("Setting up...")
     st = time.time()
 
 
@@ -76,9 +77,9 @@ comm.Barrier()
 
 if comm.Get_rank() == 0:
     et = time.time()
-    print "Done. Time: ", et-st
+    print("Done. Time: ", et-st)
     st = time.time()
-    print "Starting eigenvalue solve..."
+    print("Starting eigenvalue solve...")
 
 evals1, evecs1 = scalapy.eigh(A, overwrite_a=False)
 
@@ -86,7 +87,7 @@ comm.Barrier()
 
 if comm.Get_rank() == 0:
     et = time.time()
-    print "Done. Time: ", et-st
+    print("Done. Time: ", et-st)
 
     evtime = et - st
 
@@ -94,7 +95,7 @@ comm.Barrier()
 
 if comm.Get_rank() == 0:
     st = time.time()
-    print "Starting Cholesky..."
+    print("Starting Cholesky...")
 
 U = scalapy.cholesky(A, overwrite_a=False)
 
@@ -102,12 +103,12 @@ comm.Barrier()
 
 if comm.Get_rank() == 0:
     et = time.time()
-    print "Done. Time: ", et-st
+    print("Done. Time: ", et-st)
 
     chtime = et - st
 
     st = time.time()
-    print "Starting matrix multiply..."
+    print("Starting matrix multiply...")
 
 
 A2 = scalapy.dot(U, U, transA='T')
@@ -117,12 +118,12 @@ comm.Barrier()
 
 if comm.Get_rank() == 0:
     et = time.time()
-    print "Done. Time: ", et-st
+    print("Done. Time: ", et-st)
 
     mltime = et - st
 
     st = time.time()
-    print "Starting verification..."
+    print("Starting verification...")
 
 
 # Calculate eigenvalues by fourier transform.
@@ -132,9 +133,9 @@ evals2 = np.sort(np.fft.fft(f(px)).real)
 
 
 if comm.Get_rank() == 0:
-    print "Max diff:", np.abs((evals1 - evals2) / evals1).max()
+    print("Max diff:", np.abs((evals1 - evals2) / evals1).max())
 
-    print "Max diff A, rnk 0:", np.abs(A.local_array - A2.local_array).max() / np.abs(A.local_array).max()
+    print("Max diff A, rnk 0:", np.abs(A.local_array - A2.local_array).max() / np.abs(A.local_array).max())
 
     #bfile = bfile + "_%i_%i_%i_%i_%i.dat" % (n, B, npx, npy, nthread)
 

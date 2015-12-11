@@ -32,15 +32,16 @@ Classes
     ScalapackException
 
 """
+from __future__ import absolute_import
 
 from numbers import Number
 import numpy as np
 
 from mpi4py import MPI
 
-import blockcyclic
-import blacs
-import mpi3util
+from . import blockcyclic
+from . import blacs
+from . import mpi3util
 
 
 class ScalapyException(Exception):
