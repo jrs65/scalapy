@@ -295,7 +295,7 @@ class DistributedMatrix(object):
         dm = DistributedMatrix((10, 10), dtype=np.complex128)
 
         # Copy the first five columns
-        five_cols = dm[: :5]
+        five_cols = dm[:, :5]
 
         # Copy out the third and second to last rows
         two_rows = dm[-3:-1]
