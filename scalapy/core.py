@@ -32,7 +32,7 @@ Classes
     ScalapackException
 
 """
-from __future__ import absolute_import
+from __future__ import print_function, division, absolute_import
 
 from numbers import Number
 import numpy as np
@@ -369,9 +369,9 @@ class DistributedMatrix(object):
     def local_shape(self):
         """The shape of the local matrix."""
 
-        lshape = map(blockcyclic.numrc, self.global_shape,
-                     self.block_shape, self.context.grid_position,
-                     self.context.grid_shape)
+        lshape = tuple(map(blockcyclic.numrc, self.global_shape,
+                       self.block_shape, self.context.grid_position,
+                       self.context.grid_shape))
 
         return tuple(lshape)
 
@@ -611,11 +611,11 @@ class DistributedMatrix(object):
             dm.local_array[:] = rows + cols
         """
 
-        ri, ci = map(blockcyclic.indices_rc,
-                     self.global_shape,
-                     self.block_shape,
-                     self.context.grid_position,
-                     self.context.grid_shape)
+        ri, ci = tuple(map(blockcyclic.indices_rc,
+                       self.global_shape,
+                       self.block_shape,
+                       self.context.grid_position,
+                       self.context.grid_shape))
 
         ri = ri.reshape((-1, 1), order='F')
         ci = ci.reshape((1, -1), order='F')
@@ -650,11 +650,11 @@ class DistributedMatrix(object):
             #
             raise RuntimeError('scalapy.core.DistributedMatrix.local_diagonal_indices() called on non-square matrix, and allow_non_square=False')
 
-        ri, ci = map(blockcyclic.indices_rc,
-                     self.global_shape,
-                     self.block_shape,
-                     self.context.grid_position,
-                     self.context.grid_shape)
+        ri, ci = tuple(map(blockcyclic.indices_rc,
+                       self.global_shape,
+                       self.block_shape,
+                       self.context.grid_position,
+                       self.context.grid_shape))
 
         global_index = np.intersect1d(ri, ci)
 

@@ -18,6 +18,7 @@ Routines
     dot
 
 """
+from __future__ import print_function, division
 
 import numpy as np
 
@@ -179,13 +180,13 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
         if info > 0:
             if np.mod(info, 2) != 0:
                 raise core.ScalapackException("One or more eigenvectors failed to converge")
-            elif np.mod(info / 2, 2) != 0:
+            elif np.mod(info // 2, 2) != 0:
                 raise core.ScalapackException("Eigenvectors corresponding to one or more clusters of eigenvalues could not be reorthogonalized because of insufficient workspace")
-            elif np.mod(info / 4, 2) != 0:
+            elif np.mod(info // 4, 2) != 0:
                 raise core.ScalapackException("Space limit prevented p?sygvx from computing all of the eigenvectors between %f and %f. The number of eigenvectors computed is %d" % (vl, vu, nz))
-            elif np.mod(info / 8, 2) != 0:
+            elif np.mod(info // 8, 2) != 0:
                 raise core.ScalapackException("p?stebz failed to compute eigenvalues")
-            elif np.mod(info / 16, 2) != 0:
+            elif np.mod(info // 16, 2) != 0:
                 raise core.ScalapackException("The smallest minor order %d of `B` is not positive definite" % ifail[0])
             else:
                 raise core.ScalapackException("Unknown error")

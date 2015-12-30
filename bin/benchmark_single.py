@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
 
@@ -28,8 +28,8 @@ print("Decomposing  %i x %i global matrix" % (n, n))
 print()
 print("Number of threads: %i" % (int(os.environ['OMP_NUM_THREADS']) if 'OMP_NUM_THREADS' in os.environ else 0))
 print("===============================================")
-print() 
-    
+print()
+
 st = time.time()
 # Construct array of distances between indices (taking into account
 # periodicity).
@@ -75,7 +75,7 @@ print("Done. Time: ", et-st)
 chtime = et - st
 
 #================
-    
+
 st = time.time()
 print("Starting matrix multiply...")
 
@@ -86,11 +86,11 @@ print("Done. Time: ", et-st)
 mltime = et - st
 
 #================
-    
+
 st = time.time()
 print("Starting verification...")
 
-    
+
 # Calculate eigenvalues by fourier transform.
 x = np.arange(n, dtype=np.float64)
 px = np.where(x < n-x, x, n-x)
@@ -106,5 +106,3 @@ print("A == A2:", me)
 #bfile = bfile + "_%i_%i_%i_%i_%i.dat" % (n, B, npx, npy, nthread)
 
 print("%i %i %g %g %g\n" % (n, nthread, evtime, chtime, mltime))
-
-

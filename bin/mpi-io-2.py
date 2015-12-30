@@ -1,4 +1,5 @@
-from __future__ import print_function
+from __future__ import print_function, division, absolute_import
+
 from pyscalapack import blockcyclic
 
 import numpy as np
@@ -23,9 +24,9 @@ if rank == 0:
 
     arrf = np.asfortranarray(arrc)
     arrf.T.tofile("testarr_f.dat")
-    
+
     print(arrc)
-    
+
     print(arrf)
 
 
@@ -36,10 +37,10 @@ local_array_f = blockcyclic.mpi_readmatrix("testarr_f.dat", comm, gshape,
                                            np.float64, blocksize, pshape, order='F')
 
 for i in range(size):
-    comm.Barrier() 
+    comm.Barrier()
 
     if rank == i:
-        print([int(rank / pshape[1]), int(rank % pshape[1])])
+        print([int(rank // pshape[1]), int(rank % pshape[1])])
         #print local_array.flags
         #print local_array
 
@@ -74,6 +75,3 @@ if rank == 0:
 
 
 MPI.Finalize()
-
-
-

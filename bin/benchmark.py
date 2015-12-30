@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, division, absolute_import
 
 import scalapy
 import numpy as np
@@ -142,5 +142,3 @@ if comm.Get_rank() == 0:
     with open(bfile, "w+") as f:
         line = "%i %i %i %i %i %g %g %g\n" % (n, B, npx, npy, nthread, evtime, chtime, mltime)
         f.write(line)
-
-
