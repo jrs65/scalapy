@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, division, absolute_import
 
 from mpi4py import MPI
 import numpy as np
@@ -18,7 +18,7 @@ world_comm = MPI.COMM_WORLD
 rank = world_comm.rank
 
 # Split the world_group into subgroups of four processes
-group_index = rank / 4
+group_index = rank // 4
 group_rank = rank % 4
 group_indices = np.arange(4) + group_index*4
 new_group = world_group.Incl(group_indices)
@@ -55,4 +55,3 @@ for i in range(world_comm.size):
         print("Group %i. Group rank %i. Rank %i. " % (group_index, group_rank, rank))
         print(evals[-10:])
         print()
-        
