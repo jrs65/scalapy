@@ -247,8 +247,8 @@ def localize_indices(global_indices, B, P):
     assert B > 0
     assert P > 0
 
-    t = np.divide(global_indices, B)
-    u = np.divide(t, P)
+    t = global_indices // B
+    u = t // P
     return (t - u * P, global_indices + B * (u - t))
 
 

@@ -14,7 +14,8 @@ import mpi4py
 
 
 def runcommand(cmd):
-    process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, universal_newlines=True)
     c = process.communicate()
 
     if process.returncode != 0:

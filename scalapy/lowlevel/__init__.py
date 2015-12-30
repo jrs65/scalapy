@@ -46,7 +46,7 @@ standard manner would be something like::
     zwork = np.zeros(1, dtype=np.complex128)
 
     # Perform work query
-    info = lowlevel.pzheevd('V', 'L', N,
+    info = lowlevel.pzheevd(b'V', b'L', N,
                             dA.local_array, 1, 1, dA.desc,
                             evals,
                             evecs.local_array, 1, 1, evecs.desc,
@@ -61,7 +61,7 @@ standard manner would be something like::
     zwork = np.zeros(lzwork, dtype=np.complex128)
 
     # Perform computation
-    info = lowlevel.pzheevd('V', 'L', N,
+    info = lowlevel.pzheevd(b'V', b'L', N,
                             dA.local_array, 1, 1, dA.desc,
                             evals,
                             evecs.local_array, 1, 1, evecs.desc,
@@ -99,6 +99,10 @@ which it inserts the correct arguments, and then on the subsequent call it
 uses the query result to initialising temporary work arrays which are passed
 into the routine for computation. This behaviour can save a substantial amount
 of time manually querying and initialising temporary arrays.
+
+A final transformation is that string arguments are automatically sanitised and
+converted to ASCII string held in a byte array. On Python 2 this is not needed,
+but for Python 3 we need to ensure this is done properly.
 
 
 Classes
@@ -162,6 +166,18 @@ def _expand_dm(args):
     return exp_args
 
 
+def _encode_strings(args):
+    # Ensure any string arguments get turned into proper 1-byte ascii so
+    # ScaLAPACK doesn't get confused
+
+    def _fix_string(arg):
+        if isinstance(arg, str):
+            return arg.encode('ascii')
+        return arg
+
+    return [_fix_string(arg) for arg in args]
+
+
 def _call_routine(routine, *args):
     # Call the routine, expanding any arguments as required.
 
@@ -170,6 +186,9 @@ def _call_routine(routine, *args):
 
     # Expand the DM arguments
     exp_args = _expand_dm(args)
+
+    # Convert any strings to bytes (potentially an issue for Python 3)
+    exp_args = _encode_strings(exp_args)
 
     # Perform a WorkArray query if needed
     if need_workquery:
