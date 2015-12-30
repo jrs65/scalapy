@@ -1,5 +1,7 @@
-from __future__ import print_function
+"""Routines for parsing ScaLAPACK documentation and generating a PYF file.
+"""
 
+from __future__ import print_function, division
 
 import sys
 import re
@@ -159,6 +161,3 @@ if __name__ == '__main__':
         print("Error processing %s" % inputfile)
         print("  --", e.message)
         sys.exit(1)
-
-
-    

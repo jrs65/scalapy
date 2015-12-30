@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-from __future__ import absolute_import
+# Script for generating the F2PY interface files (pyf files) from a copy of the
+# ScaLAPACK source.
+
+from __future__ import print_function, division
+
 import os
 import shutil
 import glob

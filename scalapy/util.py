@@ -12,6 +12,7 @@ Routines
 
     flatten
 """
+from __future__ import print_function, division
 
 import numpy as np
 
@@ -45,7 +46,6 @@ def flatten(x):
     result = []
     for el in x:
         if isinstance(el, (list, tuple)):
-        #if hasattr(el, "__iter__") and not isinstance(el, basestring):
             result.extend(flatten(el))
         else:
             result.append(el)
@@ -64,7 +64,7 @@ def assert_square(A):
 
 
 def real_equiv(dtype):
-    ## Return the real datatype with the same precision as dtype.
+    # Return the real datatype with the same precision as dtype.
     if dtype == np.float32 or dtype == np.complex64:
         return np.float32
 

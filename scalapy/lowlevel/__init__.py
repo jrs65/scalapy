@@ -128,7 +128,7 @@ Scalapack Routines
 <_insert_scalapack>
 
 """
-
+from __future__ import print_function, division
 
 import numpy as np
 
@@ -140,10 +140,8 @@ from . import redist as _redist
 expand_args = True
 
 
-
-
 def _expand_work(args, query=True):
-    ## Go through an argument list and expand and WorkArrays found.
+    # Go through an argument list and expand and WorkArrays found.
 
     exp_args = []
     for arg in args:
@@ -154,7 +152,7 @@ def _expand_work(args, query=True):
 
 
 def _expand_dm(args):
-    ## Iterate through and expand any DistributedMatrices found.
+    # Iterate through and expand any DistributedMatrices found.
 
     exp_args = []
     for arg in args:
@@ -165,7 +163,7 @@ def _expand_dm(args):
 
 
 def _call_routine(routine, *args):
-    ## Call the routine, expanding any arguments as required.
+    # Call the routine, expanding any arguments as required.
 
     # Check to see if there any WorkArrays
     need_workquery = any([isinstance(arg, WorkArray) for arg in args])
@@ -186,8 +184,8 @@ def _call_routine(routine, *args):
 
 
 def _wrap_routine(rname, robj):
-    ## Generate a wrapper around the lowlevel routine which can expand the
-    ## arguments if required.
+    # Generate a wrapper around the lowlevel routine which can expand the
+    # arguments if required.
 
     # Create wrapper
     def wrapper(*args):
@@ -274,9 +272,8 @@ class WorkArray(object):
         return work_list
 
 
-
-## Add wrapped routines to this modules dictionary.
-## Also try and insert the PBLAS and ScaLAPACK routines into the docstring.
+# Add wrapped routines to this modules dictionary.
+# Also try and insert the PBLAS and ScaLAPACK routines into the docstring.
 _mod_dict = globals()
 
 _doc_redist = ''
@@ -285,7 +282,7 @@ _doc_scl = ''
 
 
 # From REDIST
-for rname, robj in _redist.__dict__.iteritems():
+for rname, robj in _redist.__dict__.items():
     if type(robj).__name__ == 'fortran':
         _mod_dict[rname] = _wrap_routine(rname, robj)
         _doc_redist += '    ' + rname + '\n'
@@ -294,7 +291,7 @@ _mod_dict['__doc__'] = _mod_dict['__doc__'].replace('<insert_redist>', _doc_redi
 
 
 # From PBLAS
-for rname, robj in _pblas.__dict__.iteritems():
+for rname, robj in _pblas.__dict__.items():
     if type(robj).__name__ == 'fortran':
         _mod_dict[rname] = _wrap_routine(rname, robj)
         _doc_pblas += '    ' + rname + '\n'
@@ -302,10 +299,9 @@ for rname, robj in _pblas.__dict__.iteritems():
 _mod_dict['__doc__'] = _mod_dict['__doc__'].replace('<insert_pblas>', _doc_pblas)
 
 # From Scalapack
-for rname, robj in _scl.__dict__.iteritems():
+for rname, robj in _scl.__dict__.items():
     if type(robj).__name__ == 'fortran':
         _mod_dict[rname] = _wrap_routine(rname, robj)
         _doc_scl += '    ' + rname + '\n'
 
 _mod_dict['__doc__'] = _mod_dict['__doc__'].replace('<insert_scalapack>', _doc_scl)
-
