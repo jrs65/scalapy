@@ -12,11 +12,13 @@ created whilst hiding all the nasty details of block cyclic distribution.
 Dependencies
 ============
 
-This package depends upon two python packages ``numpy`` and ``mpi4py``. It is
-written largely in pure Python, but some parts require ``Cython`` and
-``f2py``. Obviously it also requires an ``MPI`` distribution (OpenMPI and
-IntelMPI supported out the box), and a ``Scalapack`` installation (both Intel
-MKL and NETLIB are currently supported).
+``scalapy`` supports both Python 2 and 3 (2.7, 3.2 or later).
+
+The package depends upon two python packages ``numpy`` and ``mpi4py``. It is
+written largely in pure Python, but some parts require ``Cython`` and ``f2py``.
+It also requires an ``MPI`` distribution (OpenMPI and IntelMPI supported out the
+box), and a ``Scalapack`` installation (both Intel MKL and NETLIB are currently
+supported).
 
 Installation
 ============
@@ -37,11 +39,11 @@ Limited, but improving, documentation is available `here <http://jrs65.github.co
 MPI Version (OpenMPI 1.8.2 or higher)
 =====================================
 
-Some of the features, especially distribution of matrice from global arrays
-and files, make heavy use of advanced features of MPI, such as derived
-datatypes and MPI-IO. Unfortunately many MPI distributions contain critical
-bugs in these components (mostly due to ``ROMIO``), which means these will
-fail in some common circumstances.
+Some of the features, especially distribution of matrices from global arrays and
+files, make heavy use of advanced features of MPI, such as derived datatypes and
+MPI-IO. Unfortunately many MPI distributions contain critical bugs in these
+components (mostly due to ``ROMIO``), which means these will fail in some common
+circumstances.
 
 However, recent versions of OpenMPI contain a new implementation of MPI-IO
 (called OMPIO) which seems to be issue free. This means that for full, and
@@ -54,7 +56,3 @@ can be done by calling with::
 or by setting the environment variable::
 
     $ export OMPI_MCA_io=ompio
-
-
-
- 
