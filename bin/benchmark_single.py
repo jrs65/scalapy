@@ -1,3 +1,4 @@
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
 
@@ -22,13 +23,13 @@ nthread = int(sys.argv[2])
 os.environ['OMP_NUM_THREADS'] = repr(nthread)
 
 
-print "==============================================="
-print "Decomposing  %i x %i global matrix" % (n, n)
-print
-print "Number of threads: %i" % (int(os.environ['OMP_NUM_THREADS']) if 'OMP_NUM_THREADS' in os.environ else 0)
-print "==============================================="
-print 
-    
+print("===============================================")
+print("Decomposing  %i x %i global matrix" % (n, n))
+print()
+print("Number of threads: %i" % (int(os.environ['OMP_NUM_THREADS']) if 'OMP_NUM_THREADS' in os.environ else 0))
+print("===============================================")
+print()
+
 st = time.time()
 # Construct array of distances between indices (taking into account
 # periodicity).
@@ -50,14 +51,14 @@ del da
 #================
 
 et = time.time()
-print "Done. Time: ", et-st
+print("Done. Time: ", et-st)
 st = time.time()
-print "Starting eigenvalue solve..."
+print("Starting eigenvalue solve...")
 
 evals1, evecs1 = la.eigh(A)
 
 et = time.time()
-print "Done. Time: ", et-st
+print("Done. Time: ", et-st)
 del evecs1
 
 evtime = et - st
@@ -65,31 +66,31 @@ evtime = et - st
 #================
 
 st = time.time()
-print "Starting Cholesky..."
+print("Starting Cholesky...")
 
 U = la.cholesky(A)
 
 et = time.time()
-print "Done. Time: ", et-st
+print("Done. Time: ", et-st)
 chtime = et - st
 
 #================
-    
+
 st = time.time()
-print "Starting matrix multiply..."
+print("Starting matrix multiply...")
 
 A2 = np.dot(U.T, U)
 
 et = time.time()
-print "Done. Time: ", et-st
+print("Done. Time: ", et-st)
 mltime = et - st
 
 #================
-    
-st = time.time()
-print "Starting verification..."
 
-    
+st = time.time()
+print("Starting verification...")
+
+
 # Calculate eigenvalues by fourier transform.
 x = np.arange(n, dtype=np.float64)
 px = np.where(x < n-x, x, n-x)
@@ -97,13 +98,11 @@ evals2 = np.sort(np.fft.fft(f(px)).real)
 
 me = (A==A2).all()
 
-print "Max diff:", np.abs((evals1 - evals2) / evals1).max()
+print("Max diff:", np.abs((evals1 - evals2) / evals1).max())
 
-print "A == A2:", me
+print("A == A2:", me)
 #print "Max diff A, rnk 0:", np.abs(A - A2.local_matrix).max() / np.abs(A.local_matrix).max()
 
 #bfile = bfile + "_%i_%i_%i_%i_%i.dat" % (n, B, npx, npy, nthread)
 
-print "%i %i %g %g %g\n" % (n, nthread, evtime, chtime, mltime)
-
-
+print("%i %i %g %g %g\n" % (n, nthread, evtime, chtime, mltime))

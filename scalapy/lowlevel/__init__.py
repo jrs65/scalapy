@@ -46,7 +46,7 @@ standard manner would be something like::
     zwork = np.zeros(1, dtype=np.complex128)
 
     # Perform work query
-    info = lowlevel.pzheevd('V', 'L', N,
+    info = lowlevel.pzheevd(b'V', b'L', N,
                             dA.local_array, 1, 1, dA.desc,
                             evals,
                             evecs.local_array, 1, 1, evecs.desc,
@@ -61,7 +61,7 @@ standard manner would be something like::
     zwork = np.zeros(lzwork, dtype=np.complex128)
 
     # Perform computation
-    info = lowlevel.pzheevd('V', 'L', N,
+    info = lowlevel.pzheevd(b'V', b'L', N,
                             dA.local_array, 1, 1, dA.desc,
                             evals,
                             evecs.local_array, 1, 1, evecs.desc,
@@ -100,6 +100,10 @@ uses the query result to initialising temporary work arrays which are passed
 into the routine for computation. This behaviour can save a substantial amount
 of time manually querying and initialising temporary arrays.
 
+A final transformation is that string arguments are automatically sanitised and
+converted to ASCII string held in a byte array. On Python 2 this is not needed,
+but for Python 3 we need to ensure this is done properly.
+
 
 Classes
 =======
@@ -128,7 +132,7 @@ Scalapack Routines
 <_insert_scalapack>
 
 """
-
+from __future__ import print_function, division
 
 import numpy as np
 
@@ -140,10 +144,8 @@ from . import redist as _redist
 expand_args = True
 
 
-
-
 def _expand_work(args, query=True):
-    ## Go through an argument list and expand and WorkArrays found.
+    # Go through an argument list and expand and WorkArrays found.
 
     exp_args = []
     for arg in args:
@@ -154,7 +156,7 @@ def _expand_work(args, query=True):
 
 
 def _expand_dm(args):
-    ## Iterate through and expand any DistributedMatrices found.
+    # Iterate through and expand any DistributedMatrices found.
 
     exp_args = []
     for arg in args:
@@ -164,14 +166,29 @@ def _expand_dm(args):
     return exp_args
 
 
+def _encode_strings(args):
+    # Ensure any string arguments get turned into proper 1-byte ascii so
+    # ScaLAPACK doesn't get confused
+
+    def _fix_string(arg):
+        if isinstance(arg, str):
+            return arg.encode('ascii')
+        return arg
+
+    return [_fix_string(arg) for arg in args]
+
+
 def _call_routine(routine, *args):
-    ## Call the routine, expanding any arguments as required.
+    # Call the routine, expanding any arguments as required.
 
     # Check to see if there any WorkArrays
     need_workquery = any([isinstance(arg, WorkArray) for arg in args])
 
     # Expand the DM arguments
     exp_args = _expand_dm(args)
+
+    # Convert any strings to bytes (potentially an issue for Python 3)
+    exp_args = _encode_strings(exp_args)
 
     # Perform a WorkArray query if needed
     if need_workquery:
@@ -186,8 +203,8 @@ def _call_routine(routine, *args):
 
 
 def _wrap_routine(rname, robj):
-    ## Generate a wrapper around the lowlevel routine which can expand the
-    ## arguments if required.
+    # Generate a wrapper around the lowlevel routine which can expand the
+    # arguments if required.
 
     # Create wrapper
     def wrapper(*args):
@@ -274,9 +291,8 @@ class WorkArray(object):
         return work_list
 
 
-
-## Add wrapped routines to this modules dictionary.
-## Also try and insert the PBLAS and ScaLAPACK routines into the docstring.
+# Add wrapped routines to this modules dictionary.
+# Also try and insert the PBLAS and ScaLAPACK routines into the docstring.
 _mod_dict = globals()
 
 _doc_redist = ''
@@ -285,7 +301,7 @@ _doc_scl = ''
 
 
 # From REDIST
-for rname, robj in _redist.__dict__.iteritems():
+for rname, robj in _redist.__dict__.items():
     if type(robj).__name__ == 'fortran':
         _mod_dict[rname] = _wrap_routine(rname, robj)
         _doc_redist += '    ' + rname + '\n'
@@ -294,7 +310,7 @@ _mod_dict['__doc__'] = _mod_dict['__doc__'].replace('<insert_redist>', _doc_redi
 
 
 # From PBLAS
-for rname, robj in _pblas.__dict__.iteritems():
+for rname, robj in _pblas.__dict__.items():
     if type(robj).__name__ == 'fortran':
         _mod_dict[rname] = _wrap_routine(rname, robj)
         _doc_pblas += '    ' + rname + '\n'
@@ -302,10 +318,9 @@ for rname, robj in _pblas.__dict__.iteritems():
 _mod_dict['__doc__'] = _mod_dict['__doc__'].replace('<insert_pblas>', _doc_pblas)
 
 # From Scalapack
-for rname, robj in _scl.__dict__.iteritems():
+for rname, robj in _scl.__dict__.items():
     if type(robj).__name__ == 'fortran':
         _mod_dict[rname] = _wrap_routine(rname, robj)
         _doc_scl += '    ' + rname + '\n'
 
 _mod_dict['__doc__'] = _mod_dict['__doc__'].replace('<insert_scalapack>', _doc_scl)
-

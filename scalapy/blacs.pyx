@@ -44,7 +44,7 @@ def gridinfo(ctxt):
 
     Raises
     ------
-    BLACSException 
+    BLACSException
         If process grid undefined.
     """
     cdef int ictxt, nrows, ncols, row, col
@@ -79,7 +79,10 @@ def gridinit(ctxt, nrows, ncols, order="Row"):
 
     ictxt = <int>ctxt
 
-    if order != "Row":
+    # Ensure order is property converted to an ASCII string
+    order = bytes(order.encode('ascii')) if isinstance(order, str) else order
+
+    if order != b"Row":
         raise Exception("Order not valid.")
 
     # Initialise the grid
@@ -95,4 +98,3 @@ def gridinit(ctxt, nrows, ncols, order="Row"):
     ctxt = ictxt
 
     return ctxt
-

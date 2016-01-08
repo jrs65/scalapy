@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# Script for generating the F2PY interface files (pyf files) from a copy of the
+# ScaLAPACK source.
+
+from __future__ import print_function, division
+
 import os
 import shutil
 import glob
@@ -7,7 +12,7 @@ import subprocess
 
 from termcolor import colored
 
-import scalapack2pyf as s2p
+from . import scalapack2pyf as s2p
 
 # Script for generating pyf file.
 
@@ -33,7 +38,7 @@ os.makedirs(PBLAS_OUTDIR)
 # Files in PBLAS to process
 pblas_files = glob.glob(PBLAS_SRCDIR + '/*_.c')
 
-print "Scanning PBLAS - processing %i files" % len(pblas_files)
+print("Scanning PBLAS - processing %i files" % len(pblas_files))
 
 # Iterate over files in PBLAS and create a pyf signature file.
 for pbfile in pblas_files:
@@ -43,14 +48,14 @@ for pbfile in pblas_files:
     try:
         s2p.scalapack2pyf(pbfile, outfile)
     except s2p.ParseException as p:
-        print colored('FAILURE', 'red') + ': processing %s' % basefile
+        print(colored('FAILURE', 'red') + ': processing %s' % basefile)
 
 # Construct list of signature files that are not blacklisted.
 pblas_sigfiles = []
 for sigfile in glob.glob(PBLAS_OUTDIR + '/*.pyf'):
     fname = os.path.splitext(os.path.basename(sigfile))[0]
     if fname in blacklist:
-        print "Not processing blacklisted: %s" % fname
+        print("Not processing blacklisted: %s" % fname)
         continue
 
     pblas_sigfiles.append(sigfile)
@@ -59,8 +64,8 @@ for sigfile in glob.glob(PBLAS_OUTDIR + '/*.pyf'):
 try:
     output = subprocess.check_output([F2PY, '-h', 'pblas.pyf'] + pblas_sigfiles + ['-m', 'pblas', '--overwrite-signature'], stderr=subprocess.STDOUT)
 except Exception as e:
-    print colored('ERROR')
-    print e.output
+    print(colored('ERROR'))
+    print(e.output)
 
 
 
@@ -71,7 +76,7 @@ os.makedirs(SCL_OUTDIR)
 # Files in Scalapack to process
 scl_files = glob.glob(SCL_SRCDIR + '/*.f')
 
-print "Scanning Scalapack - processing %i files" % len(scl_files)
+print("Scanning Scalapack - processing %i files" % len(scl_files))
 
 # Iterate over files in Scalapack and create a pyf signature file.
 for pbfile in scl_files:
@@ -81,14 +86,14 @@ for pbfile in scl_files:
     try:
         s2p.scalapack2pyf(pbfile, outfile)
     except s2p.ParseException as p:
-        print colored('FAILURE', 'red') + ': processing %s' % basefile
+        print(colored('FAILURE', 'red') + ': processing %s' % basefile)
 
 # Construct list of signature files that are not blacklisted.
 scl_sigfiles = []
 for sigfile in glob.glob(SCL_OUTDIR + '/*.pyf'):
     fname = os.path.splitext(os.path.basename(sigfile))[0]
     if fname in blacklist:
-        print "Not processing blacklisted: %s" % fname
+        print("Not processing blacklisted: %s" % fname)
         continue
 
     scl_sigfiles.append(sigfile)
@@ -97,5 +102,5 @@ for sigfile in glob.glob(SCL_OUTDIR + '/*.pyf'):
 try:
     output = subprocess.check_output([F2PY, '-h', 'scalapack.pyf'] + scl_sigfiles + ['-m', 'scalapack', '--overwrite-signature'], stderr=subprocess.STDOUT)
 except Exception as e:
-    print colored('ERROR')
-    print e.output
+    print(colored('ERROR'))
+    print(e.output)

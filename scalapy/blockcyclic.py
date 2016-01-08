@@ -18,9 +18,10 @@ Routines
     num_blocks
     num_c_blocks
     num_lblocks
-    num_c_lblocks 
+    num_c_lblocks
     partial_last_block
 """
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
 
@@ -29,7 +30,7 @@ from mpi4py import MPI
 
 def ceildiv(x, y):
     """Round to ceiling division."""
-    return ((int(x) - 1) / int(y) + 1)
+    return ((int(x) - 1) // int(y) + 1)
 
 
 def pid_remap(p, p0, P):
@@ -50,7 +51,7 @@ def num_c_blocks(N, B):
     -------
     num : integer
     """
-    return int(N / B)
+    return int(N // B)
 
 
 def num_blocks(N, B):
@@ -89,7 +90,7 @@ def num_c_lblocks(N, B, p, P):
     num : integer
     """
     nbc = num_c_blocks(N, B)
-    return int(nbc / P) + int(1 if ((nbc % P) > p) else 0)
+    return int(nbc // P) + int(1 if ((nbc % P) > p) else 0)
 
 
 def num_lblocks(N, B, p, P):
@@ -111,7 +112,7 @@ def num_lblocks(N, B, p, P):
     num : integer
     """
     nb = num_blocks(N, B)
-    return int(nb / P) + int(1 if ((nb % P) > p) else 0)
+    return int(nb // P) + int(1 if ((nb % P) > p) else 0)
 
 
 def partial_last_block(N, B, p, P):
@@ -192,7 +193,7 @@ def indices_rc(N, B, p, P):
 
     Returns
     -------
-    indices : np.ndarray[int32]    
+    indices : np.ndarray[int32]
         Indices of the side that are local to this process.
 
     Examples
@@ -211,18 +212,18 @@ def indices_rc(N, B, p, P):
 
     ind = np.zeros(nt, dtype='int')
 
-    ind[:(nb*B)] = ((np.arange(nb)[:, np.newaxis] * P + p)*B +
-                    np.arange(B)[np.newaxis, :]).flatten()
+    ind[:(nb * B)] = ((np.arange(nb)[:, np.newaxis] * P + p) * B +
+                      np.arange(B)[np.newaxis, :]).flatten()
 
     if (nb * B < nt):
-        ind[(nb*B):] = (nb*P+p)*B + np.arange(nt - nb*B)
+        ind[(nb * B):] = (nb * P + p) * B + np.arange(nt - nb * B)
 
     return ind
 
 
 def localize_indices(global_indices, B, P):
     """Given an array of "global indices", compute the (rank, local index) pair corresponding to each global index.
-    
+
     Parameters
     ----------
     global_indices : integer-valued array
@@ -246,9 +247,9 @@ def localize_indices(global_indices, B, P):
     assert B > 0
     assert P > 0
 
-    t = np.divide(global_indices, B)
-    u = np.divide(t, P)
-    return (t-u*P, global_indices+B*(u-t))
+    t = global_indices // B
+    u = t // P
+    return (t - u * P, global_indices + B * (u - t))
 
 
 def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F', displacement=0):
@@ -256,7 +257,7 @@ def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F
 
     The order flag specifies in which order (either C or Fortran) the array is
     on disk. Importantly the returned `local_array` is ordered the *same* way.
-    
+
     Parameters
     ----------
     fname : string
@@ -289,23 +290,20 @@ def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F
     # Get MPI type
     mpitype = _typemap[dtype]
 
-
     # Sort out F, C ordering
     if order not in ['F', 'C']:
         raise Exception("Order must be 'F' (Fortran) or 'C'")
 
     # Set file ordering
-    mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C 
+    mpiorder = MPI.ORDER_FORTRAN if order == 'F' else MPI.ORDER_C
 
     # Get MPI process info
     rank = comm.Get_rank()
     size = comm.Get_size()
 
     # Check process grid shape
-    if size != process_grid[0]*process_grid[1]:
+    if size != process_grid[0] * process_grid[1]:
         raise Exception("MPI size does not match process grid.")
-
-
 
     # Create distributed array view.
     darr = mpitype.Create_darray(size, rank, gshape,
@@ -314,13 +312,12 @@ def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F
     darr.Commit()
 
     # Get shape of loal segment
-    process_position = [int(rank / process_grid[1]), int(rank % process_grid[1])]
-    lshape = map(numrc, gshape, blocksize, process_position, process_grid)
+    process_position = [int(rank // process_grid[1]), int(rank % process_grid[1])]
+    lshape = tuple(map(numrc, gshape, blocksize, process_position, process_grid))
 
     # Check to see if they type has the same shape.
-    if lshape[0]*lshape[1] != darr.Get_size() / mpitype.Get_size():
+    if lshape[0] * lshape[1] != darr.Get_size() // mpitype.Get_size():
         raise Exception("Strange mismatch is local shape size.")
-
 
     # Create the local array
     local_array = np.empty(lshape, dtype=dtype, order=order)
@@ -335,16 +332,16 @@ def mpi_readmatrix(fname, comm, gshape, dtype, blocksize, process_grid, order='F
 
 
 
-    
+
 def mpi_writematrix(fname, local_array, comm, gshape, dtype,
                     blocksize, process_grid, order='F', displacement=0):
-    
+
     """Write a block cyclic distributed matrix to a file (using MPI-IO).
 
     The order flag specifies in which order (either C or Fortran) the array
     should be on on disk. Importantly the input `local_array` *must* be ordered
     in the same way.
-    
+
     Parameters
     ----------
     fname : string
@@ -369,29 +366,26 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
         `displacement` bytes.
 
     """
-    
+
     if dtype not in _typemap:
         raise Exception("Unsupported type.")
 
     # Get MPI type
     mpitype = _typemap[dtype]
 
-
     # Sort out F, C ordering
     if order not in ['F', 'C']:
         raise Exception("Order must be 'F' (Fortran) or 'C'")
 
-    mpiorder = MPI.ORDER_FORTRAN if order=='F' else MPI.ORDER_C 
-
+    mpiorder = MPI.ORDER_FORTRAN if order == 'F' else MPI.ORDER_C
 
     # Get MPI process info
     rank = comm.Get_rank()
     size = comm.Get_size()
 
     # Check process grid shape
-    if size != process_grid[0]*process_grid[1]:
+    if size != process_grid[0] * process_grid[1]:
         raise Exception("MPI size does not match process grid.")
-
 
     # Create distributed array view.
     darr = mpitype.Create_darray(size, rank, gshape,
@@ -400,13 +394,13 @@ def mpi_writematrix(fname, local_array, comm, gshape, dtype,
     darr.Commit()
 
     # Check to see if they type has the same shape.
-    if local_array.size != darr.Get_size() / mpitype.Get_size():
+    if local_array.size != darr.Get_size() // mpitype.Get_size():
         raise Exception("Local array size is not consistent with array description.")
 
     # Length of filename required for write (in bytes).
-    filelength = displacement + gshape[0]*gshape[1]
+    filelength = displacement + gshape[0] * gshape[1]
 
-    print filelength, darr.Get_size()
+    print(filelength, darr.Get_size())
 
     # Open the file, and read out the segments
     f = MPI.File.Open(comm, fname, MPI.MODE_RDWR | MPI.MODE_CREATE)

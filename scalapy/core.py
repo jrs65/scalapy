@@ -32,15 +32,16 @@ Classes
     ScalapackException
 
 """
+from __future__ import print_function, division, absolute_import
 
 from numbers import Number
 import numpy as np
 
 from mpi4py import MPI
 
-import blockcyclic
-import blacs
-import mpi3util
+from . import blockcyclic
+from . import blacs
+from . import mpi3util
 
 
 class ScalapyException(Exception):
@@ -368,9 +369,9 @@ class DistributedMatrix(object):
     def local_shape(self):
         """The shape of the local matrix."""
 
-        lshape = map(blockcyclic.numrc, self.global_shape,
-                     self.block_shape, self.context.grid_position,
-                     self.context.grid_shape)
+        lshape = tuple(map(blockcyclic.numrc, self.global_shape,
+                       self.block_shape, self.context.grid_position,
+                       self.context.grid_shape))
 
         return tuple(lshape)
 
@@ -387,7 +388,7 @@ class DistributedMatrix(object):
         """
 
         ## Check and set data type
-        if dtype not in typemap.keys():
+        if dtype not in list(typemap.keys()):
             raise Exception("Requested dtype not supported by Scalapack.")
 
         self._dtype = dtype
@@ -444,7 +445,6 @@ class DistributedMatrix(object):
         self._desc[7] = 0
         self._desc[8] = self.local_shape[0]
 
-
     def _mk_mpi_dtype(self):
         ## Construct the MPI datatypes (both Fortran and C ordered)
         ##   These are required for reading in and out of arrays and files.
@@ -475,10 +475,10 @@ class DistributedMatrix(object):
 
             # Create list of types for all ranks (useful for passing to global array)
             self._darr_list = [ self.mpi_dtype.Create_darray(size, ri,
-                                    self.global_shape,
-                                    [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
-                                    self.block_shape, self.context.grid_shape,
-                                    MPI.ORDER_F).Commit() for ri in range(size) ]
+                                self.global_shape,
+                                [MPI.DISTRIBUTE_CYCLIC, MPI.DISTRIBUTE_CYCLIC],
+                                self.block_shape, self.context.grid_shape,
+                                MPI.ORDER_F).Commit() for ri in range(size) ]
 
 
     @classmethod
@@ -535,14 +535,14 @@ class DistributedMatrix(object):
            The process context. If not set uses the default (recommended).
         """
 
-        ret = cls(global_shape = (n,n),
-                  dtype = dtype,
-                  block_shape = block_shape,
-                  context = context)
+        ret = cls(global_shape=(n, n),
+                  dtype=dtype,
+                  block_shape=block_shape,
+                  context=context)
 
-        (g,r,c) = ret.local_diagonal_indices()
+        g, r, c = ret.local_diagonal_indices()
 
-        ret.local_array[r,c] = 1.0
+        ret.local_array[r, c] = 1.0
         return ret
 
 
@@ -610,11 +610,11 @@ class DistributedMatrix(object):
             dm.local_array[:] = rows + cols
         """
 
-        ri, ci = map(blockcyclic.indices_rc,
-                     self.global_shape,
-                     self.block_shape,
-                     self.context.grid_position,
-                     self.context.grid_shape)
+        ri, ci = tuple(map(blockcyclic.indices_rc,
+                       self.global_shape,
+                       self.block_shape,
+                       self.context.grid_position,
+                       self.context.grid_shape))
 
         ri = ri.reshape((-1, 1), order='F')
         ci = ci.reshape((1, -1), order='F')
@@ -649,11 +649,11 @@ class DistributedMatrix(object):
             #
             raise RuntimeError('scalapy.core.DistributedMatrix.local_diagonal_indices() called on non-square matrix, and allow_non_square=False')
 
-        ri, ci = map(blockcyclic.indices_rc,
-                     self.global_shape,
-                     self.block_shape,
-                     self.context.grid_position,
-                     self.context.grid_shape)
+        ri, ci = tuple(map(blockcyclic.indices_rc,
+                       self.global_shape,
+                       self.block_shape,
+                       self.context.grid_position,
+                       self.context.grid_shape))
 
         global_index = np.intersect1d(ri, ci)
 
@@ -1005,11 +1005,11 @@ class DistributedMatrix(object):
             items = tuple([slice(None, None, None) if items is Ellipsis else item for item in items])
 
         # First case deal with just a single slice (either an int or slice object)
-        if type(items) in [int, long]:
+        if isinstance(items, int):
             m, rows = regularize_idx(items, nrow, 0)
             n = ncol  # number of columns
             cols = [(0, ncol)]
-        elif type(items) is slice:
+        elif isinstance(items, slice):
             if items == slice(None, None, None):
                 return self.copy()
 
@@ -1018,35 +1018,35 @@ class DistributedMatrix(object):
             cols = [(0, ncol)]
 
         # Then deal with the case of a tuple (i.e. slicing both dimensions)
-        elif type(items) is tuple:
+        elif isinstance(items, tuple):
 
             # Check we have two indexed dimensions
             if len(items) != 2:
                 raise ValueError('Two many indices for 2D matrix: %s' % repr(items))
 
             # Check the types in the slicing are correct
-            if not ((type(items[0]) in [int, long, slice] or items[0] is Ellipsis) and
-                    (type(items[1]) in [int, long, slice] or items[1] is Ellipsis)):
+            if not ((isinstance(items[0], (int, slice)) or items[0] is Ellipsis) and
+                    (isinstance(items[1], (int, slice)) or items[1] is Ellipsis)):
                 raise ValueError('Invalid indices %s' % items)
 
             # Process case of wanting a specific row
-            if type(items[0]) in [int, long]:
+            if isinstance(items[0], int):
                 m, rows = regularize_idx(items[0], nrow, 0)
 
-                if type(items[1]) in [int, long]:
+                if isinstance(items[1], int):
                     n, cols = regularize_idx(items[1], ncol, 1)
-                elif type(items[1]) is slice:
+                elif isinstance(items[1], slice):
                     n, cols = regularize_slice(items[1], ncol)
                 else:
                     raise ValueError('Invalid indices %s' % items)
 
             # Case of wanting a slice of rows
-            elif type(items[0]) is slice:
+            elif isinstance(items[0], slice):
                 m, rows = regularize_slice(items[0], nrow)
 
-                if type(items[1]) in [int, long]:
+                if isinstance(items[1], int):
                     n, cols = regularize_idx(items[1], ncol, 1)
-                elif type(items[1]) is slice:
+                elif isinstance(items[1], slice):
                     if items[0] == slice(None, None, None) and items[1] == slice(None, None, None):
                         return self.copy()
 

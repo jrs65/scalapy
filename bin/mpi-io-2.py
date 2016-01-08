@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 from pyscalapack import blockcyclic
 
 import numpy as np
@@ -22,10 +24,10 @@ if rank == 0:
 
     arrf = np.asfortranarray(arrc)
     arrf.T.tofile("testarr_f.dat")
-    
-    print arrc
-    
-    print arrf
+
+    print(arrc)
+
+    print(arrf)
 
 
 
@@ -35,19 +37,19 @@ local_array_f = blockcyclic.mpi_readmatrix("testarr_f.dat", comm, gshape,
                                            np.float64, blocksize, pshape, order='F')
 
 for i in range(size):
-    comm.Barrier() 
+    comm.Barrier()
 
     if rank == i:
-        print [int(rank / pshape[1]), int(rank % pshape[1])]
+        print([int(rank // pshape[1]), int(rank % pshape[1])])
         #print local_array.flags
         #print local_array
 
-        print "Fortran ordered."
-        print local_array_f
-        print
-        print "C ordered."
-        print local_array_c
-        print
+        print("Fortran ordered.")
+        print(local_array_f)
+        print()
+        print("C ordered.")
+        print(local_array_c)
+        print()
 
 blockcyclic.mpi_writematrix("testarr2_c.dat", local_array_c, comm, gshape,
                             np.float64, blocksize, pshape, order='C')
@@ -63,16 +65,13 @@ if rank == 0:
     arr1_f = np.fromfile("testarr_f.dat")
     arr2_f = np.fromfile("testarr2_f.dat")
 
-    print "F ordered"
-    print arr1_f
-    print arr2_f
-    print
-    print "C ordered"
-    print arr1_c
-    print arr2_c
+    print("F ordered")
+    print(arr1_f)
+    print(arr2_f)
+    print()
+    print("C ordered")
+    print(arr1_c)
+    print(arr2_c)
 
 
 MPI.Finalize()
-
-
-

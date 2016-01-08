@@ -13,6 +13,7 @@ Routines
 
     allocate_hdf5_dataset
 """
+from __future__ import print_function, division, absolute_import
 
 import h5py
 import numpy as np
@@ -101,9 +102,9 @@ def write_matrix(a, f, dataset_name, root=0, memlimit_gb=1.0, nblocks=None):
     This is an alternative to the "high-tech" approach (scalapy.hdf5utils.ensure_hdf5_dataset
     followed by scalapy.core.DistributedMatrix.to_file()).
 
-    It gathers the matrix onto the root task (in blocks, to avoid exceeding memory limits) 
+    It gathers the matrix onto the root task (in blocks, to avoid exceeding memory limits)
     then writes the file from the root.
-    
+
     Parameters
     ----------
     a : numpy.ndarray (serial case) or scalapy.core.DistributedMatrix (parallel)
@@ -136,12 +137,12 @@ def write_matrix(a, f, dataset_name, root=0, memlimit_gb=1.0, nblocks=None):
         # Factor 2 here is because of double-buffering needed to unpack the result of mpi_gather (see below)
         gb_per_row = 2 * ncols_global * np.dtype(a.dtype).itemsize / 1.0e9
         rows_per_block = int(memlimit_gb / gb_per_row)
-        
+
         if rows_per_block == 0:
             raise RuntimeError('write_matrix: memlimit_gb is too small')
 
         nblocks = (nrows_global + rows_per_block - 1) // rows_per_block
- 
+
     rindices = [ blockcyclic.indices_rc(nrows_global, a.block_shape[0], p, a.context.grid_shape[0]) for p in xrange(a.context.grid_shape[0]) ]
     cindices = [ blockcyclic.indices_rc(ncols_global, a.block_shape[1], p, a.context.grid_shape[1]) for p in xrange(a.context.grid_shape[1]) ]
 
@@ -151,7 +152,7 @@ def write_matrix(a, f, dataset_name, root=0, memlimit_gb=1.0, nblocks=None):
     assert nblocks > 0
     assert np.sum(col_counts) == ncols_global
     assert 0 <= root < a.context.mpi_comm.size
-    
+
     if mpi_rank == root:
         assert isinstance(f, h5py.Group)
         dset = f.create_dataset(dataset_name, (nrows_global,ncols_global), dtype=a.dtype)
@@ -198,7 +199,7 @@ def write_matrix(a, f, dataset_name, root=0, memlimit_gb=1.0, nblocks=None):
 
         if mpi_rank != root:
             continue
-        
+
         #
         # Unpack rbuf into 2D array of shape (grj-gri, ncols_global)
         # Step 1: unpack rows, leaving columns in packed form
@@ -213,7 +214,7 @@ def write_matrix(a, f, dataset_name, root=0, memlimit_gb=1.0, nblocks=None):
             cd = col_displs[q]
 
             rbuf2[rl,cd:(cd+n)] = np.reshape(rbuf[d:(d+m*n)], (m,n))
-        
+
         #
         # Unpacking step 2: permute cols
         #

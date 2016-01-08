@@ -1,3 +1,4 @@
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
 import numpy.lib.format as npfor
@@ -14,7 +15,7 @@ def read_header_data(fname):
     return shape, fortran_order, dtype, header_length
 
 def write_header_data(fname, header_data):
-    
+
     version = (1, 0)
     fp = open(fname, 'r+')
     fp.write(npfor.magic(*version))
@@ -22,7 +23,7 @@ def write_header_data(fname, header_data):
     write_array_header_1_0(fp, header_data)
 
 def pack_header_data(shape, fortran_order, dtype):
-    
+
     # Do very strict type checking, which is normally a not done in python.
     # We need repr() to work perfectly.
     msg = "`shape` must me a tuple of intergers."
@@ -43,17 +44,17 @@ def pack_header_data(shape, fortran_order, dtype):
 
 def get_header_length(header):
     """Gets the total length of the header given the header data.
-    
+
     Works for header data in a dictionary (as returned by `pack_header_data` or
     for data already packed into a string (as returned by `get_header_string`).
     """
-    
+
     if isinstance(header, dict):
         header = get_header_str(header)
-    return npfor.MAGIC_LEN + 2 + len(header) 
+    return npfor.MAGIC_LEN + 2 + len(header)
 
 def get_header_str(header_data):
-    
+
     header = ["{"]
     for key, value in sorted(header_data.items()):
         # Need to use repr here, since we eval these when reading
@@ -65,7 +66,7 @@ def get_header_str(header_data):
     # boundary.  Hopefully, some system, possibly memory-mapping, can take
     # advantage of our premature optimization.
     # 1 for the newline
-    current_header_len = get_header_length(header) + 1  # 1 for newline.  
+    current_header_len = get_header_length(header) + 1  # 1 for newline.
     topad = 4096 - (current_header_len % 4096)
     header = '%s%s\n' % (header, ' '*topad)
     return header
@@ -92,4 +93,3 @@ def write_array_header_1_0(fp, d):
     header_len_str = struct.pack('<H', len(header))
     fp.write(header_len_str)
     fp.write(header)
-
