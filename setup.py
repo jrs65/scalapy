@@ -89,9 +89,9 @@ elif mpiversion == 'openmpi':
     mpicompileargs = runcommand('mpicc -showme:compile').split()
 elif mpiversion == 'mpich':
     link_info = runcommand('mpicc -link_info')
-    mpilinkargs = re.sub(f'^\w+\s', '', link_info).split()
+    mpilinkargs = re.sub(r'^\w+\s', '', link_info).split()
     compile_info = runcommand('mpicc -compile_info')
-    mpicompileargs = re.sub(f'^\w+\s', '', compile_info).split()
+    mpicompileargs = re.sub(r'^\w+\s', '', compile_info).split()
 else:
     raise Exception("MPI library unsupported. Please modify setup.py manually.")
 
