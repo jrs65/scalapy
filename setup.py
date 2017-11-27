@@ -27,12 +27,15 @@ def runcommand(cmd):
 def whichmpi():
     # Figure out which MPI environment this is
     import re
-    mpiv = runcommand('mpirun -V')
+    try:
+        mpiv = runcommand('mpirun -V')
 
-    if re.search('Intel', mpiv):
-        return 'intelmpi'
-    elif re.search('Open MPI', mpiv):
-        return 'openmpi'
+        if re.search('Intel', mpiv):
+            return 'intelmpi'
+        elif re.search('Open MPI', mpiv):
+            return 'openmpi'
+    except:
+        return 'mpich'
 
     warnings.warn('Unknown MPI environment.')
     return None
@@ -84,6 +87,11 @@ elif mpiversion == 'openmpi':
     # Fetch the arguments for linking and compiling.
     mpilinkargs = runcommand('mpicc -showme:link').split()
     mpicompileargs = runcommand('mpicc -showme:compile').split()
+elif mpiversion == 'mpich':
+    link_info = runcommand('mpicc -link_info')
+    mpilinkargs = re.sub(f'^\w+\s', '', link_info).split()
+    compile_info = runcommand('mpicc -compile_info')
+    mpicompileargs = re.sub(f'^\w+\s', '', compile_info).split()
 else:
     raise Exception("MPI library unsupported. Please modify setup.py manually.")
 
