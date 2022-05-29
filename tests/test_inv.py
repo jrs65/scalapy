@@ -15,50 +15,49 @@ size = comm.size
 if size != 4:
     raise Exception("Test needs 4 processes.")
 
-core.initmpi([2, 2], block_shape=[16, 16])
+test_context = {"gridshape": (2, 2), "block_shape": (16, 16)}
 
 allclose = lambda a, b: np.allclose(a, b, rtol=1e-4, atol=1e-6)
 
 
 def test_inv_D():
-    ## Test inverse computation of a real double precision distributed matrix
-    ns = 353
+    """Test inverse computation of a real double precision distributed matrix"""
+    with core.shape_context(**test_context):
 
-    gA = np.random.standard_normal((ns, ns)).astype(np.float64)
-    gA = np.asfortranarray(gA)
+        ns = 353
 
-    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+        gA = np.random.standard_normal((ns, ns)).astype(np.float64)
+        gA = np.asfortranarray(gA)
 
-    invA, ipiv = rt.inv(dA)
-    ginvA = invA.to_global_array(rank=0)
+        dA = core.DistributedMatrix.from_global_array(gA, rank=0)
 
-    # print 'Process %d has ipiv = %s' % (rank, ipiv)
+        invA, ipiv = rt.inv(dA)
+        ginvA = invA.to_global_array(rank=0)
 
-    if rank == 0:
-        assert allclose(np.dot(ginvA, gA), np.eye(ns, dtype=np.float64))
-        assert allclose(ginvA, la.inv(gA)) # compare with scipy result
+        # print 'Process %d has ipiv = %s' % (rank, ipiv)
+
+        if rank == 0:
+            assert allclose(np.dot(ginvA, gA), np.eye(ns, dtype=np.float64))
+            assert allclose(ginvA, la.inv(gA)) # compare with scipy result
 
 
 def test_inv_Z():
-    ## Test inverse computation of a complex double precision distributed matrix
-    ns = 521
+    """Test inverse computation of a complex double precision distributed matrix"""
+    with core.shape_context(**test_context):
 
-    gA = np.random.standard_normal((ns, ns)).astype(np.float64)
-    gA = gA + 1.0J * np.random.standard_normal((ns, ns)).astype(np.float64)
-    gA = np.asfortranarray(gA)
+        ns = 521
 
-    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+        gA = np.random.standard_normal((ns, ns)).astype(np.float64)
+        gA = gA + 1.0J * np.random.standard_normal((ns, ns)).astype(np.float64)
+        gA = np.asfortranarray(gA)
 
-    invA, ipiv = rt.inv(dA)
-    ginvA = invA.to_global_array(rank=0)
+        dA = core.DistributedMatrix.from_global_array(gA, rank=0)
 
-    # print 'Process %d has ipiv = %s' % (rank, ipiv)
+        invA, ipiv = rt.inv(dA)
+        ginvA = invA.to_global_array(rank=0)
 
-    if rank == 0:
-        assert allclose(np.dot(ginvA, gA), np.eye(ns, dtype=np.complex128))
-        assert allclose(ginvA, la.inv(gA)) # compare with scipy result
+        # print 'Process %d has ipiv = %s' % (rank, ipiv)
 
-
-if __name__ == '__main__':
-    test_inv_D()
-    test_inv_Z()
+        if rank == 0:
+            assert allclose(np.dot(ginvA, gA), np.eye(ns, dtype=np.complex128))
+            assert allclose(ginvA, la.inv(gA)) # compare with scipy result

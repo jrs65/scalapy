@@ -27,14 +27,13 @@ def test_process_context():
 
 
 def test_initmpi():
+    with core.shape_context([2, 2], block_shape=[5, 5]):
 
-    core.initmpi([2, 2], block_shape=[5, 5])
+        # Test grid shape is correct
+        assert core._context.grid_shape == (2, 2)
 
-    # Test grid shape is correct
-    assert core._context.grid_shape == (2, 2)
+        # Test we have the correct positions
+        assert core._context.grid_position == poslist[rank]
 
-    # Test we have the correct positions
-    assert core._context.grid_position == poslist[rank]
-
-    # Test the blockshape is set correctly
-    assert core._block_shape == (5, 5)
+        # Test the blockshape is set correctly
+        assert core._block_shape == (5, 5)

@@ -14,114 +14,116 @@ size = comm.size
 if size != 4:
     raise Exception("Test needs 4 processes.")
 
-core.initmpi([2, 2], block_shape=[16, 16])
+test_context = {"gridshape": (2, 2), "block_shape": (16, 16)}
 
 allclose = lambda a, b: np.allclose(a, b, rtol=1e-4, atol=1e-6)
 
 
 def test_trans_D():
-    ## Test transpose of a real double precision distributed matrix
-    m, n = 354, 231
+    """Test transpose of a real double precision distributed matrix"""
+    with core.shape_context(**test_context):
 
-    gA = np.random.standard_normal((m, n)).astype(np.float64)
-    gA = np.asfortranarray(gA)
+        m, n = 354, 231
 
-    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+        gA = np.random.standard_normal((m, n)).astype(np.float64)
+        gA = np.asfortranarray(gA)
 
-    dAT = rt.transpose(dA)
-    gAT = dAT.to_global_array(rank=0)
+        dA = core.DistributedMatrix.from_global_array(gA, rank=0)
 
-    if rank == 0:
-        assert allclose(gAT, gA.T) # compare with numpy result
+        dAT = rt.transpose(dA)
+        gAT = dAT.to_global_array(rank=0)
+
+        if rank == 0:
+            assert allclose(gAT, gA.T) # compare with numpy result
 
 
 def test_trans_Z():
-    ## Test transpose of a complex double precision distributed matrix
-    m, n = 379, 432
+    """Test transpose of a complex double precision distributed matrix"""
+    with core.shape_context(**test_context):
+        m, n = 379, 432
 
-    gA = np.random.standard_normal((m, n)).astype(np.float64)
-    gA = gA + 1.0J * np.random.standard_normal((m, n)).astype(np.float64)
-    gA = np.asfortranarray(gA)
+        gA = np.random.standard_normal((m, n)).astype(np.float64)
+        gA = gA + 1.0J * np.random.standard_normal((m, n)).astype(np.float64)
+        gA = np.asfortranarray(gA)
 
-    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+        dA = core.DistributedMatrix.from_global_array(gA, rank=0)
 
-    dAT = rt.transpose(dA)
-    gAT = dAT.to_global_array(rank=0)
+        dAT = rt.transpose(dA)
+        gAT = dAT.to_global_array(rank=0)
 
-    if rank == 0:
-        assert allclose(gAT, gA.T) # compare with numpy result
+        if rank == 0:
+            assert allclose(gAT, gA.T) # compare with numpy result
 
 
 def test_conj_D():
-    ## Test complex conjugate of a real double precision distributed matrix
-    m, n = 245, 357
+    """Test complex conjugate of a real double precision distributed matrix"""
+    with core.shape_context(**test_context):
 
-    gA = np.random.standard_normal((m, n)).astype(np.float64)
-    gA = np.asfortranarray(gA)
+        m, n = 245, 357
 
-    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+        gA = np.random.standard_normal((m, n)).astype(np.float64)
+        gA = np.asfortranarray(gA)
 
-    dAC = rt.conj(dA)
-    gAC = dAC.to_global_array(rank=0)
+        dA = core.DistributedMatrix.from_global_array(gA, rank=0)
 
-    if rank == 0:
-        assert allclose(gAC, gA.conj()) # compare with numpy result
+        dAC = rt.conj(dA)
+        gAC = dAC.to_global_array(rank=0)
+
+        if rank == 0:
+            assert allclose(gAC, gA.conj()) # compare with numpy result
 
 
 def test_conj_Z():
-    ## Test complex conjugate of a complex double precision distributed matrix
-    m, n = 630, 62
+    """Test complex conjugate of a complex double precision distributed matrix"""
+    with core.shape_context(**test_context):
 
-    gA = np.random.standard_normal((m, n)).astype(np.float64)
-    gA = gA + 1.0J * np.random.standard_normal((m, n)).astype(np.float64)
-    gA = np.asfortranarray(gA)
+        m, n = 630, 62
 
-    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+        gA = np.random.standard_normal((m, n)).astype(np.float64)
+        gA = gA + 1.0J * np.random.standard_normal((m, n)).astype(np.float64)
+        gA = np.asfortranarray(gA)
 
-    dAC = rt.conj(dA)
-    gAC = dAC.to_global_array(rank=0)
+        dA = core.DistributedMatrix.from_global_array(gA, rank=0)
 
-    if rank == 0:
-        assert allclose(gAC, gA.conj()) # compare with numpy result
+        dAC = rt.conj(dA)
+        gAC = dAC.to_global_array(rank=0)
+
+        if rank == 0:
+            assert allclose(gAC, gA.conj()) # compare with numpy result
 
 
 def test_hconj_D():
-    ## Test Hermitian conjugate of a real double precision distributed matrix
-    m, n = 245, 357
+    """Test Hermitian conjugate of a real double precision distributed matrix"""
+    with core.shape_context(**test_context):
 
-    gA = np.random.standard_normal((m, n)).astype(np.float64)
-    gA = np.asfortranarray(gA)
+        m, n = 245, 357
 
-    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+        gA = np.random.standard_normal((m, n)).astype(np.float64)
+        gA = np.asfortranarray(gA)
 
-    dAH = rt.hconj(dA)
-    gAH = dAH.to_global_array(rank=0)
+        dA = core.DistributedMatrix.from_global_array(gA, rank=0)
 
-    if rank == 0:
-        assert allclose(gAH, gA.T.conj()) # compare with numpy result
+        dAH = rt.hconj(dA)
+        gAH = dAH.to_global_array(rank=0)
+
+        if rank == 0:
+            assert allclose(gAH, gA.T.conj()) # compare with numpy result
 
 
 def test_hconj_Z():
-    ## Test Hermitian conjugate of a complex double precision distributed matrix
-    m, n = 630, 62
+    """Test Hermitian conjugate of a complex double precision distributed matrix"""
+    with core.shape_context(**test_context):
 
-    gA = np.random.standard_normal((m, n)).astype(np.float64)
-    gA = gA + 1.0J * np.random.standard_normal((m, n)).astype(np.float64)
-    gA = np.asfortranarray(gA)
+        m, n = 630, 62
 
-    dA = core.DistributedMatrix.from_global_array(gA, rank=0)
+        gA = np.random.standard_normal((m, n)).astype(np.float64)
+        gA = gA + 1.0J * np.random.standard_normal((m, n)).astype(np.float64)
+        gA = np.asfortranarray(gA)
 
-    dAH = rt.hconj(dA)
-    gAH = dAH.to_global_array(rank=0)
+        dA = core.DistributedMatrix.from_global_array(gA, rank=0)
 
-    if rank == 0:
-        assert allclose(gAH, gA.T.conj()) # compare with numpy result
+        dAH = rt.hconj(dA)
+        gAH = dAH.to_global_array(rank=0)
 
-
-if __name__ == '__main__':
-    test_trans_D()
-    test_trans_Z()
-    test_conj_D()
-    test_conj_Z()
-    test_hconj_D()
-    test_hconj_Z()
+        if rank == 0:
+            assert allclose(gAH, gA.T.conj()) # compare with numpy result
