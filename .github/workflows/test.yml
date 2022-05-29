@@ -15,10 +15,9 @@ jobs:
     - name: Install Ubuntu packages
       run: |
         sudo apt update
-        sudo apt install libscalapack-openmpi-dev libopenmpi-dev python-dev
+        sudo apt install libscalapack-openmpi-dev libopenmpi-dev python-dev python-pip
     - name: Install dependencies
       run: |
-        python -m ensurepip --upgrade
         pip install numpy scipy pytest Cython
     - name: Build
       run: python setup.py develop
