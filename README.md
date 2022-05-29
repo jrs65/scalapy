@@ -36,7 +36,7 @@ robust, you can edit ``setup.py`` manually specify what to use.
 Documentation
 -------------
 
-Limited, but improving, documentation is available `here <http://jrs65.github.com/scalapy/>`_.
+Limited, but improving, documentation is available ~~[here](http://jrs65.github.com/scalapy/)~~ (TBD).
 
 MPI Version (OpenMPI 1.8.2 or higher)
 -------------------------------------
