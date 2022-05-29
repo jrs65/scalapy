@@ -18,7 +18,7 @@ jobs:
         sudo apt install libscalapack-openmpi-dev libopenmpi-dev python3-dev python3-pip
     - name: Install dependencies
       run: |
-        pip install numpy scipy pytest Cython
+        pip install mpi4py numpy scipy pytest Cython
     - name: Build
       run: python setup.py develop
     - name: Test
