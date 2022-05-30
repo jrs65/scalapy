@@ -25,6 +25,7 @@ import numpy as np
 
 from . import core, util
 from . import lowlevel as ll
+from .blockcyclic import numrc
 
 
 def _pxxxevr(jobz, erange, uplo, A, vl, vu, il, iu):
@@ -655,6 +656,76 @@ def pinv2(A, overwrite_a=True, cond=None, rcond=None, return_rank=False, check_f
         return B, rank
     else:
         return B
+
+
+def qr(a, overwrite_a=True, mode='reduced'):
+    """Perform the QR decomposition.
+
+    Currently, only 'reduced' mode supported.
+
+    Parameters
+    ----------
+    a : DistributedMatrix
+        Real or complex-valued matrix to decompose.
+    overwrite_a : bool
+        If True, allows overwriting the input.
+    mode : str
+        Return mode (currently 'reduced' only).
+
+    Returns
+    -------
+    q : DistributedMatrix
+    r : DistributedMatrix
+    """
+    assert mode == 'reduced'
+    a = a if overwrite_a else a.copy()
+    m, n = a.global_shape
+    rank = min(m, n)
+
+    # Temporary local array with elementary reflections of Q representation
+    tau = np.zeros(numrc(
+        rank,
+        a.block_shape[1],
+        a.context.grid_position[1],
+        a.context.grid_shape[1],
+    ), dtype=a.dtype)
+
+    # Perform QR
+    args = [m, n, a, tau]
+    call_table_qrf = {'S': (ll.psgeqrf, args + [ll.WorkArray('S')]),
+                      'D': (ll.pdgeqrf, args + [ll.WorkArray('D')]),
+                      'C': (ll.pcgeqrf, args + [ll.WorkArray('C')]),
+                      'Z': (ll.pzgeqrf, args + [ll.WorkArray('Z')])}
+    func, args = call_table_qrf[a.sc_dtype]
+    info = func(*args)
+    if info < 0:
+        raise core.ScalapackException(f"scalapack qrf reports error {info}")
+
+    # Copy R
+    # (reduced mode)
+    if m > n:
+        r = triu(a[:n])  # [n, n]
+    else:
+        r = triu(a)  # [m, n]
+
+    # Re-assemble Q
+    args = [m, rank, rank, a, tau]
+    call_table_gqr = {'S': (ll.psorgqr, args + [ll.WorkArray('S')]),
+                      'D': (ll.pdorgqr, args + [ll.WorkArray('D')]),
+                      'C': (ll.pcungqr, args + [ll.WorkArray('C')]),
+                      'Z': (ll.pzungqr, args + [ll.WorkArray('Z')])}
+
+    func, args = call_table_gqr[a.sc_dtype]
+    info = func(*args)
+    if info < 0:
+        raise core.ScalapackException(f"scalapack gqr reports error {info}")
+    # (reduced mode)
+    if m < n:
+        q = a[:, :m]  # [m, m]
+    else:
+        q = a  # [m, n]
+
+    return q, r
 
 
 def transpose(A):
