@@ -70,3 +70,53 @@ def test_eigh_Z():
 
             assert allclose(evalsn, evalsd)
             assert cmp_evecs(gZn, gZd)
+
+
+def test_eigh_d_generalized():
+    with core.shape_context(**test_context):
+
+        ns = 314
+
+        a = np.random.standard_normal((ns, ns)).astype(np.float64)
+        a += a.T  # Make symmetric
+        a = np.asfortranarray(a)
+
+        b = np.random.standard_normal((ns, ns)).astype(np.float64)
+        b += b.T
+        b = b @ b
+        b = np.asfortranarray(b)
+
+        a_distributed = core.DistributedMatrix.from_global_array(a, rank=0)
+        b_distributed = core.DistributedMatrix.from_global_array(b, rank=0)
+
+        vals, vecs_distributed = rt.eigh(a_distributed, b_distributed)
+        vecs = vecs_distributed.to_global_array(rank=0)
+
+        if rank == 0:
+            np.testing.assert_allclose(a @ vecs - b @ vecs * vals[None, :], 0, err_msg=f"A @ v - val B @ v = 0", atol=1e-5)
+            np.testing.assert_allclose(vecs.T @ b @ vecs, np.eye(ns), err_msg=f"v.T @ b @ v = I", atol=1e-8)
+
+
+def test_eigh_z_generalized():
+    with core.shape_context(**test_context):
+
+        ns = 176
+
+        a = np.random.standard_normal((ns, ns)).astype(np.float64) + 1.j * np.random.standard_normal((ns, ns)).astype(np.float64)
+        a += a.conj().T
+        a = np.asfortranarray(a)
+
+        b = np.random.standard_normal((ns, ns)).astype(np.float64) + 1.j * np.random.standard_normal((ns, ns)).astype(np.float64)
+        b += b.conj().T
+        b = b @ b
+        b = np.asfortranarray(b)
+
+        a_distributed = core.DistributedMatrix.from_global_array(a, rank=0)
+        b_distributed = core.DistributedMatrix.from_global_array(b, rank=0)
+
+        vals, vecs_distributed = rt.eigh(a_distributed, b_distributed)
+        vecs = vecs_distributed.to_global_array(rank=0)
+
+        if rank == 0:
+            np.testing.assert_allclose(a @ vecs - b @ vecs * vals[None, :], 0, err_msg=f"A @ v - val B @ v = 0", atol=1e-5)
+            np.testing.assert_allclose(vecs.conj().T @ b @ vecs, np.eye(ns), err_msg=f"v.T @ b @ v = I", atol=1e-8)

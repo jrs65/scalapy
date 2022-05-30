@@ -20,6 +20,7 @@ Routines
 """
 from __future__ import print_function, division
 from functools import partial
+from warnings import warn
 
 import numpy as np
 
@@ -77,7 +78,7 @@ def _pxxxgvx(ibtype, jobz, erange, uplo, A, B, vl, vu, il, iu, abstol=0.0, orfac
     func, args = call_table[A.sc_dtype]
     m, nz, info = func(*args)
 
-    return w, Z, m, nz, info, ifail
+    return w, Z, m, nz, info, ifail, iclustr, gap
 
 
 def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_b=True, type_=1, eigbounds=None, eigvals=None):
@@ -170,20 +171,21 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
         if type_ not in [1, 2, 3]:
             raise core.ScalapackException("Type argument invalid.")
 
-        evals, evecs, m, nz, info, ifail = _pxxxgvx(type_, task, erange, uplo, A, B, vl, vu, il, iu)
+        evals, evecs, m, nz, info, ifail, fail_cluster_ix, fail_gap_size = _pxxxgvx(type_, task, erange, uplo, A, B, vl, vu, il, iu)
 
-        if info == 0:
-            if task == 'N':
-                return evals[:m]
-            else:
-                return evals[:m], evecs[:, :m]
         if info < 0:
             raise core.ScalapackException("Failure with info = %d" % info)
-        if info > 0:
+        elif info > 0:
             if np.mod(info, 2) != 0:
                 raise core.ScalapackException("One or more eigenvectors failed to converge")
             elif np.mod(info // 2, 2) != 0:
-                raise core.ScalapackException("Eigenvectors corresponding to one or more clusters of eigenvalues could not be reorthogonalized because of insufficient workspace")
+                cluster_info = ", ".join(
+                    f"[vecs {fr - 1}-{to - 1} gap {gap:.3e} (reported) / {(evals[fr:to] - evals[fr - 1:to - 1]).min():.3e} (returned)]"
+                    for fr, to, gap in zip(fail_cluster_ix[::2], fail_cluster_ix[1::2], fail_gap_size)
+                    if fr != 0
+                )
+                warn(f"Eigenvectors corresponding to eigenvalue cluster(s) {cluster_info} "
+                     f"could not be re-orthogonalized because of insufficient workspace")
             elif np.mod(info // 4, 2) != 0:
                 raise core.ScalapackException("Space limit prevented p?sygvx from computing all of the eigenvectors between %f and %f. The number of eigenvectors computed is %d" % (vl, vu, nz))
             elif np.mod(info // 8, 2) != 0:
@@ -192,6 +194,11 @@ def eigh(A, B=None, lower=True, eigvals_only=False, overwrite_a=True, overwrite_
                 raise core.ScalapackException("The smallest minor order %d of `B` is not positive definite" % ifail[0])
             else:
                 raise core.ScalapackException("Unknown error")
+
+        if task == 'N':
+            return evals[:m]
+        else:
+            return evals[:m], evecs[:, :m]
 
 
 def cholesky(A, lower=False, overwrite_a=False, zero_triangle=True):
