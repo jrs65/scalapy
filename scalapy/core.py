@@ -245,8 +245,8 @@ class ProcessContext(object):
         self.mpi_comm.Allgather(t, self._all_grid_positions)
 
         # Compute all_mpi_ranks from all_grid_positions
-        self._all_mpi_ranks = np.zeros(self.grid_shape, dtype=np.int)
-        self._all_mpi_ranks[self._all_grid_positions[:,0],self._all_grid_positions[:,1]] = np.arange(self.mpi_comm.size, dtype=np.int)
+        self._all_mpi_ranks = np.zeros(self.grid_shape, dtype=int)
+        self._all_mpi_ranks[self._all_grid_positions[:,0],self._all_grid_positions[:,1]] = np.arange(self.mpi_comm.size, dtype=int)
 
 
 class DistributedMatrix(object):
