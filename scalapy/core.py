@@ -518,6 +518,7 @@ class DistributedMatrix(object):
         """
         return cls(mat.global_shape, block_shape=mat.block_shape,
                    dtype=mat.dtype, context=mat.context)
+    zeros_like = empty_like  # TODO: currently, empty_like is actually zeros_like
 
 
     @classmethod

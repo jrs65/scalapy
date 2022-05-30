@@ -732,7 +732,7 @@ def copy(a, which=None, out=None):
         The resulting copy.
     """
     if out is None:
-        out = core.DistributedMatrix.empty_like(a)
+        out = core.DistributedMatrix.zeros_like(a)
     assert a.global_shape == out.global_shape, f'out shape mismatch: {out.global_shape} vs {a.global_shape} (expected)'
 
     m, n = a.global_shape
