@@ -19,6 +19,7 @@ Routines
 
 """
 from __future__ import print_function, division
+from functools import partial
 
 import numpy as np
 
@@ -709,3 +710,43 @@ def hconj(A):
     """
 
     return A.hconj()
+
+
+def copy(a, which=None, out=None):
+    """
+    Distributed matrix copy.
+
+    Parameters
+    ----------
+    a : DistributedMatrix
+        The matrix to copy.
+    which : str
+        Which part to copy: (U)pper-triangular, (L)ower-triangular
+        or the entire matrix (default).
+    out : DistributedMatrix
+        The output matrix of exact same shape.
+
+    Returns
+    -------
+    out : DistributedMatrix
+        The resulting copy.
+    """
+    if out is None:
+        out = core.DistributedMatrix.empty_like(a)
+    assert a.global_shape == out.global_shape, f'out shape mismatch: {out.global_shape} vs {a.global_shape} (expected)'
+
+    m, n = a.global_shape
+    args = [which, m, n, a, out]
+
+    call_table = {'S': (ll.pslacpy, args),
+                  'D': (ll.pdlacpy, args),
+                  'C': (ll.pclacpy, args),
+                  'Z': (ll.pzlacpy, args)}
+
+    func, args = call_table[a.sc_dtype]
+    func(*args)
+    return out
+
+
+triu = partial(copy, which='U')
+tril = partial(copy, which='L')
