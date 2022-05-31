@@ -33,6 +33,7 @@ Classes
 
 """
 from __future__ import print_function, division, absolute_import
+from contextlib import contextmanager
 
 from numbers import Number
 import numpy as np
@@ -106,6 +107,26 @@ def initmpi(gridshape=None, block_shape=[32, 32]):
     _block_shape = tuple(block_shape)
 
 
+@contextmanager
+def shape_context(gridshape=None, block_shape=[32, 32]):
+    """
+    Sets a temporary context for Scalapack matrix distribution.
+
+    Parameters
+    ----------
+    gridshape
+        Process grid as a pair of integers.
+    block_shape
+        Contiguous matrix block size ad a pair of integers.
+    """
+    global _context, _block_shape
+
+    prev_context = _context
+    prev_bs = _block_shape
+    initmpi(gridshape=gridshape, block_shape=block_shape)
+    yield None
+    _context = prev_context
+    _block_shape = prev_bs
 
 
 class ProcessContext(object):
@@ -224,8 +245,8 @@ class ProcessContext(object):
         self.mpi_comm.Allgather(t, self._all_grid_positions)
 
         # Compute all_mpi_ranks from all_grid_positions
-        self._all_mpi_ranks = np.zeros(self.grid_shape, dtype=np.int)
-        self._all_mpi_ranks[self._all_grid_positions[:,0],self._all_grid_positions[:,1]] = np.arange(self.mpi_comm.size, dtype=np.int)
+        self._all_mpi_ranks = np.zeros(self.grid_shape, dtype=int)
+        self._all_mpi_ranks[self._all_grid_positions[:,0],self._all_grid_positions[:,1]] = np.arange(self.mpi_comm.size, dtype=int)
 
 
 class DistributedMatrix(object):
